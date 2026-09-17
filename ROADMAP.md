@@ -35,10 +35,15 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
 | J6    | Photo de session                            | J5        | Terminé |
 | J7    | Export PDF                                  | J6        | Terminé |
-| J8    | Catalogue de modèles                        | JD, J5    | Partiel |
-| J9    | Finitions et validation du MVP              | J7, J8    | À faire |
+| JN    | Notifications                               | J7        | À faire |
+| J8    | Catalogue de modèles et réglages            | JD, JN    | Partiel |
+| JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
+| JS    | Sections personnalisées                     | J3, J5    | À faire |
+| J9    | Finitions et validation du MVP              | J8, JZ, JS | À faire |
 
-## État au 17 septembre 2026
+## État du projet
+
+### Au 17 septembre 2026
 
 `fvm flutter analyze` ne signale aucun problème et les 182 tests passent.
 
@@ -62,6 +67,28 @@ Trois changements de comportement introduits par le JD, à connaître :
   A4, contre une seule pour l'ancien jeu de données ;
 - les projets exposent leur rôle et leur lien, et la date d'une certification
   s'affiche en regard de son intitulé plutôt que dans celui-ci.
+
+### Élargissement du périmètre au 18 septembre 2026
+
+La mise à jour de `design_handoff_cv_maker/` élargit le MVP sur trois points,
+reportés dans le cahier des charges :
+
+1. **Le catalogue passe de trois à huit modèles** et gagne deux réglages
+   enregistrés par CV : la couleur d'accent, dans une palette fermée de cinq
+   valeurs, et l'affichage de la photo. Le J8 est réécrit en conséquence.
+2. **Trois des huit modèles ne tiennent pas en une seule colonne** — bandeau
+   latéral, latéral clair et titres en marge. Ils demandent un moteur de zones
+   dans le générateur PDF, qui était jusqu'ici hors périmètre pour des raisons
+   de compatibilité ATS. Le handoff lève cette réserve en imposant que le
+   bandeau soit émis comme un bloc distinct placé après le corps dans l'ordre
+   du document. Ces trois modèles forment donc le jalon **JZ**, séparé du J8 :
+   les cinq modèles en une colonne se livrent sans lui.
+3. **Les sections personnalisées** apparaissent, avec leurs trois types de
+   contenu. Elles touchent le modèle de données, les formulaires, le générateur
+   PDF et la persistance : elles forment le jalon **JS**.
+
+Les notifications décrites par le handoff, communes à l'export et au catalogue,
+forment le jalon **JN**, prérequis du J8.
 
 ---
 
@@ -332,33 +359,129 @@ l'aperçu, même si l'export est demandé juste après une modification.
 
 ---
 
-## J8 — Catalogue de modèles
+## JN — Notifications
 
-**Objectif :** offrir plusieurs modèles intégrés et permettre d'en changer sans
-toucher au contenu.
+**Objectif :** remplacer les messages posés dans l'aperçu par les notifications
+décrites par le handoff, communes à l'export et au catalogue.
 
-Ce jalon ne dépend que du J5 (le modèle sélectionné doit être persisté) et peut
-donc être mené en parallèle du J6 et du J7.
+- [ ] Créer le contrôleur de notifications : file de trois au maximum, la plus
+  récente en bas à droite, disparition automatique après quelques secondes,
+  un peu plus longtemps avec une action, croix de fermeture toujours présente.
+- [ ] Passer par un `Overlay` plutôt que par `ScaffoldMessenger`, afin que les
+  notifications survivent au changement d'onglet en fenêtre étroite.
+- [ ] Décrire chaque notification par une donnée : nature, titre, texte
+  secondaire facultatif, action facultative.
+- [ ] Couvrir les quatre cas du handoff : régénération du PDF avant un export,
+  export réussi avec « Ouvrir le dossier », export échoué avec « Réessayer »,
+  modèle appliqué.
+- [ ] Retirer du panneau d'aperçu les messages qu'elles remplacent.
+- [ ] Tester l'empilement, la limite de trois, la fermeture manuelle et la
+  disparition automatique sans faire échouer les temporisations des tests.
 
-- [x] Décrire chaque modèle intégré par une `CvDesignSpec` : professionnel,
-  moderne et minimaliste. Aucune branche conditionnelle sur l'identifiant du
-  modèle ne subsiste dans le générateur PDF.
-- [x] Conserver la structure en une seule colonne pour tous les modèles du MVP.
-- [ ] Persister l'identifiant du modèle avec le CV et retomber sur le modèle
-  professionnel si l'identifiant est inconnu. ⚠ `CvDesign.fromId` assure déjà le
-  repli ; la persistance attend le J5.
-- [x] Générer les vignettes du catalogue depuis les modèles PDF réels, sur un CV
-  d'exemple, et les livrer dans les assets.
-- [x] Afficher le catalogue : vignette, libellé, description, modèle courant
-  identifié, sélection et fermeture.
+**Terminé quand :** un export réussi, un export échoué et l'application d'un
+modèle produisent chacun leur notification, actionnable et refermable.
+
+---
+
+## J8 — Catalogue de modèles et réglages
+
+**Objectif :** offrir les modèles intégrés et leurs deux réglages, et permettre
+d'en changer sans toucher au contenu.
+
+Le périmètre de ce jalon couvre les **cinq modèles en une seule colonne** :
+classique, sobre, en-tête coloré, compact et académique. Les trois modèles à
+deux zones relèvent du JZ. L'interface du catalogue, elle, est livrée complète
+dès ce jalon.
+
+- [x] Décrire chaque modèle intégré par une `CvDesignSpec`. Aucune branche
+  conditionnelle sur l'identifiant du modèle ne subsiste dans le générateur PDF.
+- [ ] Porter le catalogue sur la maquette du handoff : grille de vignettes à
+  quatre colonnes, modèle courant identifié par une bordure et une pastille,
+  panneau d'aperçu et de réglages à droite, pied rappelant la compatibilité
+  ATS, actions « Annuler » et « Appliquer le modèle ».
+- [ ] Rendre les vignettes et le grand aperçu depuis le PDF réel du CV en
+  cours, et non depuis une image livrée dans les assets.
+- [ ] Ajouter les cinq modèles en une seule colonne, chacun décrit par une
+  constante, le modèle classique servant de repli.
+- [ ] Permettre au modèle académique d'imposer son ordre de sections
+  (formations avant expériences) sans modifier l'ordre enregistré dans le CV.
+- [ ] Ajouter le réglage de couleur d'accent : palette fermée de cinq valeurs,
+  ignorée par un modèle sans couleur.
+- [ ] Ajouter le réglage d'affichage de la photo, indisponible tant qu'aucune
+  photo n'est chargée dans la session.
+- [ ] Enregistrer le modèle, la couleur d'accent et l'affichage de la photo
+  avec le CV, et retomber sur le modèle classique si l'identifiant est inconnu.
+  ⚠ La persistance sur disque attend le J5.
 - [x] Déclencher la régénération du PDF au changement de modèle et inclure ce
   changement dans l'historique undo/redo.
+- [ ] Afficher la notification « Modèle appliqué » à la validation.
 - [x] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
   ni la visibilité des sections.
+- [ ] Tester que les deux réglages atteignent le PDF et qu'ils survivent à une
+  annulation puis à un rétablissement.
 
-**Terminé quand :** l'utilisateur choisit un modèle dans le catalogue, l'aperçu
-et l'export le reflètent, le choix est retrouvé après un redémarrage et aucun
-contenu n'est perdu au passage d'un modèle à l'autre.
+**Terminé quand :** l'utilisateur choisit un modèle et ses deux réglages dans le
+catalogue, l'aperçu et l'export les reflètent, le choix est retrouvé après un
+redémarrage et aucun contenu n'est perdu au passage d'un modèle à l'autre.
+
+---
+
+## JZ — Moteur de zones et modèles à deux zones
+
+**Objectif :** livrer les trois modèles que la structure en une seule colonne ne
+permet pas d'exprimer.
+
+Ce jalon existe parce que le générateur actuel émet une suite de blocs sur toute
+la largeur. Les modèles à bandeau latéral et à titres en marge demandent de
+placer du contenu dans une zone secondaire, sur plusieurs pages, sans casser
+l'ordre de lecture attendu par les systèmes ATS.
+
+- [ ] Étendre la description de modèle : position et largeur de la zone
+  secondaire, sections qui y sont placées. Les propriétés existent déjà dans
+  `CvDesignStructure` mais ne sont pas honorées par le générateur.
+- [ ] Émettre la zone secondaire comme un bloc distinct placé après le corps
+  dans l'ordre du document, afin que l'extraction linéaire reste correcte.
+- [ ] Gérer la continuation de la zone secondaire sur plusieurs pages.
+- [ ] Ajouter les modèles bandeau latéral, latéral clair et contraste.
+- [ ] Vérifier par un test que l'ordre d'émission du texte reste celui de la
+  lecture humaine, quel que soit le modèle.
+- [ ] Vérifier qu'aucun modèle ne place de texte dans un en-tête de page ni ne
+  le rend sous forme d'image.
+
+**Terminé quand :** les huit modèles du catalogue sont disponibles, et le texte
+d'un modèle à bandeau s'extrait dans l'ordre de lecture attendu.
+
+---
+
+## JS — Sections personnalisées
+
+**Objectif :** permettre à l'utilisateur de créer les sections que les sections
+standard ne couvrent pas.
+
+- [ ] Modéliser une section personnalisée : identifiant, nom unique de 40
+  caractères au plus, type figé, visibilité, ordre, contenu.
+- [ ] Modéliser les trois types de contenu : texte libre, liste datée, liste
+  simple.
+- [ ] Sérialiser ces sections avec le CV, sans perte à l'aller-retour.
+- [ ] Étendre l'ordre et la visibilité des sections à ces sections, qui se
+  placent après les sections standard.
+- [ ] Ajouter le dialogue de création : nom, choix du type, mention que le type
+  est définitif, refus des doublons et des noms vides.
+- [ ] Ajouter le bouton « Ajouter une section » sous la liste des sections.
+- [ ] Sélectionner la nouvelle section dans le formulaire après sa création.
+- [ ] Réutiliser les formulaires génériques selon le type, et signaler dans
+  l'en-tête qu'il s'agit d'une section personnalisée, avec son type et son
+  nombre d'éléments.
+- [ ] Permettre le renommage et la suppression, avec une confirmation qui
+  rappelle le nombre d'éléments perdus et propose le masquage.
+- [ ] Rendre ces sections dans le PDF avec les composants des sections standard
+  correspondantes, en respectant la règle du titre solidaire.
+- [ ] Inclure création, renommage, suppression, masquage et saisie dans
+  l'historique undo/redo.
+
+**Terminé quand :** l'utilisateur crée une section de chaque type, la remplit,
+la renomme, la masque et la supprime ; le PDF la reflète et elle est retrouvée
+après un redémarrage.
 
 ---
 
@@ -369,7 +492,7 @@ contenu n'est perdu au passage d'un modèle à l'autre.
 - [ ] Gestion des erreurs de sauvegarde, de lecture de base et de génération
   PDF.
 - [ ] Présentation en onglets du formulaire et de l'aperçu sur une fenêtre
-  étroite.
+  étroite, notifications comprises.
 - [ ] Exécuter les scénarios de validation de bout en bout et vérifier
   l'absence de régressions entre les fonctionnalités des différents jalons.
 - [ ] Vérifier un par un les critères d'acceptation de la section 12 du cahier
@@ -409,7 +532,15 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   l'ordre de lecture attendu si des structures multi-colonnes sont ajoutées
   plus tard.
 - **Extension du catalogue :** le format de description des modèles n'est pas
-  figé tant que le moteur de zones n'existe pas. Exposer un manifeste chargé
-  depuis un dossier utilisateur avant cela reviendrait à publier un format
-  incapable de décrire autre chose que des variantes de couleur, qu'il faudrait
-  ensuite migrer.
+  figé tant que le moteur de zones du JZ n'existe pas. Exposer un manifeste
+  chargé depuis un dossier utilisateur avant cela reviendrait à publier un
+  format incapable de décrire autre chose que des variantes de couleur, qu'il
+  faudrait ensuite migrer.
+- **Vignettes du catalogue :** les rendre depuis le PDF réel du CV en cours
+  demande autant de générations que de modèles à l'ouverture du catalogue. Si
+  cela devient perceptible, les produire en tâche de fond, du modèle courant
+  vers les autres, et conserver le résultat le temps de la session.
+- **Réglages contre description :** la couleur d'accent et l'affichage de la
+  photo sont les deux seules propriétés qu'un CV peut surcharger. Elles se
+  lisent donc en un seul endroit, au moment de résoudre la description effective
+  du modèle, et non dispersées dans le générateur.

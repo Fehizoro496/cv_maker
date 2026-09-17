@@ -10,8 +10,9 @@ Utilisateurs : étudiants, jeunes diplômés, chercheurs d'emploi, professionnel
 à jour. Ils ne connaissent pas les logiciels de mise en page : l'interface doit être simple et
 rassurante. **Toute l'interface est en français.**
 
-Périmètre MVP : un seul modèle de CV, mode clair, pas de compte, pas de cloud, pas d'IA, pas
-d'import LinkedIn, pas d'export Word, pas de version mobile/web.
+Périmètre MVP : **8 modèles de CV** au catalogue (réglages limités à la couleur d'accent et à
+l'affichage de la photo), **sections personnalisées** créées par l'utilisateur, mode clair, pas de
+compte, pas de cloud, pas d'IA, pas d'import LinkedIn, pas d'export Word, pas de version mobile/web.
 
 ## À propos des fichiers de design
 
@@ -63,6 +64,9 @@ de fenêtre à droite, fond `#EDF0F5`, bordure basse 1 px `#DDE1E8`).
 - Ligne : nom du CV (14 px / 600, ellipsis) + `IconButton` 32 px `folder_open` (`#2F5D8C`,
   fond `#E3EAF3`, radius 16) → ouvre le dialogue **Mes CV**. Tooltip « Mes CV ».
 - Sous-titre : « Modifié aujourd'hui à 14:02 » — 11 px `#73777F`.
+- **Carte « Modèle »** : bordure 1 px `#DDE1E8`, radius 12, fond `#FCFCFF`, padding 6/8 ;
+  icône `style` 18 px `#2F5D8C`, sur-titre « MODÈLE » 9 px `#73777F`, nom du modèle 12 px / 600,
+  `TextButton` « Changer » 11 px / 700 `#2F5D8C` → ouvre le **catalogue de modèles**.
 
 **Liste des sections** (padding 8 px, rangées de 36 px, gap 1 px)
 Chaque rangée = `ListTile` dense / `InkWell` : radius **18 px** (stadium), padding horizontal 10 px,
@@ -94,6 +98,13 @@ Puis un sur-titre « SECTIONS FACULTATIVES » (même style que « SECTIONS ») e
   Quand une section est masquée, **toute la rangée passe en `#9AA0A6`** (libellé et icône) et la
   section n'apparaît pas dans le PDF. Tooltips : « Affichée dans le CV » / « Masquée dans le CV ».
   Basculer la visibilité régénère le PDF.
+
+**Bouton « + Ajouter une section »** : dernière rangée de la liste, marge haute 10 px, hauteur 36 px,
+radius 18, **bordure pointillée 1 px `#C3C7CD`**, icône `add` 18 px + libellé 13 px / 600 `#2F5D8C`
+→ ouvre le dialogue **Nouvelle section**.
+
+Les sections personnalisées s'insèrent après « Références », avec l'icône `label` par défaut et le
+même interrupteur de visibilité que les sections facultatives.
 
 **Pied (bordure haute 1 px)** : `cloud_off` 15 px + « Hors ligne — données sur cet ordinateur »,
 11 px `#73777F`.
@@ -307,6 +318,7 @@ ombre `0 10px 24px rgba(16,24,40,.16)` ; icône 20 px, titre 13 px / 600, texte 
 |---|---|---|---|
 | PDF pas à jour au moment de l'export | `#2F5D8C` | `progress_activity` (rotation) | « Mise à jour du PDF… » / « L'export démarrera dès que l'aperçu sera à jour. » |
 | Export réussi | `#1E5233` | `check_circle` | « PDF exporté » / chemin du fichier (ellipsis) / action **« Ouvrir le dossier »** (`folder_open`) |
+| Modèle appliqué | `#2F5D8C` | `style` | « Modèle appliqué » / nom du modèle |
 | Export échoué | `#8C1D18` (bordure `#F3CFCB`) | `error` | « L'export a échoué » / « Le fichier est ouvert dans une autre application. Fermez-le puis réessayez. » / action **« Réessayer »** (`refresh`) |
 
 Implémentation Flutter : `Overlay` + `AnimatedSlide` / `AnimatedOpacity` dans un
@@ -348,7 +360,10 @@ Message clair, sans jargon technique, toujours accompagné d'une action.
 - `cvList: List<CvSummary>` — id, nom, date de modification ; trié par date décroissante.
 - `currentCv: Cv` — modèle complet ; `openLastModified()` au démarrage.
 - `selectedSection: SectionId` — pilote le formulaire affiché.
-- `sectionVisibility: Map<SectionId, bool>` — uniquement pour les 4 sections facultatives.
+- `sectionVisibility: Map<SectionId, bool>` — les 4 sections facultatives et les sections
+  personnalisées.
+- `customSections: List<CustomSection>` — persistées avec le CV.
+- `templateId` / `accentColor` / `showPhoto` — par CV ; toute modification régénère le PDF.
 - `saveState: idle | saving | saved | error`.
 - `previewState: upToDate | generating | error` + `pdfBytes`, `pageCount`, `zoom`.
 - `undoStack` / `redoStack` par CV (au moins 50 pas) ; Ctrl+Z / Ctrl+Y ; les boutons sont
@@ -360,19 +375,160 @@ Message clair, sans jargon technique, toujours accompagné d'une action.
 
 ---
 
+## Catalogue de modèles
+
+`data-screen-label="10 Catalogue de modèles"`
+
+`Dialog` de **1160 × 760**, radius 28, scrim `rgba(16,24,40,.32)`. Ouvert par « Changer » dans la
+carte « Modèle » de la navigation.
+
+**En-tête** (padding 22/24/16, bordure basse 1 px `#E7EAEF`) : titre « Choisir un modèle » 20 px / 600,
+sous-titre « 8 modèles, tous lisibles par les logiciels de tri des candidatures. Vos informations
+sont conservées quand vous changez de modèle. » 12 px `#43474E`, `IconButton` `close` 36 px à droite.
+
+**Corps** : grid `minmax(0,1fr) 420px`.
+
+### Grille de vignettes (gauche)
+
+`GridView` 4 colonnes, gap 14 × 16 px, padding 16/20, **défilement vertical**.
+Chaque carte : conteneur radius 10, padding 5 px ;
+- non sélectionnée — bordure 1 px `#DDE1E8`, fond `#F5F7FA` ;
+- **sélectionnée** — bordure **2 px `#2F5D8C`**, fond `#EEF4FA`, + pastille `check` 24 px
+  (`#2F5D8C`, icône blanche, ombre `0 2px 6px rgba(16,24,40,.28)`) débordant du coin supérieur droit.
+
+À l'intérieur, une **miniature A4** (`aspect-ratio: 210/297`, `overflow: hidden`, fond blanc,
+ombre `0 1px 4px rgba(16,24,40,.14)`) rendue à partir du **vrai PDF** (première page mise à l'échelle),
+pas d'un visuel statique — elle doit refléter les données de l'utilisateur.
+Sous la miniature : nom 12 px / 600, description 11 px `#43474E` (une à deux lignes).
+
+| # | Nom | Description | Mise en page |
+|---|---|---|---|
+| 1 | **Classique** | Une colonne, filet d'accent. | Le modèle existant (section 5 du document) — sélection par défaut |
+| 2 | **Sobre** | Noir et blanc, sans accent. | Une colonne, filet et titres en `#1B1F23`, aucune couleur |
+| 3 | **Bandeau latéral** | Colonne colorée à gauche. | Bandeau 34 % en aplat d'accent : photo, contact, compétences, langues ; corps à droite |
+| 4 | **Latéral clair** | Colonne grise à droite. | Colonne 32 % `#EDF0F5`, titres `#12385C` : contact, langues, centres d'intérêt |
+| 5 | **En-tête coloré** | Bandeau pleine largeur. | En-tête en aplat d'accent (nom et titre en blanc), corps en une colonne |
+| 6 | **Compact** | Interlignes serrés, plus de contenu. | Corps 8,5 pt, interligne 1,4, espacement inter-sections réduit d'un tiers |
+| 7 | **Académique** | En-tête centré, longues listes. | En-tête centré, filet gris, **Formations en premier**, sections longues (publications, enseignement) |
+| 8 | **Contraste** | Capitales, titres en marge. | Nom en capitales 17 pt, titres de section dans une marge gauche de 26 %, filet d'accent de 28 px |
+
+Tous les modèles restent **ATS-compatibles** : une seule colonne de texte dans le flux de lecture
+(les bandeaux latéraux sont générés comme un bloc distinct placé après le corps dans l'ordre du
+document), pas de tableau de mise en page, pas de texte en image.
+
+### Aperçu et réglages (droite, 420 px, fond `#EDF0F5`)
+
+- Grand aperçu de la première page (270 × 382 px dans la maquette), centré, ombre
+  `0 3px 14px rgba(16,24,40,.2)`. Il se régénère à chaque changement de modèle ou de réglage
+  (même debounce que l'aperçu principal).
+- Panneau de réglages (fond `#FCFCFF`, bordure haute 1 px `#DDE1E8`, padding 16/18, gap 14) :
+  - **Couleur d'accent** — 5 pastilles de 32 px, palette **fermée** :
+    `#2F5D8C` (bleu, défaut), `#1E5233` (vert), `#6B4E2E` (brun), `#7A2F4A` (bordeaux),
+    `#3E4046` (graphite). Sélection : anneau `0 0 0 2px #FCFCFF, 0 0 0 4px <couleur>` + `check` blanc.
+    Le modèle **Sobre** ignore ce réglage (pastilles désactivées).
+  - **Afficher la photo** — `Switch` Material 3, sous-titre « Ce modèle propose aussi une version
+    sans photo. » Désactivé (grisé) tant qu'aucune photo n'est chargée dans la session.
+
+**Pied** (padding 14/24, bordure haute) : à gauche `check_circle` 16 px + « Compatible avec les
+logiciels de tri des candidatures » 11 px `#73777F` ; à droite `TextButton` « Annuler » et
+`FilledButton.icon` **« Appliquer le modèle »** (`check`).
+
+### Comportement
+
+- Le choix, la couleur d'accent et l'affichage de la photo sont **enregistrés par CV**
+  (`Cv.templateId`, `Cv.accentColor`, `Cv.showPhoto`), pas globalement.
+- « Annuler » referme sans rien appliquer ; « Appliquer le modèle » écrit les trois valeurs,
+  régénère le PDF principal et affiche un toast « Modèle appliqué — <nom> ».
+- Changer de modèle **ne perd aucune donnée** : toutes les sections restent, seule leur mise en
+  page change. Si un modèle n'a pas de place pour la photo, elle est simplement ignorée.
+- Un changement de modèle est **annulable par Ctrl+Z** comme les autres modifications.
+
+---
+
+## Sections personnalisées
+
+`data-screen-label="11 Nouvelle section"`, `"12 Section personnalisée – formulaire"`
+
+### Dialogue « Nouvelle section »
+
+`Dialog` 520 px, radius 28, padding 24, gap 18.
+- Titre « Nouvelle section » 20 px / 600 ; sous-titre « Elle sera ajoutée à la fin de votre CV.
+  Vous pourrez la masquer à tout moment. » 12 px `#43474E`.
+- `TextField` **« Nom de la section »**, 48 px, en focus à l'ouverture.
+- **Type de contenu** — trois cartes radio (padding 12, radius 12 ; non choisie : bordure 1 px
+  `#C3C7CD` ; **choisie** : bordure 2 px `#2F5D8C`, fond `#EEF4FA`, titre `#12385C`).
+  Chaque carte : `radio_button_checked`/`_unchecked` 20 px, titre 13 px / 600, explication 11 px
+  `#43474E`, icône de type 22 px à droite.
+
+  | Type | Icône | Champs par élément | Rendu PDF |
+  |---|---|---|---|
+  | **Texte libre** | `notes` | un paragraphe unique (pas de liste) | comme « Profil professionnel » |
+  | **Liste datée** | `event_list` | Titre, Sous-titre, Début, Fin, Description | comme « Expériences » |
+  | **Liste simple** | `format_list_bulleted` | Titre, Description courte | comme « Certifications » |
+
+- Mention : `info` 15 px + « Le type ne pourra plus être changé après la création. » 11 px `#73777F`.
+- Actions : « Annuler » / **« Créer la section »** (`FilledButton`).
+- Validation : nom obligatoire, 40 caractères max, **doublons refusés** (message
+  « Une section porte déjà ce nom. » sous le champ, bordure `#8C1D18`).
+
+À la création, la section est ajoutée à la fin du CV, **visible par défaut**, et devient la section
+sélectionnée dans le formulaire.
+
+### Formulaire d'une section personnalisée
+
+Identique au motif commun des listes, avec en plus dans l'en-tête :
+- badge **« PERSONNALISÉE »** — 20 px de haut, radius 10, fond `#EDF0F5`, texte 10 px / 700
+  `#43474E`, majuscules, `letter-spacing .04em` ;
+- sous-titre « Liste datée · 2 éléments » ;
+- `IconButton` 32 px `drive_file_rename_outline` (Renommer la section) et `delete`
+  (Supprimer la section), avant l'indicateur de sauvegarde.
+
+Le bouton d'ajout reprend le nom au singulier quand c'est possible
+(« Ajouter une publication »), sinon « Ajouter un élément ».
+
+### Suppression
+
+`Dialog` de confirmation standard : « Supprimer la section « Publications » ? » /
+« Ses 2 éléments seront supprimés avec elle. Pour la retirer du CV sans perdre son contenu,
+masquez-la plutôt avec l'icône œil. » / « Annuler » — « Supprimer » (`#8C1D18`).
+Annulable par Ctrl+Z.
+
+### Modèle de données
+
+```
+CustomSection {
+  String id;
+  String name;                       // 40 caractères max, unique
+  CustomSectionType type;            // freeText | datedList | simpleList
+  bool visible;                      // défaut true
+  int order;                         // position après les sections standard
+  String? text;                      // type freeText
+  List<CustomItem> items;            // types datedList / simpleList
+}
+CustomItem { String id; String title; String? subtitle; String? start; String? end; String? description; }
+```
+
+Les sections personnalisées sont rendues par les **mêmes composants PDF** que les sections standard
+correspondantes (titre de section en 8 pt / 700 majuscules accentué, éléments identiques) et
+respectent la même règle de pagination : titre solidaire du premier élément.
+
+---
+
 ## Modèle de CV A4 (le PDF)
 
 `data-screen-label="07 CV A4 – 1 page avec photo"`, `"08 CV A4 – page 1 sans photo"`,
 `"09 CV A4 – page 2 sans photo"`
 
-Un seul modèle « professionnel » dans le MVP. À générer avec le package **`pdf`** (`pw.*`),
+Le modèle **Classique**, décrit ici en détail, sert de **référence commune aux 8 modèles** du
+catalogue : marges, styles typographiques et règles de pagination sont partagés ; seules la mise en
+page et la place de la couleur changent d'un modèle à l'autre. À générer avec le package **`pdf`** (`pw.*`),
 police **Noto Sans** (regular / bold / italic embarquées dans `assets/fonts/`).
 **Texte sélectionnable** : jamais d'image de texte.
 
 - Format **A4 portrait** (210 × 297 mm), marges **18 mm** sur les quatre côtés
   (68 px à 96 dpi dans la maquette).
-- Couleur d'accent unique `#2F5D8C`, réservée : filet sous l'en-tête, titre professionnel,
-  titres de section. Tout le reste en noir/gris.
+- **Une seule couleur d'accent** (`#2F5D8C` par défaut, choisie dans le catalogue), réservée :
+  filet sous l'en-tête, titre professionnel, titres de section. Tout le reste en noir/gris.
 - Adapté aux logiciels de tri de candidatures (ATS) : une seule colonne, pas de tableau de mise en
   page, hiérarchie par la taille et la graisse.
 - Numérotation « 1 / 2 » en bas à droite, 9,5 pt `#9AA0A6`.
@@ -401,7 +557,10 @@ police **Noto Sans** (regular / bold / italic embarquées dans `assets/fonts/`).
 ### Ordre des sections
 
 Profil professionnel · Expériences · Formations · Compétences · Langues · Certifications · Projets ·
-Centres d'intérêt · Références. Les sections **masquées** ou vides n'apparaissent pas.
+Centres d'intérêt · Références · **sections personnalisées** (dans leur ordre de création).
+Les sections **masquées** ou vides n'apparaissent pas. Le modèle **Académique** place Formations
+avant Expériences ; les modèles à bandeau déplacent contact, compétences et langues dans la colonne
+latérale.
 
 ### Pagination
 
@@ -499,7 +658,9 @@ navigation · 28 px `Dialog` · avatars en cercle complet.
   `visibility_off`, `folder_open`, `undo`, `redo`, `refresh`, `download`, `add`, `remove`, `delete`,
   `drag_indicator`, `expand_more`, `expand_less`, `check_circle`, `error`, `info`, `close`, `edit`,
   `edit_note`, `picture_as_pdf`, `calendar_month`, `upload`, `account_circle`, `note_add`,
-  `description`, `cloud_off`, `content_copy`, `drive_file_rename_outline`, `check_box`.
+  `description`, `cloud_off`, `content_copy`, `drive_file_rename_outline`, `check_box`, `style`,
+  `label`, `check`, `notes`, `event_list` (ou `list_alt`), `format_list_bulleted`,
+  `radio_button_checked`, `radio_button_unchecked`.
 - **Polices** : Segoe UI (fournie par Windows, aucun asset à embarquer) ;
   **Noto Sans** regular / bold / italic à placer dans `assets/fonts/` pour le PDF
   (`pw.Font.ttf`) — licence SIL OFL.
@@ -512,7 +673,7 @@ navigation · 28 px `Dialog` · avatars en cercle complet.
 | Fichier | Contenu |
 |---|---|
 | `README.md` | Cette spécification (auto-suffisante). |
-| `CV Maker.dc.html` | Toutes les maquettes : écran principal (2 états), fenêtre étroite (2 onglets), liste des CV, premier lancement, planche d'états et de dialogues, modèle A4 (1 page avec photo, 2 pages sans), tokens. |
+| `CV Maker.dc.html` | Toutes les maquettes : écran principal (2 états), fenêtre étroite (2 onglets), liste des CV, premier lancement, planche d'états et de dialogues, modèle A4 (1 page avec photo, 2 pages sans), tokens, **catalogue de 8 modèles**, **sections personnalisées**. |
 | `support.js` | Runtime nécessaire à l'affichage du fichier HTML (ne pas porter dans l'app). |
 
 Ouvrir le HTML dans un navigateur ; le document se déplace au glisser et se zoome à la molette.

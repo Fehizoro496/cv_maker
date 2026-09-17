@@ -32,14 +32,16 @@ Le produit minimum viable comprend :
 1. un éditeur de CV organisé en sections ;
 2. un aperçu affichant directement le PDF généré, avec un bouton de
    rafraîchissement ;
-3. un catalogue de modèles de CV intégrés, en une seule colonne, dont un
-   modèle professionnel par défaut ;
-4. l'ajout, la modification, la suppression et la réorganisation des éléments
+3. un catalogue de huit modèles de CV intégrés, dont un modèle classique par
+   défaut, accompagné de deux réglages : la couleur d'accent, choisie dans une
+   palette fermée, et l'affichage de la photo ;
+4. des sections personnalisées créées par l'utilisateur, de trois types ;
+5. l'ajout, la modification, la suppression et la réorganisation des éléments
    répétables ;
-5. l'annulation et le rétablissement des modifications (undo/redo) ;
-6. la sauvegarde automatique des données en local, à l'exception de la photo ;
-7. l'export du CV au format PDF A4 ;
-8. la création, le renommage, la duplication et la suppression de plusieurs CV.
+6. l'annulation et le rétablissement des modifications (undo/redo) ;
+7. la sauvegarde automatique des données en local, à l'exception de la photo ;
+8. l'export du CV au format PDF A4 ;
+9. la création, le renommage, la duplication et la suppression de plusieurs CV.
 
 ## 5. Fonctionnalités
 
@@ -123,15 +125,47 @@ L'utilisateur peut ajouter, supprimer et réordonner les formations.
 
 Chaque section facultative peut être affichée ou masquée dans le CV.
 
+L'utilisateur peut en outre créer ses propres sections, décrites en section
+5.13. Elles se placent après les sections standard et disposent du même
+interrupteur de visibilité.
+
 ### 5.9 Catalogue de modèles
 
-- Un catalogue affiche les modèles disponibles sous forme de vignettes
+- Un catalogue affiche les huit modèles intégrés sous forme de vignettes
   accompagnées d'un libellé et d'une courte description.
-- Les vignettes sont livrées avec l'application et consultables hors ligne.
+- Les vignettes sont rendues à partir du PDF réel du CV en cours, et non d'un
+  visuel statique : l'utilisateur voit ses propres données dans chaque modèle.
+- Le catalogue fonctionne hors ligne, comme le reste de l'application.
 - Le choix d'un modèle change uniquement la mise en forme : le contenu saisi,
-  l'ordre et la visibilité des sections sont conservés à l'identique.
-- Le modèle sélectionné est enregistré avec le CV et retrouvé à la réouverture.
-- Le changement de modèle déclenche la régénération du PDF.
+  l'ordre et la visibilité des sections sont conservés à l'identique. Un modèle
+  qui n'a pas de place pour la photo l'ignore sans la supprimer.
+- Deux réglages accompagnent le choix du modèle :
+  - la **couleur d'accent**, choisie dans une palette fermée de cinq valeurs ;
+    un modèle sans couleur ignore ce réglage ;
+  - l'**affichage de la photo**, indisponible tant qu'aucune photo n'est
+    chargée dans la session.
+- Le modèle, la couleur d'accent et l'affichage de la photo sont enregistrés
+  avec le CV, et non globalement, puis retrouvés à la réouverture.
+- Le catalogue propose d'annuler sans rien appliquer, ou d'appliquer les trois
+  valeurs d'un coup. L'application déclenche la régénération du PDF, entre dans
+  l'historique undo/redo et affiche une notification de confirmation.
+
+Les huit modèles intégrés sont :
+
+| Modèle           | Description                                | Structure |
+| ---------------- | ------------------------------------------ | --------- |
+| Classique        | Une colonne, filet d'accent                | 1 colonne |
+| Sobre            | Noir et blanc, sans accent                 | 1 colonne |
+| Bandeau latéral  | Colonne colorée à gauche                   | latérale  |
+| Latéral clair    | Colonne grise à droite                     | latérale  |
+| En-tête coloré   | Bandeau pleine largeur                     | 1 colonne |
+| Compact          | Interlignes serrés, plus de contenu        | 1 colonne |
+| Académique       | En-tête centré, formations en premier      | 1 colonne |
+| Contraste        | Capitales, titres de section en marge      | marge     |
+
+Le modèle classique sert de référence commune : marges, styles typographiques
+et règles de pagination sont partagés par les huit modèles ; seules la mise en
+page et la place de la couleur changent.
 
 Un modèle est décrit par quatre groupes de propriétés, indépendants les uns des
 autres :
@@ -145,13 +179,17 @@ autres :
 4. **décorations de section** : style des titres, filets de séparation, style
    des puces et rendu des compétences.
 
-Pour le MVP, tous les modèles intégrés utilisent la structure en une seule
-colonne. Les modèles à colonne latérale sont hors périmètre initial : les
-systèmes ATS lisent le PDF de façon linéaire et entrelacent le contenu des deux
-colonnes, ce qui dégrade fortement l'extraction des champs. Cette contrainte
-vaut également pour les évolutions : quelle que soit la structure retenue, les
-widgets du PDF doivent être émis dans l'ordre de lecture attendu par un
-humain, et le texte ne doit jamais être placé dans un en-tête de page.
+Tous les modèles restent compatibles avec les systèmes ATS, qui lisent le PDF
+de façon linéaire. La contrainte porte donc sur l'ordre d'émission et non sur
+l'apparence : les widgets du PDF sont toujours émis dans l'ordre de lecture
+attendu par un humain, un bandeau latéral est émis comme un bloc distinct placé
+après le corps dans l'ordre du document, aucune mise en page ne passe par un
+tableau, et le texte n'est jamais placé dans un en-tête de page ni rendu sous
+forme d'image.
+
+Les modèles à colonne latérale et le modèle à titres en marge demandent un
+moteur de zones dans le générateur PDF. Les cinq modèles en une seule colonne
+n'en ont pas besoin et peuvent donc être livrés avant lui.
 
 La distinction entre les groupes 1-2 et le groupe 3 est structurante : les
 jetons visuels sont destinés à devenir personnalisables par l'utilisateur
@@ -197,6 +235,32 @@ de modèle, et non les coder en dur.
 - Permettre à l'utilisateur de choisir le nom et l'emplacement du fichier.
 - Intégrer les polices nécessaires afin de préserver le rendu.
 
+### 5.13 Sections personnalisées
+
+L'utilisateur peut créer ses propres sections lorsque les sections standard ne
+couvrent pas son parcours : publications, enseignement, distinctions, bénévolat.
+
+- La création demande un nom, obligatoire, limité à 40 caractères et unique
+  parmi les sections du CV, puis un type de contenu.
+- Trois types de contenu sont proposés, chacun rendu par les mêmes composants
+  PDF que la section standard correspondante :
+  - **texte libre** : un paragraphe unique, rendu comme le profil professionnel ;
+  - **liste datée** : titre, sous-titre, dates de début et de fin, description,
+    rendue comme les expériences ;
+  - **liste simple** : titre et description courte, rendue comme les
+    certifications.
+- Le type est figé à la création ; le nom reste modifiable.
+- Une section créée est ajoutée à la fin du CV, visible, et devient la section
+  sélectionnée dans le formulaire.
+- Une section personnalisée se masque, se renomme et se supprime. La
+  suppression est confirmée, rappelle le nombre d'éléments perdus et propose le
+  masquage comme alternative.
+- Création, renommage, suppression, masquage et saisie entrent tous dans
+  l'historique undo/redo.
+- Les sections personnalisées sont enregistrées avec le CV, dans leur ordre de
+  création, et respectent la règle de pagination commune : un titre de section
+  n'est jamais séparé de son premier élément.
+
 ## 6. Interface utilisateur
 
 ### 6.1 Organisation desktop
@@ -211,8 +275,12 @@ L'écran principal comporte trois zones :
 └──────────────┴────────────────────────┴────────────────────────┘
 ```
 
-- La navigation donne accès aux différentes sections du CV.
-- Le formulaire affiche les champs de la section sélectionnée.
+- La navigation donne accès aux différentes sections du CV. Elle porte aussi
+  le nom du modèle courant, avec un accès direct au catalogue, et un bouton
+  « Ajouter une section » sous la liste des sections.
+- Le formulaire affiche les champs de la section sélectionnée. Le formulaire
+  d'une section personnalisée signale son type et permet de la renommer ou de
+  la supprimer.
 - L'aperçu PDF est affiché sur le côté droit, avec les boutons « Rafraîchir »
   et « Exporter ».
 
@@ -224,6 +292,21 @@ onglets séparés.
 - Interface simple et claire.
 - Confirmation avant toute suppression importante.
 - Indication visible de l'état de sauvegarde.
+
+### 6.3 Notifications
+
+Les messages ponctuels apparaissent sous forme de notifications empilées en bas
+à droite de la fenêtre, et non dans une barre en bas d'écran.
+
+- Trois notifications au maximum sont visibles, la plus récente en bas.
+- Chaque notification porte un titre, un texte secondaire facultatif, une
+  couleur selon sa nature et une croix de fermeture toujours disponible.
+- Elles disparaissent d'elles-mêmes après quelques secondes, un peu plus
+  longtemps lorsqu'elles portent une action.
+- Une notification peut proposer une action : ouvrir le dossier d'export,
+  réessayer un export échoué.
+- Les cas couverts sont : régénération du PDF avant un export, export réussi,
+  export échoué et modèle appliqué.
 
 ## 7. Contraintes du document A4
 
@@ -248,8 +331,9 @@ CvDocument
 ├── certifications[]
 ├── projets[]
 ├── centres d'intérêt[]
-└── préférences de présentation (modèle sélectionné, ordre et visibilité des
-    sections)
+├── sections personnalisées[] (nom, type figé, visibilité, ordre, contenu)
+└── préférences de présentation (modèle sélectionné, couleur d'accent,
+    affichage de la photo, ordre et visibilité des sections)
 ```
 
 Chaque élément répétable possède un identifiant stable et un ordre d'affichage.
@@ -258,7 +342,15 @@ ajouter d'autres thèmes ultérieurement. Le CV enregistre uniquement
 l'identifiant du modèle sélectionné, jamais sa description : celle-ci est
 fournie par le catalogue, ce qui permet de faire évoluer un modèle sans migrer
 les CV existants. Un identifiant inconnu à la lecture retombe sur le modèle
-professionnel par défaut.
+classique par défaut.
+
+Les deux réglages du catalogue sont enregistrés à côté de cet identifiant : la
+couleur d'accent, sous une forme qui reste valable si la palette évolue, et
+l'affichage de la photo. Ils surchargent les valeurs correspondantes de la
+description du modèle ; le reste de la mise en forme vient de la description.
+
+Le type d'une section personnalisée est figé à la création : il détermine la
+forme de son contenu, qu'un changement ultérieur rendrait invalide.
 
 Le modèle est immuable : chaque modification produit un nouvel état du CV, ce
 qui permet de construire l'historique undo/redo.
@@ -330,6 +422,13 @@ Le MVP est considéré comme terminé lorsque :
 - les sections facultatives peuvent être masquées ;
 - le catalogue permet de changer de modèle et le PDF reflète ce choix sans
   perte de contenu ;
+- la couleur d'accent et l'affichage de la photo choisis dans le catalogue sont
+  appliqués au PDF et retrouvés après un redémarrage ;
+- l'utilisateur peut créer une section personnalisée de chacun des trois types,
+  la remplir, la renommer, la masquer et la supprimer, et la retrouver après un
+  redémarrage ;
+- les notifications signalent un export réussi, un export échoué et un modèle
+  appliqué, et proposent l'action correspondante ;
 - un CV long est réparti sur plusieurs pages A4 ;
 - le PDF exporté est identique à celui affiché ;
 - un export demandé avant la mise à jour du PDF attend la régénération
@@ -342,12 +441,12 @@ Les fonctions suivantes pourront être étudiées après le MVP :
 
 - prise en charge de plateformes autres que Windows ;
 - stockage persistant des photos avec les CV ;
-- modèles à deux colonnes ou à colonne latérale, et le moteur de zones
-  correspondant ;
 - ajout de modèles par l'utilisateur sans recompilation, via un manifeste
   déposé dans un dossier local ;
-- personnalisation avancée des couleurs et des polices par l'utilisateur,
-  indépendamment du modèle choisi ;
+- personnalisation libre des couleurs et des polices, au-delà de la palette
+  fermée de cinq couleurs d'accent du catalogue ;
+- changement du type d'une section personnalisée après sa création ;
+- réorganisation des sections standard entre elles par l'utilisateur ;
 - rendus enrichis des compétences (points, étoiles, barres de niveau) et icônes
   de section ;
 - import depuis LinkedIn ou depuis un CV existant ;
@@ -368,5 +467,9 @@ Les fonctions suivantes pourront être étudiées après le MVP :
 5. Ajouter le système undo/redo.
 6. Ajouter la sauvegarde locale SQLite et la gestion de plusieurs CV.
 7. Implémenter la pagination et l'export PDF.
-8. Ajouter les autres modèles intégrés et le catalogue de sélection.
-9. Renforcer les tests et la gestion des erreurs.
+8. Ajouter le catalogue de sélection, ses réglages et les modèles en une seule
+   colonne.
+9. Ajouter le moteur de zones du générateur PDF, puis les modèles à colonne
+   latérale et à titres en marge.
+10. Ajouter les sections personnalisées.
+11. Renforcer les tests et la gestion des erreurs.
