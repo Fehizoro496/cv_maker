@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/draft_pdf.dart';
@@ -18,7 +19,7 @@ void main() {
           entries: example.entries,
           design: design,
         );
-        final bytes = await buildDraftPdf(draft, {});
+        final bytes = await buildDraftPdf(draft, {}, design.spec);
         final raw = latin1.decode(bytes);
         expect(raw, startsWith('%PDF-'));
         expect(raw, contains('/FontFile2'));
@@ -33,7 +34,7 @@ void main() {
             ],
           },
         );
-        final longBytes = await buildDraftPdf(long, {});
+        final longBytes = await buildDraftPdf(long, {}, design.spec);
         expect(
           RegExp(
             r'/Type\s*/Page\b',
@@ -52,7 +53,11 @@ void main() {
   test(
     'the handoff example generates one real A4 PDF with embedded fonts',
     () async {
-      final bytes = await buildDraftPdf(EditorDraft.example(), {});
+      final bytes = await buildDraftPdf(
+        EditorDraft.example(),
+        {},
+        professionalDesignSpec,
+      );
       final raw = latin1.decode(bytes);
       expect(raw.startsWith('%PDF-'), isTrue);
       expect(RegExp(r'/Type\s*/Page\b').allMatches(raw).length, 1);
@@ -63,6 +68,33 @@ void main() {
       }
     },
   );
+  test('the generator never branches on the design identity', () async {
+    final source = await File(
+      'lib/features/cv/presentation/widgets/draft_pdf.dart',
+    ).readAsString();
+    expect(source, isNot(contains('CvDesign.')));
+    expect(source, isNot(contains('cv_design.dart')));
+  });
+  test('the spec alone changes what the generator emits', () async {
+    const spec = CvDesignSpec(
+      tokens: CvDesignTokens(accentColor: 0xFFAB12CD),
+      sections: CvDesignSectionStyle(
+        titleCase: CvSectionTitleCase.none,
+        titleRuleWidth: 2,
+        bulletPrefix: '– ',
+        inlineSeparator: ' | ',
+      ),
+    );
+    final custom = await buildDraftPdf(EditorDraft.example(), {}, spec);
+    final standard = await buildDraftPdf(
+      EditorDraft.example(),
+      {},
+      professionalDesignSpec,
+    );
+    expect(latin1.decode(custom), startsWith('%PDF-'));
+    // Seule la description diffère entre les deux générations.
+    expect(custom, isNot(equals(standard)));
+  });
   test('long repeated sections paginate without losing entries', () async {
     final draft = EditorDraft.example();
     final long = EditorDraft(
@@ -75,7 +107,7 @@ void main() {
         ],
       },
     );
-    final bytes = await buildDraftPdf(long, {});
+    final bytes = await buildDraftPdf(long, {}, professionalDesignSpec);
     expect(
       RegExp(r'/Type\s*/Page\b').allMatches(latin1.decode(bytes)).length,
       greaterThan(1),
