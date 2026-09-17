@@ -1,10 +1,31 @@
 import 'dart:typed_data';
+import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'design selection preserves content, supports undo and survives edits',
+    () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final initial = container.read(editorDraftProvider);
+      final editor = container.read(editorDraftProvider.notifier);
+      editor.setDesign(CvDesign.modern);
+      expect(container.read(editorDraftProvider).fields, initial.fields);
+      expect(container.read(editorDraftProvider).entries, initial.entries);
+      editor.undo();
+      expect(container.read(editorDraftProvider).design, CvDesign.professional);
+      editor.redo();
+      expect(container.read(editorDraftProvider).design, CvDesign.modern);
+      editor.setField('Nom', 'Martin');
+      editor.add(CvSection.projects);
+      editor.setPhoto(Uint8List.fromList([1]));
+      expect(container.read(editorDraftProvider).design, CvDesign.modern);
+    },
+  );
   late ProviderContainer container;
   setUp(() {
     container = ProviderContainer();

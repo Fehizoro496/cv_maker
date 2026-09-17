@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/cv_section.dart';
+import '../domain/cv_design.dart';
 
 /// Editable, in-memory example used by the editor until local storage is added.
 class EditorDraft {
@@ -10,6 +11,7 @@ class EditorDraft {
     required Map<String, String> fields,
     required Map<CvSection, List<Map<String, String>>> entries,
     this.photo,
+    this.design = CvDesign.professional,
   }) : fields = Map.unmodifiable(fields),
        entries = Map.unmodifiable(
          entries.map(
@@ -25,6 +27,7 @@ class EditorDraft {
   final Map<String, String> fields;
   final Map<CvSection, List<Map<String, String>>> entries;
   final Uint8List? photo;
+  final CvDesign design;
 
   String get name => '${fields['Prénom'] ?? ''} ${fields['Nom'] ?? ''}'.trim();
 
@@ -158,14 +161,32 @@ class EditorDraftNotifier extends Notifier<EditorDraft> {
         fields: {...state.fields, label: value},
         entries: state.entries,
         photo: state.photo,
+        design: state.design,
       ),
       label,
     );
   }
 
   void setPhoto(Uint8List? photo) => _commit(
-    EditorDraft(fields: state.fields, entries: state.entries, photo: photo),
+    EditorDraft(
+      fields: state.fields,
+      entries: state.entries,
+      photo: photo,
+      design: state.design,
+    ),
   );
+
+  void setDesign(CvDesign design) {
+    if (state.design == design) return;
+    _commit(
+      EditorDraft(
+        fields: state.fields,
+        entries: state.entries,
+        photo: state.photo,
+        design: design,
+      ),
+    );
+  }
 
   void setEntry(CvSection section, String id, String field, String value) {
     final matches = (state.entries[section] ?? <Map<String, String>>[]).where(
@@ -188,6 +209,7 @@ class EditorDraftNotifier extends Notifier<EditorDraft> {
       fields: state.fields,
       entries: {...state.entries, section: entries},
       photo: state.photo,
+      design: state.design,
     ),
     field,
   );

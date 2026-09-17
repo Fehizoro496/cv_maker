@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../core/pdf/pdf_fonts.dart';
 import '../../domain/cv_section.dart';
+import '../../domain/cv_design.dart';
 import '../cv_section_presentation.dart';
 import '../editor_draft_provider.dart';
 
@@ -15,17 +16,36 @@ Future<Uint8List> buildDraftPdf(
 ) async {
   final fonts = await PdfFonts.load();
   final document = pw.Document(theme: fonts.theme);
-  const accent = PdfColor.fromInt(0xFF2F5D8C);
+  final modern = draft.design == CvDesign.modern;
+  final minimal = draft.design == CvDesign.minimal;
+  final accent = PdfColor.fromInt(
+    modern
+        ? 0xFF176B61
+        : minimal
+        ? 0xFF343A40
+        : 0xFF2F5D8C,
+  );
   const grey = PdfColor.fromInt(0xFF3A3F45);
   pw.Widget heading(String title) => pw.Padding(
     padding: const pw.EdgeInsets.only(top: 14, bottom: 7),
-    child: pw.Text(
-      title.toUpperCase(),
-      style: pw.TextStyle(
-        fontSize: 8,
-        fontWeight: pw.FontWeight.bold,
-        letterSpacing: 1.12,
-        color: accent,
+    child: pw.Container(
+      padding: modern
+          ? const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5)
+          : pw.EdgeInsets.zero,
+      decoration: modern
+          ? pw.BoxDecoration(
+              color: const PdfColor.fromInt(0xFFEBF4F2),
+              border: pw.Border(left: pw.BorderSide(color: accent, width: 3)),
+            )
+          : null,
+      child: pw.Text(
+        minimal ? title : title.toUpperCase(),
+        style: pw.TextStyle(
+          fontSize: minimal ? 10 : 8,
+          fontWeight: pw.FontWeight.bold,
+          letterSpacing: minimal ? 0 : 1.12,
+          color: accent,
+        ),
       ),
     ),
   );
@@ -149,60 +169,81 @@ Future<Uint8List> buildDraftPdf(
         ),
       ),
       build: (context) => [
-        pw.Row(
-          children: [
-            if (draft.photo != null) ...[
-              pw.ClipOval(
-                child: pw.Image(
-                  pw.MemoryImage(draft.photo!),
-                  width: 25 * PdfPageFormat.mm,
-                  height: 25 * PdfPageFormat.mm,
-                  fit: pw.BoxFit.cover,
+        pw.Container(
+          padding: modern ? const pw.EdgeInsets.all(16) : pw.EdgeInsets.zero,
+          color: modern ? accent : null,
+          child: pw.Row(
+            children: [
+              if (draft.photo != null) ...[
+                pw.ClipOval(
+                  child: pw.Image(
+                    pw.MemoryImage(draft.photo!),
+                    width: 25 * PdfPageFormat.mm,
+                    height: 25 * PdfPageFormat.mm,
+                    fit: pw.BoxFit.cover,
+                  ),
+                ),
+                pw.SizedBox(width: 18),
+              ],
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: minimal
+                      ? pw.CrossAxisAlignment.center
+                      : pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      draft.name.isEmpty ? 'Votre nom' : draft.name,
+                      style: pw.TextStyle(
+                        fontSize: minimal ? 26 : 23,
+                        color: modern ? PdfColors.white : PdfColors.black,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Text(
+                      draft.fields['Titre professionnel'] ?? '',
+                      style: pw.TextStyle(
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                        color: modern ? PdfColors.white : accent,
+                      ),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Text(
+                      [
+                            'Localisation',
+                            'Téléphone',
+                            'E-mail',
+                            'Site / portfolio',
+                          ]
+                          .map((key) => draft.fields[key] ?? '')
+                          .where((v) => v.isNotEmpty)
+                          .join(' · '),
+                      textAlign: minimal
+                          ? pw.TextAlign.center
+                          : pw.TextAlign.left,
+                      style: pw.TextStyle(
+                        fontSize: 8.5,
+                        color: modern ? PdfColors.white : grey,
+                      ),
+                    ),
+                    for (final link
+                        in draft.entries[CvSection.personalInfo] ??
+                            <Map<String, String>>[])
+                      pw.Text(
+                        link['URL'] ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          color: modern ? PdfColors.white : grey,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              pw.SizedBox(width: 18),
             ],
-            pw.Expanded(
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    draft.name.isEmpty ? 'Votre nom' : draft.name,
-                    style: pw.TextStyle(
-                      fontSize: 23,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.Text(
-                    draft.fields['Titre professionnel'] ?? '',
-                    style: pw.TextStyle(
-                      fontSize: 11,
-                      fontWeight: pw.FontWeight.bold,
-                      color: accent,
-                    ),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    ['Localisation', 'Téléphone', 'E-mail', 'Site / portfolio']
-                        .map((key) => draft.fields[key] ?? '')
-                        .where((v) => v.isNotEmpty)
-                        .join(' · '),
-                    style: const pw.TextStyle(fontSize: 8.5, color: grey),
-                  ),
-                  for (final link
-                      in draft.entries[CvSection.personalInfo] ??
-                          <Map<String, String>>[])
-                    pw.Text(
-                      link['URL'] ?? '',
-                      style: const pw.TextStyle(fontSize: 8.5, color: grey),
-                    ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
         pw.SizedBox(height: 12),
-        pw.Divider(color: accent, thickness: 1),
+        if (!modern) pw.Divider(color: accent, thickness: minimal ? .4 : 1),
         ...sections,
       ],
     ),

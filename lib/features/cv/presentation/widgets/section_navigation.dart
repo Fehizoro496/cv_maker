@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../domain/cv_section.dart';
+import '../../domain/cv_design.dart';
+import 'design_catalog.dart';
 import '../cv_section_presentation.dart';
 import '../editor_draft_provider.dart';
 import '../section_visibility_provider.dart';
@@ -44,6 +46,37 @@ class SectionNavigation extends ConsumerWidget {
                 const _GroupLabel('Sections facultatives'),
                 ...optionalSections.map(row),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 6, 12),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final design = await showDialog<CvDesign>(
+                  context: context,
+                  builder: (_) => DesignCatalog(
+                    selected: ref.read(editorDraftProvider).design,
+                  ),
+                );
+                if (design != null && context.mounted) {
+                  ref.read(editorDraftProvider.notifier).setDesign(design);
+                }
+              },
+              icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+              label: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Catalogue des designs'),
+                  Text(
+                    ref
+                        .watch(
+                          editorDraftProvider.select((draft) => draft.design),
+                        )
+                        .label,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
           ),
           const _OfflineFooter(),
