@@ -34,4 +34,21 @@ Ne pas modifier la version du SDK (`.fvmrc`) sans demande explicite.
 
 - Les agents **ne doivent pas** être mentionnés dans les commits : aucune ligne `Co-Authored-By` pour un agent ou une IA (Claude, Copilot, Codex, etc.), ni de mention « Generated with … ».
 - Il en va de même pour les descriptions de pull requests.
-- Messages de commit clairs et concis, décrivant le changement.
+- Les messages de commit sont rédigés **en anglais** et suivent la convention [Conventional Commits](https://www.conventionalcommits.org) :
+
+  ```
+  <type>(<scope>): <description>
+  ```
+
+  - `type` : `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `perf`, `build`, `ci`
+  - `scope` : la zone concernée (feature, module ou dossier), par ex. `cv`, `pdf`, `auth`
+  - `description` : à l'impératif, en minuscules, sans point final, 72 caractères maximum
+
+  Exemples :
+
+  ```
+  feat(cv): add experience section editor
+  fix(pdf): correct page margins on export
+  test(cv): add unit tests for cv repository
+  docs(agents): add commit conventions
+  ```
