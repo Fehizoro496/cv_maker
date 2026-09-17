@@ -8,6 +8,10 @@ Chaque jalon inclut les tests des comportements ajoutés ou modifiés et un
 fichier de test correspondant à chaque nouveau fichier de `lib/`, en miroir
 dans `test/`, conformément à `AGENTS.md`.
 
+Le design de référence (maquettes, comportements et tokens) est décrit dans
+`design_handoff_cv_maker/README.md` ; chaque jalon reproduit les écrans qui le
+concernent.
+
 L'utilisation de l'application est entièrement hors ligne : aucune connexion
 ni aucun service distant ne sont nécessaires. Les polices et les ressources
 nécessaires à l'édition, à l'aperçu et à l'export sont livrées avec l'application.
@@ -39,24 +43,25 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 **Objectif :** un squelette d'application structuré et prêt à accueillir les
 fonctionnalités.
 
-- [ ] Ajouter les dépendances de base :
+- [x] Ajouter les dépendances de base :
   - `flutter_riverpod` (gestion d'état) ;
   - `freezed`, `freezed_annotation`, `json_serializable`, `build_runner`
     (modèles immuables et sérialisation JSON) ;
   - `pdf` et `printing` (génération et affichage du PDF) ;
-  - `sqflite_common_ffi` et `path_provider` (SQLite sous Windows) ;
+  - `drift`, `drift_flutter`, `drift_dev` et `path_provider` (base SQLite
+    typée sous Windows) ;
   - `file_selector` (dialogue d'enregistrement natif) ;
   - `uuid` (identifiants stables).
-- [ ] Créer l'arborescence `lib/app`, `lib/core`, `lib/features/cv/{data,domain,presentation}`, `lib/shared`.
-- [ ] Mettre en place `ProviderScope`, le thème de l'application et l'écran
+- [x] Créer l'arborescence `lib/app`, `lib/core`, `lib/features/cv/{data,domain,presentation}`, `lib/shared`.
+- [x] Mettre en place `ProviderScope`, le thème de l'application et l'écran
   principal.
-- [ ] Construire la mise en page en trois zones : navigation des sections,
+- [x] Construire la mise en page en trois zones : navigation des sections,
   formulaire, aperçu PDF (contenus factices).
-- [ ] Intégrer une police gérant les accents (par exemple Noto Sans ou Inter)
+- [x] Intégrer une police gérant les accents (par exemple Noto Sans ou Inter)
   dans les assets pour le PDF.
-- [ ] Prévoir toutes les ressources nécessaires au fonctionnement hors ligne,
+- [x] Prévoir toutes les ressources nécessaires au fonctionnement hors ligne,
   sans téléchargement à l'exécution, et les inclure dans le build Windows.
-- [ ] Remplacer le test par défaut par des tests de l'écran principal.
+- [x] Remplacer le test par défaut par des tests de l'écran principal.
 
 **Terminé quand :** l'application affiche les trois zones sous Windows et la
 navigation change la section sélectionnée.
@@ -167,9 +172,10 @@ puis rétablie, et le formulaire comme le PDF reflètent l'état restauré.
 
 **Objectif :** retrouver ses CV après un redémarrage et en gérer plusieurs.
 
-- [ ] Initialiser SQLite via `sqflite_common_ffi` dans le dossier de données de
+- [ ] Initialiser la base drift (`drift_flutter`) dans le dossier de données de
   l'application.
-- [ ] Créer la table des CV : identifiant, nom, dates, document JSON.
+- [ ] Créer la table drift des CV : identifiant, nom, dates, document JSON,
+  avec un schéma versionné et une stratégie de migration.
 - [ ] Implémenter le repository : lister, lire, créer, mettre à jour,
   supprimer.
 - [ ] Sauvegarde automatique après modification (debounce).

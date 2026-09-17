@@ -227,8 +227,8 @@ qui permet de construire l'historique undo/redo.
 - Framework : Flutter et Dart.
 - Gestion du SDK : FVM, selon la version définie dans `.fvmrc`.
 - Gestion d'état : Riverpod (`flutter_riverpod`).
-- Stockage : SQLite local ; chaque CV est enregistré sous forme de document
-  JSON dans une table dédiée. La photo n'est pas persistée pour le MVP.
+- Stockage : SQLite local via `drift` ; chaque CV est enregistré sous forme de
+  document JSON dans une table dédiée. La photo n'est pas persistée pour le MVP.
 - Génération du PDF : package `pdf`.
 - Affichage du PDF : package `printing` ou visionneuse PDF équivalente.
 - Sélection du fichier : dialogue natif Windows.
