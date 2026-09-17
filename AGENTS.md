@@ -1,0 +1,37 @@
+# AGENTS.md
+
+Instructions partagées par tous les agents de code (Claude Code, Codex, Cursor, Copilot, etc.) travaillant sur ce projet.
+
+## Projet
+
+`cv_maker` — application Flutter (Android, iOS, Web, Windows, macOS, Linux).
+
+## FVM : ne jamais appeler `flutter` ou `dart` directement
+
+Le projet utilise [FVM](https://fvm.app) pour épingler la version du SDK (voir `.fvmrc`).
+Toutes les commandes doivent être préfixées par `fvm` :
+
+| À faire                     | À ne pas faire         |
+| --------------------------- | ---------------------- |
+| `fvm flutter pub get`       | `flutter pub get`      |
+| `fvm flutter run`           | `flutter run`          |
+| `fvm flutter test`          | `flutter test`         |
+| `fvm flutter analyze`       | `flutter analyze`      |
+| `fvm dart format .`         | `dart format .`        |
+| `fvm dart run build_runner` | `dart run build_runner`|
+
+Ne pas modifier la version du SDK (`.fvmrc`) sans demande explicite.
+
+## Tests : obligatoires pour chaque fichier et chaque feature
+
+- Tout nouveau fichier dans `lib/` doit avoir son fichier de test correspondant dans `test/`, en miroir de l'arborescence :
+  `lib/features/cv/cv_repository.dart` → `test/features/cv/cv_repository_test.dart`
+- Toute nouvelle feature ou modification de comportement doit être accompagnée de tests (unitaires, widget, et d'intégration si pertinent).
+- Toute correction de bug doit inclure un test qui reproduit le bug.
+- Une tâche n'est pas terminée tant que `fvm flutter test` et `fvm flutter analyze` ne passent pas.
+
+## Commits
+
+- Les agents **ne doivent pas** être mentionnés dans les commits : aucune ligne `Co-Authored-By` pour un agent ou une IA (Claude, Copilot, Codex, etc.), ni de mention « Generated with … ».
+- Il en va de même pour les descriptions de pull requests.
+- Messages de commit clairs et concis, décrivant le changement.
