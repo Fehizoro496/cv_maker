@@ -74,19 +74,19 @@ navigation change la section sélectionnée.
 **Objectif :** représenter un CV complet, indépendamment de l'interface et du
 PDF.
 
-- [ ] Définir `CvDocument` et ses sous-modèles : informations personnelles,
+- [x] Définir `CvDocument` et ses sous-modèles : informations personnelles,
   profil, expériences, formations, compétences, langues, certifications,
   projets, centres d'intérêt, références ou informations complémentaires,
   préférences de présentation.
-- [ ] Distinguer les données persistées du CV de son état de session, qui
+- [x] Distinguer les données persistées du CV de son état de session, qui
   accueillera la photo non persistée au J6. Prévoir un historique capable de
   restaurer les deux ensemble.
-- [ ] Donner à chaque élément répétable un identifiant stable et un ordre.
-- [ ] Modéliser l'ordre et la visibilité des sections.
-- [ ] Implémenter la sérialisation JSON (aller-retour sans perte).
-- [ ] Écrire les opérations métier pures : ajouter, modifier, supprimer et
+- [x] Donner à chaque élément répétable un identifiant stable et un ordre.
+- [x] Modéliser l'ordre et la visibilité des sections.
+- [x] Implémenter la sérialisation JSON (aller-retour sans perte).
+- [x] Écrire les opérations métier pures : ajouter, modifier, supprimer et
   réordonner un élément ; afficher ou masquer une section.
-- [ ] Créer un `CvDocument` d'exemple réutilisable dans les tests.
+- [x] Créer un `CvDocument` d'exemple réutilisable dans les tests.
 
 **Terminé quand :** toutes les opérations et la sérialisation sont couvertes par
 des tests unitaires.

@@ -39,6 +39,16 @@ class CvMonthYear {
   String format() =>
       month == null ? '$year' : '${monthLabels[month! - 1]} $year';
 
+  /// Sérialise l'année et le mois plutôt que le texte affiché : les libellés
+  /// de mois restent libres d'évoluer sans invalider les CV enregistrés.
+  Map<String, dynamic> toJson() => {
+    'year': year,
+    if (month != null) 'month': month,
+  };
+
+  factory CvMonthYear.fromJson(Map<String, dynamic> json) =>
+      CvMonthYear(json['year'] as int, json['month'] as int?);
+
   @override
   bool operator ==(Object other) =>
       other is CvMonthYear && other.year == year && other.month == month;

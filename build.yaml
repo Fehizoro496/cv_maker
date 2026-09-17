@@ -1,0 +1,13 @@
+# Configuration des générateurs de code (`fvm dart run build_runner build`).
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # Sans cette option, `toJson()` renvoie les objets imbriqués tels
+          # quels au lieu de les convertir en Map : `CvDocument.fromJson(
+          # document.toJson())` échoue alors sur chaque sous-modèle.
+          explicit_to_json: true
+          # Une clé absente du JSON prend la valeur par défaut du modèle, ce
+          # qui permet de relire un CV enregistré avant l'ajout d'un champ.
+          include_if_null: false

@@ -1,0 +1,48 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'cv_presentation_preferences.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_CvPresentationPreferences _$CvPresentationPreferencesFromJson(
+  Map<String, dynamic> json,
+) => _CvPresentationPreferences(
+  designId: json['designId'] as String? ?? 'professional',
+  sectionOrder:
+      (json['sectionOrder'] as List<dynamic>?)
+          ?.map((e) => $enumDecode(_$CvSectionEnumMap, e))
+          .toList() ??
+      const <CvSection>[],
+  hiddenSections:
+      (json['hiddenSections'] as List<dynamic>?)
+          ?.map((e) => $enumDecode(_$CvSectionEnumMap, e))
+          .toList() ??
+      const <CvSection>[],
+);
+
+Map<String, dynamic> _$CvPresentationPreferencesToJson(
+  _CvPresentationPreferences instance,
+) => <String, dynamic>{
+  'designId': instance.designId,
+  'sectionOrder': instance.sectionOrder
+      .map((e) => _$CvSectionEnumMap[e]!)
+      .toList(),
+  'hiddenSections': instance.hiddenSections
+      .map((e) => _$CvSectionEnumMap[e]!)
+      .toList(),
+};
+
+const _$CvSectionEnumMap = {
+  CvSection.personalInfo: 'personalInfo',
+  CvSection.profile: 'profile',
+  CvSection.experiences: 'experiences',
+  CvSection.education: 'education',
+  CvSection.skills: 'skills',
+  CvSection.languages: 'languages',
+  CvSection.certifications: 'certifications',
+  CvSection.projects: 'projects',
+  CvSection.interests: 'interests',
+  CvSection.references: 'references',
+};

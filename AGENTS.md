@@ -22,6 +22,21 @@ Toutes les commandes doivent être préfixées par `fvm` :
 
 Ne pas modifier la version du SDK (`.fvmrc`) sans demande explicite.
 
+## Code généré
+
+Les modèles du domaine utilisent `freezed` et `json_serializable`. Après toute
+modification d'un fichier contenant `part '<nom>.freezed.dart';` ou
+`part '<nom>.g.dart';` :
+
+```shell
+fvm dart run build_runner build --delete-conflicting-outputs
+```
+
+- Les fichiers `.freezed.dart` et `.g.dart` sont versionnés : `fvm flutter test`
+  fonctionne donc sans lancer la génération au préalable.
+- Ne jamais les modifier à la main.
+- Les options des générateurs sont dans `build.yaml`.
+
 ## Tests : obligatoires pour chaque fichier et chaque feature
 
 - Tout nouveau fichier dans `lib/` doit avoir son fichier de test correspondant dans `test/`, en miroir de l'arborescence :

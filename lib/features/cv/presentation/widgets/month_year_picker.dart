@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/app_theme.dart';
-import '../cv_month_year.dart';
+import '../../domain/cv_month_year.dart';
 
 /// Ouvre le sélecteur de mois et d'année d'un champ de date du CV.
 ///

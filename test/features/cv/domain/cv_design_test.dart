@@ -9,4 +9,15 @@ void main() {
       'Minimaliste',
     });
   });
+
+  test('fromId retrouve le modèle enregistré', () {
+    for (final design in CvDesign.values) {
+      expect(CvDesign.fromId(design.id), design);
+    }
+  });
+
+  test('fromId retombe sur le professionnel si l’identifiant est inconnu', () {
+    expect(CvDesign.fromId('supprimé'), CvDesign.professional);
+    expect(CvDesign.fromId(''), CvDesign.professional);
+  });
 }
