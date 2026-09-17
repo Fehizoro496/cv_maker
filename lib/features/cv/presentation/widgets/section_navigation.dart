@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
+import '../../../../shared/notifications/app_toast.dart';
 import '../../domain/cv_section.dart';
-import '../../domain/cv_design.dart';
-import 'design_catalog.dart';
+import '../catalog_preview_provider.dart';
 import '../cv_section_presentation.dart';
 import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
+import 'design_catalog.dart';
 
 class SectionNavigation extends ConsumerWidget {
   const SectionNavigation({super.key});
@@ -51,21 +52,38 @@ class SectionNavigation extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(12, 8, 6, 12),
             child: OutlinedButton.icon(
               onPressed: () async {
-                final design = await showDialog<CvDesign>(
+                final session = ref.read(cvSessionProvider);
+                final presentation = session.document.presentation;
+                final choice = await showDialog<CatalogChoice>(
                   context: context,
                   builder: (_) => DesignCatalog(
-                    selected: ref.read(cvSessionProvider).document.design,
+                    selected: presentation.design,
+                    accent: presentation.accent,
+                    showPhoto: presentation.showPhoto,
+                    hasPhoto: session.hasPhoto,
                   ),
                 );
-                if (design != null && context.mounted) {
-                  ref.read(cvSessionProvider.notifier).setDesign(design);
-                }
+                if (choice == null || !context.mounted) return;
+                ref
+                    .read(cvSessionProvider.notifier)
+                    .applyTemplate(
+                      design: choice.design,
+                      accent: choice.accent,
+                      showPhoto: choice.showPhoto,
+                    );
+                ref
+                    .read(appToastsProvider.notifier)
+                    .show(
+                      kind: AppToastKind.info,
+                      title: 'Modèle appliqué',
+                      message: choice.design.label,
+                    );
               },
-              icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+              icon: const Icon(Icons.style, size: 18),
               label: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Catalogue des designs'),
+                  const Text('Catalogue des modèles'),
                   Text(
                     ref
                         .watch(

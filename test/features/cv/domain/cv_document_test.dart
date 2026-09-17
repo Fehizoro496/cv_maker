@@ -16,7 +16,7 @@ void main() {
     expect(document.updatedAt, now);
     expect(document.profile, isEmpty);
     expect(document.experiences, isEmpty);
-    expect(document.design, CvDesign.professional);
+    expect(document.design, CvDesign.classic);
   });
 
   test('touched ne change que la date de modification', () {
@@ -123,14 +123,14 @@ void main() {
 
   test('withDesign change le modèle sans toucher au contenu', () {
     final document = exampleCvDocument();
-    final modern = document.withDesign(CvDesign.modern);
-    expect(modern.design, CvDesign.modern);
+    final modern = document.withDesign(CvDesign.banner);
+    expect(modern.design, CvDesign.banner);
     expect(modern.copyWith(presentation: document.presentation), document);
   });
 
   test('aller-retour JSON sans perte sur un CV complet', () {
     final document = exampleCvDocument()
-        .withDesign(CvDesign.minimal)
+        .withDesign(CvDesign.academic)
         .withSectionVisible(CvSection.references, false);
     expect(CvDocument.fromJson(document.toJson()), document);
   });

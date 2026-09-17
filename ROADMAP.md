@@ -35,17 +35,17 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
 | J6    | Photo de session                            | J5        | Terminé |
 | J7    | Export PDF                                  | J6        | Terminé |
-| JN    | Notifications                               | J7        | À faire |
-| J8    | Catalogue de modèles et réglages            | JD, JN    | Partiel |
+| JN    | Notifications                               | J7        | Terminé |
+| J8    | Catalogue de modèles et réglages            | JD, JN    | Terminé |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
 | JS    | Sections personnalisées                     | J3, J5    | À faire |
 | J9    | Finitions et validation du MVP              | J8, JZ, JS | À faire |
 
 ## État du projet
 
-### Au 17 septembre 2026
+### Au 18 septembre 2026
 
-`fvm flutter analyze` ne signale aucun problème et les 182 tests passent.
+`fvm flutter analyze` ne signale aucun problème et les 235 tests passent.
 
 Le jalon JD a résorbé les deux dettes structurelles qui bloquaient la fin du
 J2 : `CvDocument` est désormais la seule représentation d'un CV dans
@@ -89,6 +89,20 @@ reportés dans le cahier des charges :
 
 Les notifications décrites par le handoff, communes à l'export et au catalogue,
 forment le jalon **JN**, prérequis du J8.
+
+Les jalons **JN** et **J8** sont livrés. Trois points à connaître :
+
+- les identifiants des modèles ont changé : `professional`, `modern` et
+  `minimal` sont devenus `classic`, `banner` et `academic`, rejoints par
+  `plain` et `compact`. Aucun CV n'étant encore enregistré, il n'y a rien à
+  migrer, et `CvDesign.fromId` couvre le cas d'un identifiant inconnu ;
+- le générateur PDF n'est pas déterministe : le paquet `pdf` termine chaque
+  document par un identifiant aléatoire. Les tests comparent donc une empreinte
+  qui l'ignore (`test/helpers/pdf_bytes.dart`). Sans cela, un test d'égalité
+  d'octets échouerait toujours et un test de différence réussirait toujours —
+  deux assertions antérieures étaient dans ce second cas ;
+- le JZ reste à faire : le catalogue ne propose que cinq des huit modèles du
+  handoff.
 
 ---
 
@@ -364,19 +378,25 @@ l'aperçu, même si l'export est demandé juste après une modification.
 **Objectif :** remplacer les messages posés dans l'aperçu par les notifications
 décrites par le handoff, communes à l'export et au catalogue.
 
-- [ ] Créer le contrôleur de notifications : file de trois au maximum, la plus
+- [x] Créer le contrôleur de notifications : file de trois au maximum, la plus
   récente en bas à droite, disparition automatique après quelques secondes,
   un peu plus longtemps avec une action, croix de fermeture toujours présente.
-- [ ] Passer par un `Overlay` plutôt que par `ScaffoldMessenger`, afin que les
-  notifications survivent au changement d'onglet en fenêtre étroite.
-- [ ] Décrire chaque notification par une donnée : nature, titre, texte
+- [x] Passer par un `Overlay` plutôt que par `ScaffoldMessenger`, afin que les
+  notifications survivent au changement d'onglet en fenêtre étroite. La couche
+  est posée au-dessus du `Navigator` et enveloppée dans son propre `Overlay`,
+  sans lequel un tooltip ou un menu ne pourrait pas s'y afficher.
+- [x] Décrire chaque notification par une donnée : nature, titre, texte
   secondaire facultatif, action facultative.
-- [ ] Couvrir les quatre cas du handoff : régénération du PDF avant un export,
-  export réussi avec « Ouvrir le dossier », export échoué avec « Réessayer »,
-  modèle appliqué.
-- [ ] Retirer du panneau d'aperçu les messages qu'elles remplacent.
-- [ ] Tester l'empilement, la limite de trois, la fermeture manuelle et la
+- [x] Couvrir trois des quatre cas du handoff : régénération du PDF avant un
+  export, export réussi, export échoué avec « Réessayer », modèle appliqué.
+  ⚠ L'action « Ouvrir le dossier » de l'export réussi n'est pas branchée : le
+  chemin est affiché, mais l'ouverture de l'explorateur demande une dépendance
+  supplémentaire. À traiter au J9.
+- [x] Retirer du panneau d'aperçu les messages qu'elles remplacent.
+- [x] Tester l'empilement, la limite de trois, la fermeture manuelle et la
   disparition automatique sans faire échouer les temporisations des tests.
+  ⚠ L'icône d'attente ne tourne pas : une animation infinie bloquerait
+  `pumpAndSettle` dans tous les tests qui traversent un export.
 
 **Terminé quand :** un export réussi, un export échoué et l'application d'un
 modèle produisent chacun leur notification, actionnable et refermable.
@@ -395,29 +415,30 @@ dès ce jalon.
 
 - [x] Décrire chaque modèle intégré par une `CvDesignSpec`. Aucune branche
   conditionnelle sur l'identifiant du modèle ne subsiste dans le générateur PDF.
-- [ ] Porter le catalogue sur la maquette du handoff : grille de vignettes à
+- [x] Porter le catalogue sur la maquette du handoff : grille de vignettes à
   quatre colonnes, modèle courant identifié par une bordure et une pastille,
   panneau d'aperçu et de réglages à droite, pied rappelant la compatibilité
   ATS, actions « Annuler » et « Appliquer le modèle ».
-- [ ] Rendre les vignettes et le grand aperçu depuis le PDF réel du CV en
-  cours, et non depuis une image livrée dans les assets.
-- [ ] Ajouter les cinq modèles en une seule colonne, chacun décrit par une
+- [x] Rendre les vignettes et le grand aperçu depuis le PDF réel du CV en
+  cours, et non depuis une image livrée dans les assets. Les trois vignettes
+  PNG livrées dans les assets ont été retirées.
+- [x] Ajouter les cinq modèles en une seule colonne, chacun décrit par une
   constante, le modèle classique servant de repli.
-- [ ] Permettre au modèle académique d'imposer son ordre de sections
+- [x] Permettre au modèle académique d'imposer son ordre de sections
   (formations avant expériences) sans modifier l'ordre enregistré dans le CV.
-- [ ] Ajouter le réglage de couleur d'accent : palette fermée de cinq valeurs,
+- [x] Ajouter le réglage de couleur d'accent : palette fermée de cinq valeurs,
   ignorée par un modèle sans couleur.
-- [ ] Ajouter le réglage d'affichage de la photo, indisponible tant qu'aucune
+- [x] Ajouter le réglage d'affichage de la photo, indisponible tant qu'aucune
   photo n'est chargée dans la session.
-- [ ] Enregistrer le modèle, la couleur d'accent et l'affichage de la photo
+- [x] Enregistrer le modèle, la couleur d'accent et l'affichage de la photo
   avec le CV, et retomber sur le modèle classique si l'identifiant est inconnu.
   ⚠ La persistance sur disque attend le J5.
 - [x] Déclencher la régénération du PDF au changement de modèle et inclure ce
   changement dans l'historique undo/redo.
-- [ ] Afficher la notification « Modèle appliqué » à la validation.
+- [x] Afficher la notification « Modèle appliqué » à la validation.
 - [x] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
   ni la visibilité des sections.
-- [ ] Tester que les deux réglages atteignent le PDF et qu'ils survivent à une
+- [x] Tester que les deux réglages atteignent le PDF et qu'ils survivent à une
   annulation puis à un rétablissement.
 
 **Terminé quand :** l'utilisateur choisit un modèle et ses deux réglages dans le
@@ -542,5 +563,13 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   vers les autres, et conserver le résultat le temps de la session.
 - **Réglages contre description :** la couleur d'accent et l'affichage de la
   photo sont les deux seules propriétés qu'un CV peut surcharger. Elles se
-  lisent donc en un seul endroit, au moment de résoudre la description effective
-  du modèle, et non dispersées dans le générateur.
+  lisent donc en un seul endroit, `CvDocument.designSpec`, et non dispersées
+  dans le générateur.
+- **PDF non déterministe :** deux générations du même CV ne produisent jamais
+  les mêmes octets, le paquet `pdf` y insérant un identifiant aléatoire. Tout
+  test qui compare des PDF doit passer par `pdfFingerprint`, sous peine de ne
+  rien vérifier du tout.
+- **Animations infinies et tests :** un indicateur qui tourne sans fin fait
+  expirer `pumpAndSettle`. Les notifications d'attente utilisent donc une icône
+  fixe, et les vignettes du catalogue sont remplacées dans les tests d'interface
+  plutôt que générées.

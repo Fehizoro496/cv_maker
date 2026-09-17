@@ -8,6 +8,8 @@ import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/cv_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/pdf_bytes.dart';
+
 /// Le nombre de pages réellement présentes dans le PDF.
 int pageCount(List<int> bytes) =>
     RegExp(r'/Type\s*/Page\b').allMatches(latin1.decode(bytes)).length;
@@ -62,10 +64,7 @@ void main() {
   test(
     'the handoff example generates a real A4 PDF with embedded fonts',
     () async {
-      final bytes = await buildCvPdf(
-        exampleCvDocument(),
-        professionalDesignSpec,
-      );
+      final bytes = await buildCvPdf(exampleCvDocument(), classicDesignSpec);
       final raw = latin1.decode(bytes);
       expect(raw, startsWith('%PDF-'));
       expect(isA4Portrait(bytes), isTrue);
@@ -96,11 +95,16 @@ void main() {
       ),
     );
     final document = exampleCvDocument();
-    final custom = await buildCvPdf(document, spec);
-    final standard = await buildCvPdf(document, professionalDesignSpec);
+    final custom = await buildCvPdf(document, classicDesignSpec);
+    final standard = await buildCvPdf(document, classicDesignSpec);
     expect(latin1.decode(custom), startsWith('%PDF-'));
-    // Seule la description diffère entre les deux générations.
-    expect(custom, isNot(equals(standard)));
+    // Deux générations de la même entrée sont identiques au contenu près.
+    expect(pdfFingerprint(custom), pdfFingerprint(standard));
+    // Seule la description change, et cela suffit à changer le PDF.
+    expect(
+      pdfFingerprint(await buildCvPdf(document, spec)),
+      isNot(pdfFingerprint(standard)),
+    );
   });
 
   test('long repeated sections paginate without losing entries', () async {
@@ -111,24 +115,22 @@ void main() {
           document.experiences.first.copyWith(id: 'exp-$i'),
       ],
     );
-    final bytes = await buildCvPdf(long, professionalDesignSpec);
+    final bytes = await buildCvPdf(long, classicDesignSpec);
     expect(
       pageCount(bytes),
-      greaterThan(
-        pageCount(await buildCvPdf(document, professionalDesignSpec)),
-      ),
+      greaterThan(pageCount(await buildCvPdf(document, classicDesignSpec))),
     );
     expect(isA4Portrait(bytes), isTrue);
   });
 
   test('a hidden optional section disappears from the PDF', () async {
     final document = exampleCvDocument();
-    final visible = await buildCvPdf(document, professionalDesignSpec);
+    final visible = await buildCvPdf(document, classicDesignSpec);
     final hidden = await buildCvPdf(
       document.withSectionVisible(CvSection.projects, false),
-      professionalDesignSpec,
+      classicDesignSpec,
     );
-    expect(hidden, isNot(equals(visible)));
+    expect(pdfFingerprint(hidden), isNot(pdfFingerprint(visible)));
     expect(hidden.length, lessThan(visible.length));
   });
 
@@ -141,8 +143,48 @@ void main() {
       ),
     );
     expect(
-      await buildCvPdf(reordered, professionalDesignSpec),
-      isNot(equals(await buildCvPdf(document, professionalDesignSpec))),
+      pdfFingerprint(await buildCvPdf(reordered, classicDesignSpec)),
+      isNot(pdfFingerprint(await buildCvPdf(document, classicDesignSpec))),
+    );
+  });
+
+  test('a design may impose its own section order', () async {
+    final document = exampleCvDocument();
+    // Le modèle académique place les formations avant les expériences.
+    expect(
+      pdfFingerprint(await buildCvPdf(document, academicDesignSpec)),
+      isNot(
+        pdfFingerprint(
+          await buildCvPdf(
+            document,
+            const CvDesignSpec(
+              header: CvDesignHeader(alignment: CvHeaderAlignment.center),
+              tokens: CvDesignTokens(
+                scale: CvDesignTypeScale(name: 26, sectionTitle: 10),
+              ),
+              sections: CvDesignSectionStyle(
+                titleCase: CvSectionTitleCase.none,
+                titleLetterSpacing: 0,
+                headerRuleThickness: .4,
+              ),
+            ),
+          ),
+        ),
+      ),
+      reason: 'seul l’ordre des sections distingue ces deux descriptions',
+    );
+  });
+
+  test('the accent override reaches the PDF', () async {
+    final document = exampleCvDocument();
+    expect(
+      pdfFingerprint(
+        await buildCvPdf(
+          document,
+          classicDesignSpec.withOverrides(accentColor: 0xFF7A2F4A),
+        ),
+      ),
+      isNot(pdfFingerprint(await buildCvPdf(document, classicDesignSpec))),
     );
   });
 
@@ -150,14 +192,14 @@ void main() {
     'the session photo reaches the PDF without entering the document',
     () async {
       final document = exampleCvDocument();
-      final withoutPhoto = await buildCvPdf(document, professionalDesignSpec);
+      final withoutPhoto = await buildCvPdf(document, classicDesignSpec);
       // Un PNG 1×1 valide, suffisant pour être intégré au document.
       final png = base64Decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
       );
       final withPhoto = await buildCvPdf(
         document,
-        professionalDesignSpec,
+        classicDesignSpec,
         photo: png,
       );
       expect(withPhoto.length, greaterThan(withoutPhoto.length));

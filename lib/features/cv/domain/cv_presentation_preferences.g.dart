@@ -9,7 +9,9 @@ part of 'cv_presentation_preferences.dart';
 _CvPresentationPreferences _$CvPresentationPreferencesFromJson(
   Map<String, dynamic> json,
 ) => _CvPresentationPreferences(
-  designId: json['designId'] as String? ?? 'professional',
+  designId: json['designId'] as String? ?? 'classic',
+  accentId: json['accentId'] as String? ?? 'blue',
+  showPhoto: json['showPhoto'] as bool? ?? true,
   sectionOrder:
       (json['sectionOrder'] as List<dynamic>?)
           ?.map((e) => $enumDecode(_$CvSectionEnumMap, e))
@@ -26,6 +28,8 @@ Map<String, dynamic> _$CvPresentationPreferencesToJson(
   _CvPresentationPreferences instance,
 ) => <String, dynamic>{
   'designId': instance.designId,
+  'accentId': instance.accentId,
+  'showPhoto': instance.showPhoto,
   'sectionOrder': instance.sectionOrder
       .map((e) => _$CvSectionEnumMap[e]!)
       .toList(),

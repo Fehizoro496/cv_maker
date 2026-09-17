@@ -6,21 +6,50 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const defaults = CvPresentationPreferences();
 
-  test('le modèle professionnel est choisi par défaut', () {
-    expect(defaults.design, CvDesign.professional);
+  test('le modèle classique est choisi par défaut', () {
+    expect(defaults.design, CvDesign.classic);
+    expect(defaults.accent, CvAccent.blue);
+    expect(defaults.showPhoto, isTrue);
   });
 
-  test('un identifiant de modèle inconnu retombe sur le professionnel', () {
+  test('un identifiant de modèle inconnu retombe sur le classique', () {
     expect(
       const CvPresentationPreferences(designId: 'supprimé').design,
-      CvDesign.professional,
+      CvDesign.classic,
+    );
+  });
+
+  test('une couleur d’accent inconnue retombe sur le bleu', () {
+    expect(
+      const CvPresentationPreferences(accentId: 'fuchsia').accent,
+      CvAccent.blue,
     );
   });
 
   test('withDesign enregistre l’identifiant, pas le libellé', () {
-    final modern = defaults.withDesign(CvDesign.modern);
-    expect(modern.designId, 'modern');
-    expect(modern.design, CvDesign.modern);
+    final banner = defaults.withDesign(CvDesign.banner);
+    expect(banner.designId, 'banner');
+    expect(banner.design, CvDesign.banner);
+  });
+
+  test('withAccent enregistre le nom de la couleur, pas son code', () {
+    final green = defaults.withAccent(CvAccent.green);
+    expect(green.accentId, 'green');
+    expect(green.accent, CvAccent.green);
+  });
+
+  test('withTemplate applique les trois choix du catalogue', () {
+    final applied = defaults.withTemplate(
+      design: CvDesign.compact,
+      accent: CvAccent.brown,
+      showPhoto: false,
+    );
+    expect(applied.design, CvDesign.compact);
+    expect(applied.accent, CvAccent.brown);
+    expect(applied.showPhoto, isFalse);
+    // L'ordre et la visibilité des sections ne bougent pas.
+    expect(applied.sectionOrder, defaults.sectionOrder);
+    expect(applied.hiddenSections, defaults.hiddenSections);
   });
 
   test('sans ordre enregistré, les sections gardent leur ordre déclaré', () {
@@ -75,7 +104,7 @@ void main() {
 
   test('aller-retour JSON sans perte', () {
     final preferences = defaults
-        .withDesign(CvDesign.minimal)
+        .withDesign(CvDesign.academic)
         .withSectionVisible(CvSection.interests, false)
         .reorderSections(0, 3);
     expect(

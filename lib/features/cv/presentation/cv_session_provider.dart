@@ -121,6 +121,24 @@ class CvSessionNotifier extends Notifier<CvSession> {
     _commitDocument(document.withDesign(design));
   }
 
+  /// Applique d'un seul geste le modèle et ses deux réglages.
+  ///
+  /// Les trois valeurs forment une seule étape d'historique : le catalogue les
+  /// valide ensemble, une annulation les retire ensemble.
+  void applyTemplate({
+    required CvDesign design,
+    required CvAccent accent,
+    required bool showPhoto,
+  }) {
+    final next = document.presentation.withTemplate(
+      design: design,
+      accent: accent,
+      showPhoto: showPhoto,
+    );
+    if (next == document.presentation) return;
+    _commitDocument(document.copyWith(presentation: next));
+  }
+
   /// La photo n'est pas persistée : elle vit dans la session, pas le document.
   void setPhoto(Uint8List? photo) {
     if (state.photo == photo) return;

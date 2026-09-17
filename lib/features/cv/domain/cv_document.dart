@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'cv_certification.dart';
 import 'cv_design.dart';
+import 'cv_design_spec.dart';
 import 'cv_education.dart';
 import 'cv_entry.dart';
 import 'cv_experience.dart';
@@ -65,6 +66,15 @@ abstract class CvDocument with _$CvDocument {
   CvDocument touched(DateTime at) => copyWith(updatedAt: at);
 
   CvDesign get design => presentation.design;
+
+  /// La description effective du modèle, réglages du CV appliqués.
+  ///
+  /// C'est la seule entrée de mise en forme du générateur PDF : la couleur
+  /// d'accent et l'affichage de la photo y sont déjà résolus.
+  CvDesignSpec get designSpec => design.spec.withOverrides(
+    accentColor: presentation.accent.color,
+    showPhoto: presentation.showPhoto,
+  );
 
   bool isVisible(CvSection section) => presentation.isVisible(section);
 

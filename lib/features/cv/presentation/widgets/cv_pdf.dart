@@ -207,7 +207,11 @@ Future<Uint8List> buildCvPdf(
       parts.where((part) => part.isNotEmpty).join(separator);
 
   final blocks = <pw.Widget>[];
-  for (final section in document.presentation.orderedSections) {
+  // Le modèle peut imposer son ordre sans toucher à celui du CV.
+  final sectionOrder = spec.structure.orderedSections(
+    document.presentation.orderedSections,
+  );
+  for (final section in sectionOrder) {
     // Les informations personnelles constituent l'en-tête, rendu à part.
     if (section == CvSection.personalInfo) continue;
     if (!document.isVisible(section) || !document.hasContent(section)) continue;

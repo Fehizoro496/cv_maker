@@ -122,17 +122,17 @@ void main() {
   });
 
   test('changer de modèle entre dans l’historique', () {
-    editor.setDesign(CvDesign.modern);
-    expect(editor.document.design, CvDesign.modern);
+    editor.setDesign(CvDesign.banner);
+    expect(editor.document.design, CvDesign.banner);
     editor.undo();
-    expect(editor.document.design, CvDesign.professional);
+    expect(editor.document.design, CvDesign.classic);
   });
 
   test('changer de modèle ne touche ni au contenu ni à la visibilité', () {
     final before = editor.document;
     editor.setSectionVisible(CvSection.projects, false);
     final hidden = editor.document;
-    editor.setDesign(CvDesign.minimal);
+    editor.setDesign(CvDesign.academic);
     final after = editor.document;
     expect(after.experiences, before.experiences);
     expect(after.personalInfo, before.personalInfo);
@@ -178,7 +178,7 @@ void main() {
 
   test('l’historique reste borné', () {
     for (var i = 0; i < 80; i++) {
-      editor.setDesign(i.isEven ? CvDesign.modern : CvDesign.minimal);
+      editor.setDesign(i.isEven ? CvDesign.banner : CvDesign.academic);
     }
     var undos = 0;
     while (editor.canUndo) {
@@ -190,10 +190,10 @@ void main() {
   });
 
   test('une nouvelle modification efface le futur', () {
-    editor.setDesign(CvDesign.modern);
+    editor.setDesign(CvDesign.banner);
     editor.undo();
     expect(editor.canRedo, isTrue);
-    editor.setDesign(CvDesign.minimal);
+    editor.setDesign(CvDesign.academic);
     expect(editor.canRedo, isFalse);
   });
 

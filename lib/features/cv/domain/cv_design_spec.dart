@@ -41,6 +41,24 @@ class CvDesignSpec {
 
   /// Groupe 4 : titres, filets, puces et rendu des compétences.
   final CvDesignSectionStyle sections;
+
+  /// La même description, avec les deux réglages que le CV peut imposer.
+  ///
+  /// La couleur d'accent et l'affichage de la photo sont les seules propriétés
+  /// qu'un CV surcharge ; elles se résolvent donc ici, en un seul endroit,
+  /// plutôt que d'être testées dans le générateur. Un modèle sans couleur
+  /// ([CvDesignTokens.ignoresAccent]) refuse la surcharge de couleur.
+  CvDesignSpec withOverrides({int? accentColor, bool? showPhoto}) =>
+      CvDesignSpec(
+        structure: structure,
+        header: showPhoto == null
+            ? header
+            : header.copyWith(showPhoto: showPhoto),
+        tokens: accentColor == null || tokens.ignoresAccent
+            ? tokens
+            : tokens.copyWith(accentColor: accentColor),
+        sections: sections,
+      );
 }
 
 /// Groupe 1 — structure : nombre de colonnes et colonne latérale.
@@ -52,6 +70,7 @@ class CvDesignStructure {
     this.columns = 1,
     this.sidebarPosition,
     this.sidebarSections = const <CvSection>[],
+    this.sectionOrder = const <CvSection>[],
   });
 
   /// Nombre de colonnes du corps du document.
@@ -63,7 +82,26 @@ class CvDesignStructure {
   /// Sections déplacées dans la colonne latérale.
   final List<CvSection> sidebarSections;
 
+  /// Ordre imposé par le modèle, ou vide pour suivre celui du CV.
+  ///
+  /// Le modèle académique place ainsi les formations avant les expériences sans
+  /// toucher à l'ordre enregistré : changer de modèle ne modifie pas le CV.
+  /// Les sections absentes de cette liste gardent leur ordre habituel, derrière
+  /// celles qui y figurent.
+  final List<CvSection> sectionOrder;
+
   bool get isSingleColumn => columns == 1;
+
+  /// L'ordre effectif des sections, [documentOrder] servant de référence.
+  List<CvSection> orderedSections(List<CvSection> documentOrder) {
+    if (sectionOrder.isEmpty) return documentOrder;
+    return [
+      for (final section in sectionOrder)
+        if (documentOrder.contains(section)) section,
+      for (final section in documentOrder)
+        if (!sectionOrder.contains(section)) section,
+    ];
+  }
 }
 
 /// Côté où se place la colonne latérale d'un modèle à deux colonnes.
@@ -101,6 +139,16 @@ class CvDesignHeader {
 
   /// Espace entre la photo et le texte de l'en-tête.
   final double photoGap;
+
+  CvDesignHeader copyWith({bool? showPhoto}) => CvDesignHeader(
+    fullWidthBanner: fullWidthBanner,
+    bannerPadding: bannerPadding,
+    alignment: alignment,
+    showPhoto: showPhoto ?? this.showPhoto,
+    photoShape: photoShape,
+    photoDiameterMm: photoDiameterMm,
+    photoGap: photoGap,
+  );
 }
 
 /// Alignement du contenu de l'en-tête.
@@ -130,6 +178,7 @@ class CvDesignTokens {
     this.entryGap = 8,
     this.sectionTitleGapAbove = 14,
     this.sectionTitleGapBelow = 7,
+    this.ignoresAccent = false,
   });
 
   /// Couleur d'accent du modèle : titres de section, filets et bandeau.
@@ -176,8 +225,33 @@ class CvDesignTokens {
   /// Espace sous un titre de section.
   final double sectionTitleGapBelow;
 
+  /// Un modèle sans couleur ignore le réglage de couleur d'accent.
+  ///
+  /// Le modèle sobre est entièrement en noir et gris : lui appliquer une
+  /// couleur reviendrait à en faire un autre modèle.
+  final bool ignoresAccent;
+
   /// La couleur effective des titres de section.
   int get effectiveHeadingColor => headingColor ?? accentColor;
+
+  CvDesignTokens copyWith({int? accentColor}) => CvDesignTokens(
+    accentColor: accentColor ?? this.accentColor,
+    onAccentColor: onAccentColor,
+    titleColor: titleColor,
+    bodyColor: bodyColor,
+    mutedColor: mutedColor,
+    footerColor: footerColor,
+    headingColor: headingColor,
+    headingSurfaceColor: headingSurfaceColor,
+    scale: scale,
+    pageMarginMm: pageMarginMm,
+    bodyLineSpacing: bodyLineSpacing,
+    headerGap: headerGap,
+    entryGap: entryGap,
+    sectionTitleGapAbove: sectionTitleGapAbove,
+    sectionTitleGapBelow: sectionTitleGapBelow,
+    ignoresAccent: ignoresAccent,
+  );
 }
 
 /// Échelle typographique d'un modèle, en points.
@@ -256,18 +330,28 @@ class CvDesignSectionStyle {
 /// Casse appliquée aux titres de section.
 enum CvSectionTitleCase { upper, none }
 
-/// Le modèle par défaut : une seule colonne, en-tête sobre et titres filetés.
+/// Le modèle par défaut : une seule colonne et un filet d'accent.
 ///
-/// Il sert aussi de repli lorsqu'un CV référence un modèle inconnu.
-const professionalDesignSpec = CvDesignSpec();
+/// Il sert de référence commune aux autres : marges, échelle typographique et
+/// règles de pagination sont les siennes, et chaque autre modèle n'en décrit
+/// que ses écarts. Il sert aussi de repli lorsqu'un CV référence un modèle
+/// inconnu.
+const classicDesignSpec = CvDesignSpec();
+
+/// Noir et blanc, sans aucune couleur d'accent.
+const plainDesignSpec = CvDesignSpec(
+  tokens: CvDesignTokens(
+    accentColor: 0xFF1B1F23,
+    mutedColor: 0xFF43474E,
+    ignoresAccent: true,
+  ),
+  sections: CvDesignSectionStyle(headerRuleThickness: .8),
+);
 
 /// Un bandeau d'accent pleine largeur et des titres de section encadrés.
-const modernDesignSpec = CvDesignSpec(
+const bannerDesignSpec = CvDesignSpec(
   header: CvDesignHeader(fullWidthBanner: true, bannerPadding: 16),
-  tokens: CvDesignTokens(
-    accentColor: 0xFF176B61,
-    headingSurfaceColor: 0xFFEBF4F2,
-  ),
+  tokens: CvDesignTokens(headingSurfaceColor: 0xFFEBF4F2),
   sections: CvDesignSectionStyle(
     titlePaddingHorizontal: 8,
     titlePaddingVertical: 5,
@@ -276,13 +360,36 @@ const modernDesignSpec = CvDesignSpec(
   ),
 );
 
-/// Un en-tête centré, des titres discrets et un filet très fin.
-const minimalDesignSpec = CvDesignSpec(
-  header: CvDesignHeader(alignment: CvHeaderAlignment.center),
+/// Interlignes serrés et espacements réduits : plus de contenu par page.
+const compactDesignSpec = CvDesignSpec(
   tokens: CvDesignTokens(
-    accentColor: 0xFF343A40,
-    scale: CvDesignTypeScale(name: 26, sectionTitle: 10),
+    scale: CvDesignTypeScale(
+      body: 8.5,
+      name: 20,
+      headline: 10,
+      entryTitle: 9.5,
+      meta: 8,
+    ),
+    pageMarginMm: 15,
+    bodyLineSpacing: 1.6,
+    headerGap: 8,
+    entryGap: 5,
+    sectionTitleGapAbove: 9,
+    sectionTitleGapBelow: 5,
   ),
+);
+
+/// En-tête centré, filet discret et formations avant les expériences.
+const academicDesignSpec = CvDesignSpec(
+  structure: CvDesignStructure(
+    sectionOrder: [
+      CvSection.profile,
+      CvSection.education,
+      CvSection.experiences,
+    ],
+  ),
+  header: CvDesignHeader(alignment: CvHeaderAlignment.center),
+  tokens: CvDesignTokens(scale: CvDesignTypeScale(name: 26, sectionTitle: 10)),
   sections: CvDesignSectionStyle(
     titleCase: CvSectionTitleCase.none,
     titleLetterSpacing: 0,
@@ -294,8 +401,10 @@ const minimalDesignSpec = CvDesignSpec(
 /// description : le générateur PDF n'utilise que [CvDesignSpec].
 extension CvDesignSpecLookup on CvDesign {
   CvDesignSpec get spec => switch (this) {
-    CvDesign.professional => professionalDesignSpec,
-    CvDesign.modern => modernDesignSpec,
-    CvDesign.minimal => minimalDesignSpec,
+    CvDesign.classic => classicDesignSpec,
+    CvDesign.plain => plainDesignSpec,
+    CvDesign.banner => bannerDesignSpec,
+    CvDesign.compact => compactDesignSpec,
+    CvDesign.academic => academicDesignSpec,
   };
 }

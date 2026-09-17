@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 
-import '../domain/cv_design_spec.dart';
 import 'preview_input_provider.dart';
 import 'widgets/cv_pdf.dart';
 
@@ -26,7 +25,7 @@ final draftPreviewProvider = FutureProvider<DraftPreview>((ref) async {
   final rasterize = ref.watch(pdfRasterizerProvider);
   final bytes = await buildCvPdf(
     session.document,
-    session.document.design.spec,
+    session.document.designSpec,
     photo: session.photo,
   );
   if (!ref.mounted) throw StateError('Generation superseded');
