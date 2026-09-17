@@ -5,7 +5,7 @@ import 'package:printing/printing.dart';
 
 import '../domain/cv_design_spec.dart';
 import 'preview_input_provider.dart';
-import 'widgets/draft_pdf.dart';
+import 'widgets/cv_pdf.dart';
 
 final pdfRasterizerProvider = Provider<Stream<Uint8List> Function(Uint8List)>(
   (ref) => (bytes) async* {
@@ -22,12 +22,12 @@ class DraftPreview {
 }
 
 final draftPreviewProvider = FutureProvider<DraftPreview>((ref) async {
-  final input = ref.watch(previewInputProvider);
+  final session = ref.watch(previewInputProvider);
   final rasterize = ref.watch(pdfRasterizerProvider);
-  final bytes = await buildDraftPdf(
-    input.draft,
-    input.visibility,
-    input.draft.design.spec,
+  final bytes = await buildCvPdf(
+    session.document,
+    session.document.design.spec,
+    photo: session.photo,
   );
   if (!ref.mounted) throw StateError('Generation superseded');
   final pages = <Uint8List>[];

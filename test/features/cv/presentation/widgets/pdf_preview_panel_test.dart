@@ -1,7 +1,8 @@
 import 'package:cv_maker/features/cv/presentation/widgets/pdf_preview_panel.dart';
 import 'package:flutter/gestures.dart';
 import 'package:cv_maker/features/cv/presentation/draft_preview_provider.dart';
-import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
+import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
+import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview_input_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../helpers/preview_override.dart';
@@ -40,10 +41,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final editor = container.read(editorDraftProvider.notifier);
-    editor.setField('Prénom', 'A');
+    final editor = container.read(cvSessionProvider.notifier);
+    editor.setDocumentField(CvDocumentFields.firstName, 'A');
     await tester.pump(const Duration(milliseconds: 400));
-    editor.setField('Nom', 'Martin');
+    editor.setDocumentField(CvDocumentFields.lastName, 'Martin');
     await tester.pump(const Duration(milliseconds: 400));
     expect(generations, 1);
     expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -51,7 +52,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
     expect(generations, 2);
-    editor.setField('Prénom', 'Alice');
+    editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
     await tester.pump();
     await tester.tap(find.byTooltip('Rafraîchir'));
     await tester.pumpAndSettle();

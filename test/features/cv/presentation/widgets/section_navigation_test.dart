@@ -1,12 +1,11 @@
 import 'package:cv_maker/app/app_theme.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/cv_section_presentation.dart';
-import 'package:cv_maker/features/cv/presentation/section_visibility_provider.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
-import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
+import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,8 +41,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Choisir Moderne'));
     await tester.pumpAndSettle();
-    expect(container.read(editorDraftProvider).design, CvDesign.modern);
-    container.read(editorDraftProvider.notifier).undo();
+    expect(container.read(cvSessionProvider).document.design, CvDesign.modern);
+    container.read(cvSessionProvider.notifier).undo();
     await tester.pumpAndSettle();
     expect(find.text('Professionnel'), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<CvDesign>), findsNothing);
@@ -78,11 +77,8 @@ void main() {
       expect(
         find.descendant(
           of: rowOf(section),
-          matching: find.byIcon(
-            [CvSection.interests, CvSection.references].contains(section)
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-          ),
+          // Toutes les sections du CV d'exemple sont visibles au départ.
+          matching: find.byIcon(Icons.visibility_outlined),
         ),
         section.isOptional ? findsOneWidget : findsNothing,
       );
@@ -123,7 +119,10 @@ void main() {
     await tester.pump();
 
     expect(
-      container.read(sectionVisibilityProvider)[CvSection.certifications],
+      container
+          .read(cvSessionProvider)
+          .document
+          .isVisible(CvSection.certifications),
       isFalse,
     );
     expect(

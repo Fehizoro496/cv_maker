@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/app_theme.dart';
-import 'editor_draft_provider.dart';
+import 'cv_session_provider.dart';
 import 'widgets/pdf_preview_panel.dart';
 import 'widgets/section_editor_panel.dart';
 import 'widgets/section_navigation.dart';
@@ -23,7 +23,7 @@ class EditorScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final editor = ref.read(editorDraftProvider.notifier);
+    final editor = ref.read(cvSessionProvider.notifier);
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyZ, control: true):
