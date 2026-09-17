@@ -34,7 +34,8 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J5    | Persistance SQLite et gestion multi-CV      | J4        |
 | J6    | Photo de session                            | J5        |
 | J7    | Export PDF                                  | J6        |
-| J8    | Finitions et validation du MVP              | J7        |
+| J8    | Catalogue de modèles                        | J5        |
+| J9    | Finitions et validation du MVP              | J7, J8    |
 
 ---
 
@@ -99,8 +100,16 @@ réel, avec pagination et fonctionnement hors ligne.
 
 - [ ] Créer le provider du CV en cours d'édition.
 - [ ] Développer le formulaire des informations personnelles (sans photo).
-- [ ] Créer le générateur PDF du modèle professionnel : une fonction pure
-  `CvDocument → bytes PDF`, au format A4 portrait, avec texte sélectionnable.
+- [ ] Définir la description de modèle (`CvDesignSpec`) avec ses quatre groupes
+  de propriétés décrits en section 5.9 du cahier des charges : structure,
+  en-tête, jetons visuels, décorations de section.
+- [ ] Créer le générateur PDF : une fonction pure
+  `(CvDocument, CvDesignSpec) → bytes PDF`, au format A4 portrait, avec texte
+  sélectionnable. Le générateur lit toutes ses décisions de mise en forme dans
+  la description ; aucune couleur, taille ni variante ne doit être codée en dur
+  ni dépendre d'un test sur l'identité du modèle.
+- [ ] Fournir la description du modèle professionnel par défaut, en une seule
+  colonne.
 - [ ] Implémenter la pagination automatique sur plusieurs pages A4 avant
   l'ajout des formulaires de toutes les sections.
 - [ ] Ne jamais séparer un titre de section de son premier contenu.
@@ -233,7 +242,36 @@ l'aperçu, même si l'export est demandé juste après une modification.
 
 ---
 
-## J8 — Finitions et validation du MVP
+## J8 — Catalogue de modèles
+
+**Objectif :** offrir plusieurs modèles intégrés et permettre d'en changer sans
+toucher au contenu.
+
+Ce jalon ne dépend que du J5 (le modèle sélectionné doit être persisté) et peut
+donc être mené en parallèle du J6 et du J7.
+
+- [ ] Décrire chaque modèle intégré par une `CvDesignSpec` : professionnel,
+  moderne et minimaliste. Aucune branche conditionnelle sur l'identifiant du
+  modèle ne doit subsister dans le générateur PDF.
+- [ ] Conserver la structure en une seule colonne pour tous les modèles du MVP.
+- [ ] Persister l'identifiant du modèle avec le CV et retomber sur le modèle
+  professionnel si l'identifiant est inconnu.
+- [ ] Générer les vignettes du catalogue depuis les modèles PDF réels, sur un CV
+  d'exemple, et les livrer dans les assets.
+- [ ] Afficher le catalogue : vignette, libellé, description, modèle courant
+  identifié, sélection et fermeture.
+- [ ] Déclencher la régénération du PDF au changement de modèle et inclure ce
+  changement dans l'historique undo/redo.
+- [ ] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
+  ni la visibilité des sections.
+
+**Terminé quand :** l'utilisateur choisit un modèle dans le catalogue, l'aperçu
+et l'export le reflètent, le choix est retrouvé après un redémarrage et aucun
+contenu n'est perdu au passage d'un modèle à l'autre.
+
+---
+
+## J9 — Finitions et validation du MVP
 
 **Objectif :** vérifier tous les critères d'acceptation et stabiliser.
 
@@ -267,3 +305,15 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   génération que l'aperçu, grâce au numéro de version introduit au J2.
 - **Choix des packages :** les packages listés au J0 sont des propositions à
   confirmer lors de la mise en place.
+- **Compatibilité ATS :** les systèmes ATS lisent le PDF de façon linéaire.
+  Une colonne latérale fait entrelacer les compétences avec les intitulés de
+  poste et dégrade fortement l'extraction des champs ; le texte placé dans un
+  en-tête de page est souvent ignoré. D'où la structure en une seule colonne
+  pour tous les modèles du MVP, et l'obligation d'émettre les widgets dans
+  l'ordre de lecture attendu si des structures multi-colonnes sont ajoutées
+  plus tard.
+- **Extension du catalogue :** le format de description des modèles n'est pas
+  figé tant que le moteur de zones n'existe pas. Exposer un manifeste chargé
+  depuis un dossier utilisateur avant cela reviendrait à publier un format
+  incapable de décrire autre chose que des variantes de couleur, qu'il faudrait
+  ensuite migrer.
