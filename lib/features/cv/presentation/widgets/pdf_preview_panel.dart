@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
+import '../../../../shared/notifications/app_toast.dart';
 import '../../../../shared/widgets/soft_panel.dart';
 import '../draft_preview_provider.dart';
 import '../preview_input_provider.dart';
@@ -28,7 +29,6 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
   late int _zoom = widget.initialZoom;
   DraftPreview? _lastPreview;
   bool _exporting = false;
-  String? _notice;
 
   void _refresh() {
     ref.read(previewInputProvider.notifier).flush();
@@ -56,22 +56,39 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
     }
   }
 
+  /// Attend la génération correspondant aux dernières modifications.
+  ///
+  /// Une saisie pendant l'attente invalide la génération en cours : la boucle
+  /// recommence jusqu'à ce que l'aperçu et la session soient d'accord.
+  Future<DraftPreview?> _upToDatePreview() async {
+    Future<DraftPreview> pending;
+    DraftPreview preview;
+    do {
+      ref.read(previewInputProvider.notifier).flush();
+      pending = ref.read(draftPreviewProvider.future);
+      preview = await pending;
+      if (!mounted) return null;
+      ref.read(previewInputProvider.notifier).flush();
+    } while (!identical(pending, ref.read(draftPreviewProvider.future)));
+    return preview;
+  }
+
   Future<void> _export() async {
-    setState(() {
-      _exporting = true;
-      _notice = null;
-    });
+    final toasts = ref.read(appToastsProvider.notifier);
+    setState(() => _exporting = true);
+    // Prévenir seulement si l'attente est réelle : sinon la notification
+    // apparaîtrait et disparaîtrait sans que personne ne la lise.
+    final waiting = ref.read(previewDirtyProvider)
+        ? toasts.show(
+            kind: AppToastKind.progress,
+            title: 'Mise à jour du PDF…',
+            message: "L’export démarrera dès que l’aperçu sera à jour.",
+          )
+        : null;
     try {
-      // Recheck after each await: edits may have invalidated an earlier future.
-      Future<DraftPreview> pending;
-      DraftPreview preview;
-      do {
-        ref.read(previewInputProvider.notifier).flush();
-        pending = ref.read(draftPreviewProvider.future);
-        preview = await pending;
-        if (!mounted) return;
-        ref.read(previewInputProvider.notifier).flush();
-      } while (!identical(pending, ref.read(draftPreviewProvider.future)));
+      var preview = await _upToDatePreview();
+      if (preview == null) return;
+      if (waiting != null) toasts.dismiss(waiting);
       final location = await getSaveLocation(
         suggestedName: 'CV.pdf',
         acceptedTypeGroups: [
@@ -79,26 +96,32 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
         ],
       );
       if (location == null || !mounted) return;
-      do {
-        ref.read(previewInputProvider.notifier).flush();
-        pending = ref.read(draftPreviewProvider.future);
-        preview = await pending;
-        if (!mounted) return;
-        ref.read(previewInputProvider.notifier).flush();
-      } while (!identical(pending, ref.read(draftPreviewProvider.future)));
+      preview = await _upToDatePreview();
+      if (preview == null) return;
       await XFile.fromData(
         preview.bytes,
         mimeType: 'application/pdf',
       ).saveTo(location.path);
-      if (mounted) setState(() => _notice = 'PDF exporté');
+      if (!mounted) return;
+      toasts.show(
+        kind: AppToastKind.success,
+        title: 'PDF exporté',
+        message: location.path,
+      );
     } catch (_) {
-      if (mounted) {
-        setState(
-          () => _notice =
-              "L’export a échoué. Vérifiez l’emplacement et réessayez.",
-        );
-      }
+      if (!mounted) return;
+      toasts.show(
+        kind: AppToastKind.error,
+        title: "L’export a échoué",
+        message:
+            'Le fichier est peut-être ouvert dans une autre application. '
+            'Fermez-le puis réessayez.',
+        actionLabel: 'Réessayer',
+        actionIcon: Icons.refresh,
+        onAction: _export,
+      );
     } finally {
+      if (waiting != null) toasts.dismiss(waiting);
       if (mounted) setState(() => _exporting = false);
     }
   }
@@ -280,41 +303,6 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
                               ),
                             ],
                           ],
-                        ),
-                      ),
-                    ),
-                  if (_notice != null)
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: Material(
-                        elevation: 0,
-                        color: AppColors.surface,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadii.card),
-                          side: const BorderSide(
-                            color: AppColors.outlineVariant,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _notice!,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Fermer',
-                                onPressed: () => setState(() => _notice = null),
-                                icon: const Icon(Icons.close, size: 18),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),

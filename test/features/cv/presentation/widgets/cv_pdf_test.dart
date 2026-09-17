@@ -114,7 +114,9 @@ void main() {
     final bytes = await buildCvPdf(long, professionalDesignSpec);
     expect(
       pageCount(bytes),
-      greaterThan(pageCount(await buildCvPdf(document, professionalDesignSpec))),
+      greaterThan(
+        pageCount(await buildCvPdf(document, professionalDesignSpec)),
+      ),
     );
     expect(isA4Portrait(bytes), isTrue);
   });

@@ -30,6 +30,9 @@ abstract final class AppColors {
   static const disabledFill = Color(0xFFF3F4F7);
   static const error = Color(0xFFB3261E);
   static const errorContainer = Color(0xFFFDECEA);
+
+  /// Bordure d'une notification d'erreur, plus douce que [error].
+  static const errorBorder = Color(0xFFF3CFCB);
   static const successContainer = Color(0xFFE6F4EA);
   static const onSuccessContainer = Color(0xFF1E6B3A);
   static const pageShadow = Color(0x1A101828);
