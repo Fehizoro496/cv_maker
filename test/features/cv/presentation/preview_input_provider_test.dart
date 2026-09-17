@@ -1,7 +1,7 @@
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
-import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
+import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
+import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview_input_provider.dart';
-import 'package:cv_maker/features/cv/presentation/section_visibility_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,25 +13,33 @@ void main() {
     addTearDown(container.dispose);
     var updates = 0;
     container.listen(previewInputProvider, (_, _) => updates++);
-    final editor = container.read(editorDraftProvider.notifier);
-    editor.setField('Prénom', 'Alice');
+    final editor = container.read(cvSessionProvider.notifier);
+    editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
     await tester.pump(const Duration(milliseconds: 600));
-    editor.setEntry(CvSection.experiences, 'exp-1', 'Poste', 'Designer');
+    final experience = container
+        .read(cvSessionProvider)
+        .document
+        .experiences
+        .first;
+    editor.updateEntry(
+      CvSection.experiences,
+      experience.copyWith(position: 'Designer'),
+    );
     await tester.pump(const Duration(milliseconds: 600));
-    editor.setField('Profil professionnel', 'Nouveau profil');
-    expect(container.read(editorDraftProvider).fields['Prénom'], 'Alice');
+    editor.setDocumentField(CvDocumentFields.profile, 'Nouveau profil');
+    expect(
+      container.read(cvSessionProvider).document.personalInfo.firstName,
+      'Alice',
+    );
     expect(container.read(previewDirtyProvider), isTrue);
     await tester.pump(const Duration(milliseconds: 899));
     expect(updates, 0);
     await tester.pump(const Duration(milliseconds: 1));
     expect(updates, 1);
-    final input = container.read(previewInputProvider);
-    expect(input.draft.fields['Prénom'], 'Alice');
-    expect(input.draft.fields['Profil professionnel'], 'Nouveau profil');
-    expect(
-      input.draft.entries[CvSection.experiences]!.first['Poste'],
-      'Designer',
-    );
+    final document = container.read(previewInputProvider).document;
+    expect(document.personalInfo.firstName, 'Alice');
+    expect(document.profile, 'Nouveau profil');
+    expect(document.experiences.first.position, 'Designer');
     expect(container.read(previewDirtyProvider), isFalse);
   });
 
@@ -42,17 +50,14 @@ void main() {
     addTearDown(container.dispose);
     var updates = 0;
     container.listen(previewInputProvider, (_, _) => updates++);
-    container.read(editorDraftProvider.notifier).setField('Nom', 'Martin');
-    container
-        .read(sectionVisibilityProvider.notifier)
-        .toggle(CvSection.projects);
+    final editor = container.read(cvSessionProvider.notifier);
+    editor.setDocumentField(CvDocumentFields.lastName, 'Martin');
+    editor.setSectionVisible(CvSection.projects, false);
     container.read(previewInputProvider.notifier).flush();
     expect(updates, 1);
-    expect(container.read(previewInputProvider).draft.fields['Nom'], 'Martin');
-    expect(
-      container.read(previewInputProvider).visibility[CvSection.projects],
-      isFalse,
-    );
+    final document = container.read(previewInputProvider).document;
+    expect(document.personalInfo.lastName, 'Martin');
+    expect(document.isVisible(CvSection.projects), isFalse);
     await tester.pump(const Duration(seconds: 2));
     container.read(previewInputProvider.notifier).flush();
     expect(updates, 1);
@@ -65,14 +70,14 @@ void main() {
     addTearDown(container.dispose);
     var updates = 0;
     container.listen(previewInputProvider, (_, _) => updates++);
-    final editor = container.read(editorDraftProvider.notifier);
-    editor.setField('Prénom', 'Camille');
-    editor.setEntry(
-      CvSection.experiences,
-      'exp-1',
-      'Poste',
-      'Développeuse Front-End',
-    );
+    final editor = container.read(cvSessionProvider.notifier);
+    final experience = container
+        .read(cvSessionProvider)
+        .document
+        .experiences
+        .first;
+    editor.setDocumentField(CvDocumentFields.firstName, 'Camille');
+    editor.updateEntry(CvSection.experiences, experience);
     await tester.pump(const Duration(seconds: 2));
     expect(updates, 0);
     expect(editor.canUndo, isFalse);
@@ -83,12 +88,12 @@ void main() {
     (tester) async {
       final container = ProviderContainer();
       container.listen(previewInputProvider, (_, _) {});
-      final editor = container.read(editorDraftProvider.notifier);
-      editor.setField('Nom', 'Martin');
+      final editor = container.read(cvSessionProvider.notifier);
+      editor.setDocumentField(CvDocumentFields.lastName, 'Martin');
       editor.undo();
       await tester.pump(const Duration(milliseconds: 900));
       expect(
-        container.read(previewInputProvider).draft.fields['Nom'],
+        container.read(previewInputProvider).document.personalInfo.lastName,
         'Moreau',
       );
       editor.redo();

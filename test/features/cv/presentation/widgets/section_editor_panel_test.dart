@@ -1,8 +1,9 @@
+import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_editor_panel.dart';
 import 'package:flutter/material.dart';
-import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
+import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:cv_maker/app/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,7 +92,10 @@ void main() {
       await tester.tap(find.byTooltip('Annuler (Ctrl+Z)'));
       await tester.pumpAndSettle();
       expect(find.text('Camille'), findsOneWidget);
-      expect(container.read(editorDraftProvider).fields['Prénom'], 'Camille');
+      expect(
+        container.read(cvSessionProvider).document.personalInfo.firstName,
+        'Camille',
+      );
     },
   );
 
@@ -114,11 +118,8 @@ void main() {
     await tester.tap(find.text('janv.'));
     await tester.pumpAndSettle();
 
-    final entry = container
-        .read(editorDraftProvider)
-        .entries[CvSection.experiences]!
-        .first;
-    expect(entry['Début'], 'janv. 2023');
+    final entry = container.read(cvSessionProvider).document.experiences.first;
+    expect(entry.period.start, const CvMonthYear(2023, 1));
     expect(find.text('janv. 2023'), findsOneWidget);
   });
 }

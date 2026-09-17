@@ -6,8 +6,7 @@ import '../../domain/cv_section.dart';
 import '../../domain/cv_design.dart';
 import 'design_catalog.dart';
 import '../cv_section_presentation.dart';
-import '../editor_draft_provider.dart';
-import '../section_visibility_provider.dart';
+import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
 
 class SectionNavigation extends ConsumerWidget {
@@ -16,7 +15,7 @@ class SectionNavigation extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedSectionProvider);
-    final visibility = ref.watch(sectionVisibilityProvider);
+    final document = ref.watch(cvSessionProvider).document;
     final mainSections = CvSection.values.where((s) => !s.isOptional);
     final optionalSections = CvSection.values.where((s) => s.isOptional);
 
@@ -24,7 +23,7 @@ class SectionNavigation extends ConsumerWidget {
       key: ValueKey(section),
       section: section,
       isSelected: section == selected,
-      isVisible: visibility[section] ?? true,
+      isVisible: document.isVisible(section),
     );
 
     return Material(
@@ -55,11 +54,11 @@ class SectionNavigation extends ConsumerWidget {
                 final design = await showDialog<CvDesign>(
                   context: context,
                   builder: (_) => DesignCatalog(
-                    selected: ref.read(editorDraftProvider).design,
+                    selected: ref.read(cvSessionProvider).document.design,
                   ),
                 );
                 if (design != null && context.mounted) {
-                  ref.read(editorDraftProvider.notifier).setDesign(design);
+                  ref.read(cvSessionProvider.notifier).setDesign(design);
                 }
               },
               icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
@@ -70,7 +69,9 @@ class SectionNavigation extends ConsumerWidget {
                   Text(
                     ref
                         .watch(
-                          editorDraftProvider.select((draft) => draft.design),
+                          cvSessionProvider.select(
+                            (session) => session.document.design,
+                          ),
                         )
                         .label,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -124,7 +125,7 @@ class _OpenCvHeader extends ConsumerWidget {
                 Text('CV OUVERT', style: textTheme.labelSmall),
                 const SizedBox(height: 1),
                 Text(
-                  ref.watch(editorDraftProvider).name,
+                  ref.watch(cvSessionProvider).document.name,
                   style: textTheme.titleMedium,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -209,7 +210,7 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
             section == CvSection.personalInfo ||
             section == CvSection.profile
         ? null
-        : ref.watch(editorDraftProvider).entries[section]?.length ?? 0;
+        : ref.watch(cvSessionProvider).document.entriesOf(section).length;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -273,8 +274,8 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
                         ),
                         iconSize: 16,
                         onPressed: () => ref
-                            .read(sectionVisibilityProvider.notifier)
-                            .toggle(section),
+                            .read(cvSessionProvider.notifier)
+                            .setSectionVisible(section, !isVisible),
                         icon: Icon(
                           isVisible
                               ? Icons.visibility_outlined

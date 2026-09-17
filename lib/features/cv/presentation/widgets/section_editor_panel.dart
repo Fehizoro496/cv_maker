@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../shared/widgets/soft_panel.dart';
+import '../../domain/cv_entry.dart';
+import '../../domain/cv_month_year.dart';
 import '../../domain/cv_section.dart';
+import '../cv_section_forms.dart';
 import '../cv_section_presentation.dart';
-import '../editor_draft_provider.dart';
+import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
 import 'month_year_picker.dart';
 
@@ -17,8 +20,8 @@ class SectionEditorPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final section = ref.watch(selectedSectionProvider);
-    ref.watch(editorDraftProvider);
-    final editor = ref.read(editorDraftProvider.notifier);
+    ref.watch(cvSessionProvider);
+    final editor = ref.read(cvSessionProvider.notifier);
     return SoftPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,16 +120,8 @@ class SectionEditorPanel extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(24, 6, 24, 28),
               child: switch (section) {
                 CvSection.personalInfo => _PersonalForm(compact: compact),
-                CvSection.profile => _DraftField(
-                  label: 'Profil professionnel',
-                  value:
-                      ref
-                          .watch(editorDraftProvider)
-                          .fields['Profil professionnel'] ??
-                      '',
-                  lines: 6,
-                  onChanged: (value) =>
-                      editor.setField('Profil professionnel', value),
+                CvSection.profile => const _DocumentFieldInput(
+                  field: CvDocumentFields.profile,
                 ),
                 _ => _EntryList(key: ValueKey(section), section: section),
               },
@@ -138,38 +133,62 @@ class SectionEditorPanel extends ConsumerWidget {
   }
 }
 
-class _PersonalForm extends ConsumerWidget {
+/// Un champ du document : nom, coordonnées, profil.
+class _DocumentFieldInput extends ConsumerWidget {
+  const _DocumentFieldInput({required this.field});
+  final CvDocumentField field;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final document = ref.watch(cvSessionProvider).document;
+    return _TextInput(
+      label: field.label,
+      value: field.read(document),
+      lines: field.lines,
+      onChanged: (value) =>
+          ref.read(cvSessionProvider.notifier).setDocumentField(field, value),
+    );
+  }
+}
+
+class _PersonalForm extends StatelessWidget {
   const _PersonalForm({required this.compact});
   final bool compact;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final draft = ref.watch(editorDraftProvider);
-    final editor = ref.read(editorDraftProvider.notifier);
-    Widget field(String label) => _DraftField(
-      label: label,
-      value: draft.fields[label] ?? '',
-      onChanged: (value) => editor.setField(label, value),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _FieldRow(children: [field('Prénom'), field('Nom')]),
-        const SizedBox(height: 18),
-        field('Titre professionnel'),
-        const SizedBox(height: 18),
-        _PhotoCard(compact: compact),
-        const SizedBox(height: 18),
-        _FieldRow(children: [field('Localisation'), field('Téléphone')]),
-        const SizedBox(height: 14),
-        _FieldRow(children: [field('E-mail'), field('Site / portfolio')]),
-        const SizedBox(height: 18),
-        Text('Liens', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        _EntryList(section: CvSection.personalInfo),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const _FieldRow(
+        children: [
+          _DocumentFieldInput(field: CvDocumentFields.firstName),
+          _DocumentFieldInput(field: CvDocumentFields.lastName),
+        ],
+      ),
+      const SizedBox(height: 18),
+      const _DocumentFieldInput(field: CvDocumentFields.headline),
+      const SizedBox(height: 18),
+      _PhotoCard(compact: compact),
+      const SizedBox(height: 18),
+      const _FieldRow(
+        children: [
+          _DocumentFieldInput(field: CvDocumentFields.location),
+          _DocumentFieldInput(field: CvDocumentFields.phone),
+        ],
+      ),
+      const SizedBox(height: 14),
+      const _FieldRow(
+        children: [
+          _DocumentFieldInput(field: CvDocumentFields.email),
+          _DocumentFieldInput(field: CvDocumentFields.website),
+        ],
+      ),
+      const SizedBox(height: 18),
+      Text('Liens', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 8),
+      const _EntryList(section: CvSection.personalInfo),
+    ],
+  );
 }
 
 class _PhotoCard extends ConsumerWidget {
@@ -178,7 +197,7 @@ class _PhotoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photo = ref.watch(editorDraftProvider).photo;
+    final photo = ref.watch(cvSessionProvider).photo;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -233,7 +252,7 @@ class _PhotoCard extends ConsumerWidget {
                           image.dispose();
                           if (context.mounted) {
                             ref
-                                .read(editorDraftProvider.notifier)
+                                .read(cvSessionProvider.notifier)
                                 .setPhoto(bytes);
                           }
                         } catch (_) {
@@ -263,7 +282,7 @@ class _PhotoCard extends ConsumerWidget {
                       onPressed: photo == null
                           ? null
                           : () => ref
-                                .read(editorDraftProvider.notifier)
+                                .read(cvSessionProvider.notifier)
                                 .setPhoto(null),
                       child: const Text('Retirer'),
                     ),
@@ -300,44 +319,6 @@ class _PhotoCard extends ConsumerWidget {
   }
 }
 
-const _fields = <CvSection, List<String>>{
-  CvSection.personalInfo: ['Libellé', 'URL'],
-  CvSection.experiences: [
-    'Poste',
-    'Entreprise',
-    'Lieu',
-    'Début',
-    'Fin',
-    'Description / réalisations',
-  ],
-  CvSection.education: [
-    'Diplôme',
-    'Établissement',
-    'Lieu',
-    'Début',
-    'Fin',
-    'Description (facultative)',
-  ],
-  CvSection.skills: ['Nom', 'Catégorie (facultative)', 'Niveau (facultatif)'],
-  CvSection.languages: ['Langue', 'Niveau'],
-  CvSection.certifications: ['Intitulé', 'Organisme', 'Date', 'Description'],
-  CvSection.projects: ['Intitulé', 'Description'],
-  CvSection.interests: ['Intitulé', 'Description'],
-  CvSection.references: ['Intitulé', 'Description'],
-};
-
-const _addLabels = <CvSection, String>{
-  CvSection.personalInfo: 'Ajouter un lien',
-  CvSection.experiences: 'Ajouter une expérience',
-  CvSection.education: 'Ajouter une formation',
-  CvSection.skills: 'Ajouter une compétence',
-  CvSection.languages: 'Ajouter une langue',
-  CvSection.certifications: 'Ajouter une certification',
-  CvSection.projects: 'Ajouter un projet',
-  CvSection.interests: "Ajouter un centre d'intérêt",
-  CvSection.references: 'Ajouter une référence',
-};
-
 class _EntryList extends ConsumerStatefulWidget {
   const _EntryList({super.key, required this.section});
   final CvSection section;
@@ -349,28 +330,51 @@ class _EntryListState extends ConsumerState<_EntryList> {
   String? _expanded;
   bool _initialized = false;
 
+  /// La valeur d'un champ, telle qu'elle s'affiche dans le résumé replié.
+  String _textOf(CvEntryField field, CvEntry entry) => switch (field) {
+    CvEntryTextField() => field.read(entry),
+    CvEntryMonthYearField() => field.read(entry)?.format() ?? '',
+    CvEntryFlagField() => field.read(entry) ? field.label : '',
+  };
+
+  /// La période résumée d'un élément : « sept. 2023 → aujourd'hui ».
+  String _periodOf(CvSectionForm form, CvEntry entry) {
+    final dates = form.fields.whereType<CvEntryMonthYearField>().toList();
+    if (dates.isEmpty) return '';
+    final start = dates.first.read(entry);
+    if (start == null) return '';
+    if (dates.length == 1) return start.format();
+    final flags = form.fields.whereType<CvEntryFlagField>().toList();
+    final current = flags.isNotEmpty && flags.first.read(entry);
+    final end = current ? 'aujourd’hui' : dates[1].read(entry)?.format() ?? '';
+    return '${start.format()} → $end';
+  }
+
   @override
   Widget build(BuildContext context) {
     final section = widget.section;
-    final entries = ref.watch(editorDraftProvider).entries[section] ?? [];
-    final editor = ref.read(editorDraftProvider.notifier);
+    final form = cvSectionFormOf(section);
+    if (form == null) return const SizedBox.shrink();
+    final document = ref.watch(cvSessionProvider).document;
+    final entries = form.read(document);
+    final editor = ref.read(cvSessionProvider.notifier);
     if (!_initialized) {
       _expanded = section == CvSection.experiences && entries.isNotEmpty
-          ? entries.first['id']
+          ? entries.first.id
           : null;
       _initialized = true;
     }
-    void add() => setState(() => _expanded = editor.add(section));
+    void add() => setState(() => _expanded = editor.addEntry(section));
     final addButton = section == CvSection.personalInfo
         ? OutlinedButton.icon(
             onPressed: add,
             icon: const Icon(Icons.add, size: 17),
-            label: Text(_addLabels[section]!),
+            label: Text(form.addLabel),
           )
         : FilledButton.tonalIcon(
             onPressed: add,
             icon: const Icon(Icons.add, size: 18),
-            label: Text(_addLabels[section]!),
+            label: Text(form.addLabel),
           );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,21 +414,17 @@ class _EntryListState extends ConsumerState<_EntryList> {
           buildDefaultDragHandles: false,
           itemCount: entries.length,
           onReorderItem: (oldIndex, newIndex) =>
-              editor.reorder(section, oldIndex, newIndex),
+              editor.reorderEntries(section, oldIndex, newIndex),
           itemBuilder: (context, index) {
             final entry = entries[index];
-            final id = entry['id']!;
+            final id = entry.id;
             final expanded = _expanded == id;
-            final labels = _fields[section]!;
-            Widget field(String label) => _DraftField(
-              key: ValueKey('$id/$label'),
-              label: label,
-              value: entry[label] ?? '',
-              enabled: label != 'Fin' || entry['En cours'] != 'true',
-              lines: label.startsWith('Description') ? 4 : 1,
-              calendar: ['Début', 'Fin', 'Date'].contains(label),
-              onChanged: (value) => editor.setEntry(section, id, label, value),
-            );
+            final title = _textOf(form.titleField, entry);
+            final subtitleField = form.subtitleField;
+            final subtitle = subtitleField == null
+                ? ''
+                : _textOf(subtitleField, entry);
+            final period = _periodOf(form, entry);
             return AnimatedContainer(
               key: ValueKey(id),
               duration: const Duration(milliseconds: 160),
@@ -469,24 +469,23 @@ class _EntryListState extends ConsumerState<_EntryList> {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: (entry[labels.first] ?? '').isEmpty
+                                      text: title.isEmpty
                                           ? 'Nouvel élément'
-                                          : entry[labels.first],
+                                          : title,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    if ((entry[labels[1]] ?? '').isNotEmpty)
+                                    if (subtitle.isNotEmpty)
                                       TextSpan(
-                                        text: ' · ${entry[labels[1]]}',
+                                        text: ' · $subtitle',
                                         style: const TextStyle(
                                           color: AppColors.onSurfaceVariant,
                                         ),
                                       ),
-                                    if ((entry['Début'] ?? '').isNotEmpty)
+                                    if (period.isNotEmpty)
                                       TextSpan(
-                                        text:
-                                            " — ${entry['Début']} → ${entry['En cours'] == 'true' ? 'aujourd’hui' : entry['Fin'] ?? ''}",
+                                        text: ' — $period',
                                         style: const TextStyle(
                                           color: AppColors.onSurfaceVariant,
                                         ),
@@ -533,7 +532,7 @@ class _EntryListState extends ConsumerState<_EntryList> {
                               ),
                             );
                             if (confirmed == true && mounted) {
-                              editor.remove(section, id);
+                              editor.removeEntry(section, id);
                             }
                           },
                         ),
@@ -557,50 +556,14 @@ class _EntryListState extends ConsumerState<_EntryList> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _FieldRow(
-                            children: [field(labels[0]), field(labels[1])],
-                          ),
-                          if (section == CvSection.experiences ||
-                              section == CvSection.education) ...[
-                            const SizedBox(height: 14),
-                            _FieldRow(
-                              children: [
-                                field('Lieu'),
-                                field('Début'),
-                                field('Fin'),
-                              ],
+                          for (var row = 0; row < form.rows.length; row++) ...[
+                            if (row > 0) const SizedBox(height: 14),
+                            _EntryRow(
+                              section: section,
+                              entry: entry,
+                              fields: form.rows[row],
                             ),
-                            if (section == CvSection.experiences)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 28,
-                                      height: 34,
-                                      child: Checkbox(
-                                        value: entry['En cours'] == 'true',
-                                        onChanged: (value) => editor.setEntry(
-                                          section,
-                                          id,
-                                          'En cours',
-                                          '$value',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Text('En cours'),
-                                  ],
-                                ),
-                              ),
-                            const SizedBox(height: 14),
-                            field(labels.last),
-                          ] else
-                            for (final label in labels.skip(2)) ...[
-                              const SizedBox(height: 14),
-                              field(label),
-                            ],
+                          ],
                         ],
                       ),
                     ),
@@ -614,6 +577,59 @@ class _EntryListState extends ConsumerState<_EntryList> {
         addButton,
       ],
     );
+  }
+}
+
+/// Une rangée de champs d'un élément répétable.
+///
+/// Une rangée réduite à une case à cocher n'occupe pas toute la largeur.
+class _EntryRow extends ConsumerWidget {
+  const _EntryRow({
+    required this.section,
+    required this.entry,
+    required this.fields,
+  });
+
+  final CvSection section;
+  final CvEntry entry;
+  final List<CvEntryField> fields;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    void write(CvEntry updated, String coalesceKey) => ref
+        .read(cvSessionProvider.notifier)
+        .updateEntry(section, updated, coalesceKey: coalesceKey);
+
+    Widget input(CvEntryField field) {
+      final key = '${entry.id}/${field.label}';
+      return switch (field) {
+        CvEntryTextField() => _TextInput(
+          key: ValueKey(key),
+          label: field.label,
+          value: field.read(entry),
+          lines: field.lines,
+          onChanged: (value) => write(field.write(entry, value), key),
+        ),
+        CvEntryMonthYearField() => _MonthYearInput(
+          key: ValueKey(key),
+          label: field.label,
+          value: field.read(entry),
+          enabled: field.isEnabled?.call(entry) ?? true,
+          onChanged: (value) => write(field.write(entry, value), key),
+        ),
+        CvEntryFlagField() => _FlagInput(
+          key: ValueKey(key),
+          label: field.label,
+          value: field.read(entry),
+          onChanged: (value) => write(field.write(entry, value), key),
+        ),
+      };
+    }
+
+    if (fields.length == 1 && fields.first is CvEntryFlagField) {
+      return Align(alignment: Alignment.centerLeft, child: input(fields.first));
+    }
+    return _FieldRow(children: [for (final field in fields) input(field)]);
   }
 }
 
@@ -654,31 +670,135 @@ class _FieldRow extends StatelessWidget {
   );
 }
 
-class _DraftField extends StatefulWidget {
-  const _DraftField({
+/// Une case à cocher : « En cours », par exemple.
+class _FlagInput extends StatelessWidget {
+  const _FlagInput({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: 28,
+        height: 34,
+        child: Checkbox(
+          value: value,
+          onChanged: (checked) => onChanged(checked ?? false),
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(label),
+    ],
+  );
+}
+
+/// Un mois et une année, choisis dans le sélecteur plutôt que saisis.
+class _MonthYearInput extends StatefulWidget {
+  const _MonthYearInput({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+  final String label;
+  final CvMonthYear? value;
+  final ValueChanged<CvMonthYear?> onChanged;
+  final bool enabled;
+
+  @override
+  State<_MonthYearInput> createState() => _MonthYearInputState();
+}
+
+class _MonthYearInputState extends State<_MonthYearInput> {
+  late final _controller = TextEditingController(text: _text);
+
+  String get _text => widget.value?.format() ?? '';
+
+  @override
+  void didUpdateWidget(covariant _MonthYearInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_controller.text != _text) _controller.text = _text;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick() async {
+    final selection = await showMonthYearPicker(
+      context,
+      label: widget.label,
+      initialValue: widget.value,
+    );
+    if (selection == null || selection.value == widget.value) return;
+    widget.onChanged(selection.value);
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 44,
+    child: TextField(
+      controller: _controller,
+      enabled: widget.enabled,
+      // Les dates se choisissent dans le sélecteur, sans saisie libre.
+      readOnly: true,
+      onTap: _pick,
+      mouseCursor: SystemMouseCursors.click,
+      maxLines: 1,
+      style: const TextStyle(fontSize: 13, height: 1.2),
+      decoration: InputDecoration(
+        labelText: widget.label,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        fillColor: widget.enabled
+            ? AppColors.surfaceContainerLow
+            : AppColors.disabledFill,
+        hintText: 'Choisir…',
+        hintStyle: const TextStyle(fontSize: 13, color: AppColors.disabled),
+        suffixIcon: const Icon(Icons.calendar_month_outlined, size: 17),
+        suffixIconConstraints: const BoxConstraints(minWidth: 28),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 13,
+        ),
+      ),
+    ),
+  );
+}
+
+class _TextInput extends StatefulWidget {
+  const _TextInput({
     super.key,
     required this.label,
     required this.value,
     required this.onChanged,
     this.lines = 1,
-    this.enabled = true,
-    this.calendar = false,
   });
   final String label;
   final String value;
   final ValueChanged<String> onChanged;
   final int lines;
-  final bool enabled;
-  final bool calendar;
   @override
-  State<_DraftField> createState() => _DraftFieldState();
+  State<_TextInput> createState() => _TextInputState();
 }
 
-class _DraftFieldState extends State<_DraftField> {
+class _TextInputState extends State<_TextInput> {
   late final _controller = TextEditingController(text: widget.value);
+
   @override
-  void didUpdateWidget(covariant _DraftField oldWidget) {
+  void didUpdateWidget(covariant _TextInput oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Une annulation restaure l'état : le champ doit suivre.
     if (_controller.text != widget.value) {
       _controller.value = TextEditingValue(
         text: widget.value,
@@ -693,42 +813,19 @@ class _DraftFieldState extends State<_DraftField> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final value = await showMonthYearPicker(
-      context,
-      label: widget.label,
-      initialValue: _controller.text,
-    );
-    if (value == null || value == _controller.text || !mounted) return;
-    _controller.text = value;
-    widget.onChanged(value);
-  }
-
   @override
   Widget build(BuildContext context) => SizedBox(
     height: widget.lines == 1 ? 44 : null,
     child: TextField(
       controller: _controller,
       onChanged: widget.onChanged,
-      enabled: widget.enabled,
-      // Les dates se choisissent dans le sélecteur, sans saisie libre.
-      readOnly: widget.calendar,
-      onTap: widget.calendar ? _pickDate : null,
-      mouseCursor: widget.calendar ? SystemMouseCursors.click : null,
       minLines: widget.lines,
       maxLines: widget.lines == 1 ? 1 : null,
       style: TextStyle(fontSize: 13, height: widget.lines == 1 ? 1.2 : 1.6),
       decoration: InputDecoration(
         labelText: widget.label,
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        fillColor: widget.enabled
-            ? AppColors.surfaceContainerLow
-            : AppColors.disabledFill,
-        hintText: widget.calendar ? 'Choisir…' : null,
-        hintStyle: const TextStyle(fontSize: 13, color: AppColors.disabled),
-        suffixIcon: widget.calendar
-            ? const Icon(Icons.calendar_month_outlined, size: 17)
-            : null,
+        fillColor: AppColors.surfaceContainerLow,
         suffixIconConstraints: const BoxConstraints(minWidth: 28),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,

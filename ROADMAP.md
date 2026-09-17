@@ -28,42 +28,40 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | ----- | ------------------------------------------ | --------- | ------- |
 | J0    | Fondations du projet                       | —         | Terminé |
 | J1    | Modèle de données immuable                 | J0        | Terminé |
-| J2    | Identité → PDF paginé → aperçu              | J1        | Partiel |
+| J2    | Identité → PDF paginé → aperçu              | J1        | Terminé |
 | J3    | Formulaires de toutes les sections          | J2        | Terminé |
 | J4    | Undo / redo                                 | J3        | Terminé |
-| JD    | Résorption des dettes structurelles         | J4        | À faire |
+| JD    | Résorption des dettes structurelles         | J4        | Terminé |
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
-| J6    | Photo de session                            | J5        | Partiel |
+| J6    | Photo de session                            | J5        | Terminé |
 | J7    | Export PDF                                  | J6        | Terminé |
 | J8    | Catalogue de modèles                        | JD, J5    | Partiel |
 | J9    | Finitions et validation du MVP              | J7, J8    | À faire |
 
 ## État au 17 septembre 2026
 
-`fvm flutter analyze` ne signale aucun problème et les 143 tests passent.
+`fvm flutter analyze` ne signale aucun problème et les 182 tests passent.
 
-Les jalons J2 à J8 ont été abordés hors de l'ordre prévu et deux écarts
-structurels restent à résorber. Ils bloquent la fin du J2 et du J8, et il vaut
-mieux les traiter **avant** le J5 : une persistance construite sur la
-représentation actuelle figerait ce format dans la base et imposerait ensuite
-une migration de schéma. Le jalon **JD**, intercalé entre le J4 et le J5, les
-prend en charge.
+Le jalon JD a résorbé les deux dettes structurelles qui bloquaient la fin du
+J2 : `CvDocument` est désormais la seule représentation d'un CV dans
+l'application, et le générateur PDF ne lit sa mise en forme que dans une
+`CvDesignSpec`. Les jalons J2, J3, J4, J6 et J7 sont terminés.
 
-1. **Le modèle du J1 n'est pas branché.** `CvDocument` et ses sous-modèles sont
-   définis et testés, mais l'éditeur et le générateur PDF travaillent sur une
-   structure parallèle, `EditorDraft`, à base de `Map<String, String>` dont les
-   clés sont les libellés français des champs. Deux représentations concurrentes
-   du même CV coexistent, et la seule sérialisable n'est pas celle qui est
-   utilisée.
-2. **`CvDesignSpec` n'existe pas.** `CvDesign` est un simple enum à trois
-   valeurs et le générateur PDF teste l'identité du modèle pour décider des
-   couleurs, des tailles et des décorations — précisément ce que le J2 et le J8
-   interdisent.
+Le **J5 reste entier** : `drift` et `drift_flutter` figurent dans
+`pubspec.yaml` mais ne sont utilisés nulle part. Rien n'est persisté d'un
+lancement à l'autre, ce qui laisse en suspens le dernier point du J8 —
+retrouver le modèle choisi à la réouverture. `CvDocument.toJson` est prêt à
+devenir la colonne document de la table drift.
 
-Le J5 n'a fait l'objet d'aucune implémentation : `drift` et `drift_flutter`
-figurent dans `pubspec.yaml` mais ne sont utilisés nulle part. Rien n'est
-persisté d'un lancement à l'autre, ce qui laisse aussi en suspens les points du
-J6 et du J8 qui dépendent d'une sauvegarde ou d'une réouverture.
+Trois changements de comportement introduits par le JD, à connaître :
+
+- toutes les sections facultatives sont visibles au départ, alors que les
+  centres d'intérêt et les références étaient masqués par l'ancien état de
+  visibilité provisoire ;
+- le CV d'exemple du J1 remplit toutes les sections et occupe donc deux pages
+  A4, contre une seule pour l'ancien jeu de données ;
+- les projets exposent leur rôle et leur lien, et la date d'une certification
+  s'affiche en regard de son intitulé plutôt que dans celui-ci.
 
 ---
 
@@ -126,19 +124,20 @@ des tests unitaires.
 **Objectif :** valider tôt le cœur du produit, de la saisie à l'affichage du PDF
 réel, avec pagination et fonctionnement hors ligne.
 
-- [x] Créer le provider du CV en cours d'édition. ⚠ Il expose un `EditorDraft`
-  et non le `CvDocument` du J1 ; à migrer. → JD.2
+- [x] Créer le provider du CV en cours d'édition.
 - [x] Développer le formulaire des informations personnelles (sans photo).
-- [ ] Définir la description de modèle (`CvDesignSpec`) avec ses quatre groupes
+- [x] Définir la description de modèle (`CvDesignSpec`) avec ses quatre groupes
   de propriétés décrits en section 5.9 du cahier des charges : structure,
-  en-tête, jetons visuels, décorations de section. → JD.1
-- [ ] Créer le générateur PDF : une fonction pure
+  en-tête, jetons visuels, décorations de section.
+- [x] Créer le générateur PDF : une fonction pure
   `(CvDocument, CvDesignSpec) → bytes PDF`, au format A4 portrait, avec texte
   sélectionnable. Le générateur lit toutes ses décisions de mise en forme dans
   la description ; aucune couleur, taille ni variante ne doit être codée en dur
-  ni dépendre d'un test sur l'identité du modèle. → JD.1 et JD.2
-- [ ] Fournir la description du modèle professionnel par défaut, en une seule
-  colonne. → JD.1
+  ni dépendre d'un test sur l'identité du modèle. ⚠ La photo du J6 se passe en
+  paramètre nommé facultatif : elle n'est pas persistée et n'appartient donc pas
+  au document.
+- [x] Fournir la description du modèle professionnel par défaut, en une seule
+  colonne.
 - [x] Implémenter la pagination automatique sur plusieurs pages A4 avant
   l'ajout des formulaires de toutes les sections.
 - [x] Ne jamais séparer un titre de section de son premier contenu.
@@ -192,8 +191,7 @@ sections masquées n'y apparaissent plus.
 **Objectif :** annuler et rétablir toute modification du CV pendant la session.
 
 - [x] Implémenter un historique basé sur les états immuables du CV (piles
-  « passé » et « futur »), incluant l'état de session prévu au J1. ⚠ L'historique
-  empile des `EditorDraft` ; il suivra la migration vers `CvSession`. → JD.2
+  « passé » et « futur »), incluant l'état de session prévu au J1.
 - [x] Regrouper les frappes successives dans un même champ en une seule étape.
 - [x] Brancher toutes les modifications existantes sur l'historique : saisie,
   ajout, suppression, réorganisation, visibilité des sections.
@@ -227,37 +225,38 @@ le contenu.
 
 ### JD.1 — Décrire les modèles par des données
 
-- [ ] Créer `CvDesignSpec` dans le domaine, avec les quatre groupes de
+- [x] Créer `CvDesignSpec` dans le domaine, avec les quatre groupes de
   propriétés de la section 5.9 du cahier des charges : structure, en-tête,
   jetons visuels, décorations de section.
-- [ ] Décrire les trois modèles intégrés par une constante `CvDesignSpec`, le
+- [x] Décrire les trois modèles intégrés par une constante `CvDesignSpec`, le
   modèle professionnel servant de repli.
-- [ ] Exposer `CvDesign.spec` comme unique correspondance entre l'identifiant du
+- [x] Exposer `CvDesign.spec` comme unique correspondance entre l'identifiant du
   modèle et sa description.
-- [ ] Remplacer dans le générateur PDF chaque test sur `CvDesign` par une
+- [x] Remplacer dans le générateur PDF chaque test sur `CvDesign` par une
   lecture dans la description : couleur d'accent, taille et casse des titres,
   interlettrage, cadre des en-têtes de section.
-- [ ] Vérifier par un test que le générateur ne référence plus `CvDesign`.
-- [ ] Couvrir le rendu de chacune des trois descriptions.
+- [x] Vérifier par un test que le générateur ne référence plus `CvDesign`.
+- [x] Couvrir le rendu de chacune des trois descriptions.
 
 **Terminé quand :** le générateur PDF ne connaît plus que `CvDesignSpec`, et
 ajouter un modèle ne demande qu'une nouvelle constante.
 
 ### JD.2 — Brancher le modèle du J1
 
-- [ ] Remplacer `EditorDraft` par `CvSession` dans le provider d'édition,
+- [x] Remplacer `EditorDraft` par `CvSession` dans le provider d'édition,
   historique compris.
-- [ ] Introduire, par section, des descripteurs reliant le libellé affiché d'un
+- [x] Introduire, par section, des descripteurs reliant le libellé affiché d'un
   champ à sa lecture et à son écriture typées, afin de conserver le formulaire
   générique et ses tests.
-- [ ] Rendre au sélecteur de mois son type : `CvMonthYear` plutôt qu'une chaîne
-  formatée.
-- [ ] Traiter « En cours » comme le booléen `CvDateRange.isCurrent`.
-- [ ] Faire lire au générateur PDF un `CvDocument`, et la visibilité des
-  sections depuis `CvPresentationPreferences`.
-- [ ] Supprimer `EditorDraft` et les accès par libellé français
+- [x] Rendre au sélecteur de mois son type : `CvMonthYear` plutôt qu'une chaîne
+  formatée. Un effacement se distingue désormais d'une annulation.
+- [x] Traiter « En cours » comme le booléen `CvDateRange.isCurrent`.
+- [x] Faire lire au générateur PDF un `CvDocument`, et la visibilité des
+  sections depuis `CvPresentationPreferences`. L'état de visibilité provisoire
+  a disparu.
+- [x] Supprimer `EditorDraft` et les accès par libellé français
   (`fields['Prénom']`).
-- [ ] Mettre à jour les tests concernés et couvrir l'aller-retour JSON du
+- [x] Mettre à jour les tests concernés et couvrir l'aller-retour JSON du
   document tenu par l'éditeur.
 
 **Terminé quand :** `CvDocument` est la seule représentation d'un CV dans
@@ -305,8 +304,8 @@ session.
 - [x] Sélectionner une image depuis le disque.
 - [x] Conserver la photo en mémoire, associée au CV, pendant la session
   uniquement.
-- [ ] Exclure la photo du JSON sauvegardé. Rien n'est encore sauvegardé ;
-  à vérifier une fois le J5 en place.
+- [x] Exclure la photo du JSON sauvegardé. ⚠ Vérifié sur `CvDocument.toJson` ;
+  à reconfirmer sur la base au J5.
 - [x] Afficher la photo dans le PDF.
 - [x] Retirer ou remplacer la photo.
 - [x] Inclure les changements de photo dans l'historique undo/redo.
@@ -341,10 +340,9 @@ toucher au contenu.
 Ce jalon ne dépend que du J5 (le modèle sélectionné doit être persisté) et peut
 donc être mené en parallèle du J6 et du J7.
 
-- [ ] Décrire chaque modèle intégré par une `CvDesignSpec` : professionnel,
-  moderne et minimaliste. ⚠ Les trois modèles existent et sont sélectionnables,
-  mais le générateur PDF teste encore l'identifiant du modèle pour choisir ses
-  couleurs et ses décorations. Ces branches doivent disparaître. → JD.1
+- [x] Décrire chaque modèle intégré par une `CvDesignSpec` : professionnel,
+  moderne et minimaliste. Aucune branche conditionnelle sur l'identifiant du
+  modèle ne subsiste dans le générateur PDF.
 - [x] Conserver la structure en une seule colonne pour tous les modèles du MVP.
 - [ ] Persister l'identifiant du modèle avec le CV et retomber sur le modèle
   professionnel si l'identifiant est inconnu. ⚠ `CvDesign.fromId` assure déjà le
@@ -355,7 +353,7 @@ donc être mené en parallèle du J6 et du J7.
   identifié, sélection et fermeture.
 - [x] Déclencher la régénération du PDF au changement de modèle et inclure ce
   changement dans l'historique undo/redo.
-- [ ] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
+- [x] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
   ni la visibilité des sections.
 
 **Terminé quand :** l'utilisateur choisit un modèle dans le catalogue, l'aperçu

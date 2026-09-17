@@ -3,21 +3,31 @@ import 'package:flutter/material.dart';
 import '../../../../app/app_theme.dart';
 import '../../domain/cv_month_year.dart';
 
+/// Ce que l'utilisateur a choisi dans le sélecteur de date.
+///
+/// Un effacement et une annulation ne se confondent pas : l'annulation ne
+/// retourne aucune sélection, l'effacement retourne une sélection vide.
+class CvMonthYearSelection {
+  const CvMonthYearSelection(this.value);
+
+  /// La date choisie, ou `null` si l'utilisateur a effacé le champ.
+  final CvMonthYear? value;
+}
+
 /// Ouvre le sélecteur de mois et d'année d'un champ de date du CV.
 ///
-/// Retourne la date formatée, une chaîne vide si l'utilisateur efface la date,
-/// ou `null` s'il annule.
-Future<String?> showMonthYearPicker(
+/// Retourne `null` si l'utilisateur annule.
+Future<CvMonthYearSelection?> showMonthYearPicker(
   BuildContext context, {
   required String label,
-  String initialValue = '',
+  CvMonthYear? initialValue,
 }) {
-  return showDialog<String>(
+  return showDialog<CvMonthYearSelection>(
     context: context,
     builder: (context) => MonthYearPickerDialog(
       label: label,
-      initial: CvMonthYear.tryParse(initialValue),
-      hasValue: initialValue.trim().isNotEmpty,
+      initial: initialValue,
+      hasValue: initialValue != null,
     ),
   );
 }
@@ -104,15 +114,17 @@ class _MonthYearPickerDialogState extends State<MonthYearPickerDialog> {
                           initial?.year == _year && initial?.month == month,
                       onPressed: () => Navigator.pop(
                         context,
-                        CvMonthYear(_year, month).format(),
+                        CvMonthYearSelection(CvMonthYear(_year, month)),
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 8),
               OutlinedButton(
-                onPressed: () =>
-                    Navigator.pop(context, CvMonthYear(_year).format()),
+                onPressed: () => Navigator.pop(
+                  context,
+                  CvMonthYearSelection(CvMonthYear(_year)),
+                ),
                 child: Text('Année $_year seule'),
               ),
               const SizedBox(height: 8),
@@ -120,7 +132,10 @@ class _MonthYearPickerDialogState extends State<MonthYearPickerDialog> {
                 children: [
                   if (widget.hasValue)
                     TextButton(
-                      onPressed: () => Navigator.pop(context, ''),
+                      onPressed: () => Navigator.pop(
+                        context,
+                        const CvMonthYearSelection(null),
+                      ),
                       child: const Text('Effacer'),
                     ),
                   const Spacer(),
