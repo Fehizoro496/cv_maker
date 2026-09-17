@@ -24,18 +24,46 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 
 ## Vue d'ensemble
 
-| Jalon | Objectif                                   | Dépend de |
-| ----- | ------------------------------------------ | --------- |
-| J0    | Fondations du projet                       | —         |
-| J1    | Modèle de données immuable                 | J0        |
-| J2    | Identité → PDF paginé → aperçu              | J1        |
-| J3    | Formulaires de toutes les sections          | J2        |
-| J4    | Undo / redo                                 | J3        |
-| J5    | Persistance SQLite et gestion multi-CV      | J4        |
-| J6    | Photo de session                            | J5        |
-| J7    | Export PDF                                  | J6        |
-| J8    | Catalogue de modèles                        | J5        |
-| J9    | Finitions et validation du MVP              | J7, J8    |
+| Jalon | Objectif                                   | Dépend de | État    |
+| ----- | ------------------------------------------ | --------- | ------- |
+| J0    | Fondations du projet                       | —         | Terminé |
+| J1    | Modèle de données immuable                 | J0        | Terminé |
+| J2    | Identité → PDF paginé → aperçu              | J1        | Partiel |
+| J3    | Formulaires de toutes les sections          | J2        | Terminé |
+| J4    | Undo / redo                                 | J3        | Terminé |
+| JD    | Résorption des dettes structurelles         | J4        | À faire |
+| J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
+| J6    | Photo de session                            | J5        | Partiel |
+| J7    | Export PDF                                  | J6        | Terminé |
+| J8    | Catalogue de modèles                        | JD, J5    | Partiel |
+| J9    | Finitions et validation du MVP              | J7, J8    | À faire |
+
+## État au 17 septembre 2026
+
+`fvm flutter analyze` ne signale aucun problème et les 143 tests passent.
+
+Les jalons J2 à J8 ont été abordés hors de l'ordre prévu et deux écarts
+structurels restent à résorber. Ils bloquent la fin du J2 et du J8, et il vaut
+mieux les traiter **avant** le J5 : une persistance construite sur la
+représentation actuelle figerait ce format dans la base et imposerait ensuite
+une migration de schéma. Le jalon **JD**, intercalé entre le J4 et le J5, les
+prend en charge.
+
+1. **Le modèle du J1 n'est pas branché.** `CvDocument` et ses sous-modèles sont
+   définis et testés, mais l'éditeur et le générateur PDF travaillent sur une
+   structure parallèle, `EditorDraft`, à base de `Map<String, String>` dont les
+   clés sont les libellés français des champs. Deux représentations concurrentes
+   du même CV coexistent, et la seule sérialisable n'est pas celle qui est
+   utilisée.
+2. **`CvDesignSpec` n'existe pas.** `CvDesign` est un simple enum à trois
+   valeurs et le générateur PDF teste l'identité du modèle pour décider des
+   couleurs, des tailles et des décorations — précisément ce que le J2 et le J8
+   interdisent.
+
+Le J5 n'a fait l'objet d'aucune implémentation : `drift` et `drift_flutter`
+figurent dans `pubspec.yaml` mais ne sont utilisés nulle part. Rien n'est
+persisté d'un lancement à l'autre, ce qui laisse aussi en suspens les points du
+J6 et du J8 qui dépendent d'une sauvegarde ou d'une réouverture.
 
 ---
 
@@ -98,32 +126,34 @@ des tests unitaires.
 **Objectif :** valider tôt le cœur du produit, de la saisie à l'affichage du PDF
 réel, avec pagination et fonctionnement hors ligne.
 
-- [ ] Créer le provider du CV en cours d'édition.
-- [ ] Développer le formulaire des informations personnelles (sans photo).
+- [x] Créer le provider du CV en cours d'édition. ⚠ Il expose un `EditorDraft`
+  et non le `CvDocument` du J1 ; à migrer. → JD.2
+- [x] Développer le formulaire des informations personnelles (sans photo).
 - [ ] Définir la description de modèle (`CvDesignSpec`) avec ses quatre groupes
   de propriétés décrits en section 5.9 du cahier des charges : structure,
-  en-tête, jetons visuels, décorations de section.
+  en-tête, jetons visuels, décorations de section. → JD.1
 - [ ] Créer le générateur PDF : une fonction pure
   `(CvDocument, CvDesignSpec) → bytes PDF`, au format A4 portrait, avec texte
   sélectionnable. Le générateur lit toutes ses décisions de mise en forme dans
   la description ; aucune couleur, taille ni variante ne doit être codée en dur
-  ni dépendre d'un test sur l'identité du modèle.
+  ni dépendre d'un test sur l'identité du modèle. → JD.1 et JD.2
 - [ ] Fournir la description du modèle professionnel par défaut, en une seule
-  colonne.
-- [ ] Implémenter la pagination automatique sur plusieurs pages A4 avant
+  colonne. → JD.1
+- [x] Implémenter la pagination automatique sur plusieurs pages A4 avant
   l'ajout des formulaires de toutes les sections.
-- [ ] Ne jamais séparer un titre de section de son premier contenu.
-- [ ] Tester le moteur de mise en page avec des données d'exemple longues :
+- [x] Ne jamais séparer un titre de section de son premier contenu.
+- [x] Tester le moteur de mise en page avec des données d'exemple longues :
   plusieurs sections, éléments répétés et description dépassant une page,
   sans perte de contenu ni débordement.
-- [ ] Afficher le PDF dans la zone de droite.
-- [ ] Régénérer automatiquement le PDF après une courte pause dans la saisie
+- [x] Afficher le PDF dans la zone de droite.
+- [x] Régénérer automatiquement le PDF après une courte pause dans la saisie
   (debounce).
-- [ ] Ajouter le bouton « Rafraîchir » qui force la régénération.
-- [ ] Afficher un indicateur pendant la génération.
-- [ ] Garantir qu'une génération plus ancienne ne remplace jamais une plus
-  récente (numéro de version de génération).
-- [ ] Permettre le zoom et le défilement dans l'aperçu.
+- [x] Ajouter le bouton « Rafraîchir » qui force la régénération.
+- [x] Afficher un indicateur pendant la génération.
+- [x] Garantir qu'une génération plus ancienne ne remplace jamais une plus
+  récente. ⚠ Obtenu par l'invalidation du provider d'aperçu plutôt que par un
+  numéro de version explicite ; l'export compare les futures avant d'écrire.
+- [x] Permettre le zoom et le défilement dans l'aperçu.
 
 **Terminé quand :** une saisie dans le formulaire apparaît dans le PDF à droite,
 automatiquement ou via « Rafraîchir », accents compris, sans connexion réseau.
@@ -136,20 +166,21 @@ l'aperçu, sans titre isolé ni contenu tronqué.
 
 **Objectif :** pouvoir renseigner l'intégralité d'un CV.
 
-- [ ] Profil professionnel.
-- [ ] Expériences : champs, option « En cours », ajout, suppression,
+- [x] Profil professionnel.
+- [x] Expériences : champs, option « En cours », ajout, suppression,
   réorganisation.
-- [ ] Formations : champs, ajout, suppression, réorganisation.
-- [ ] Compétences : catégorie et niveau facultatifs, réorganisation,
+- [x] Formations : champs, ajout, suppression, réorganisation.
+- [x] Compétences : catégorie et niveau facultatifs, réorganisation,
   suppression.
-- [ ] Langues : niveau choisi ou saisi, réorganisation, suppression.
-- [ ] Sections complémentaires : certifications, projets, centres d'intérêt,
+- [x] Langues : niveau choisi ou saisi, réorganisation, suppression.
+- [x] Sections complémentaires : certifications, projets, centres d'intérêt,
   références ou informations complémentaires.
-- [ ] Afficher ou masquer chaque section facultative.
-- [ ] Confirmation avant les suppressions importantes.
-- [ ] Rendre toutes ces sections dans le modèle PDF.
+- [x] Afficher ou masquer chaque section facultative.
+- [x] Confirmation avant les suppressions importantes.
+- [x] Rendre toutes ces sections dans le modèle PDF.
 - [ ] Vérifier la pagination de chaque section avec des contenus longs en
-  réutilisant le moteur validé au J2.
+  réutilisant le moteur validé au J2. ⚠ Un seul test couvre les sections
+  répétées ; les autres ne sont pas vérifiées individuellement.
 
 **Terminé quand :** chaque section est éditable et visible dans le PDF, et les
 sections masquées n'y apparaissent plus.
@@ -160,20 +191,78 @@ sections masquées n'y apparaissent plus.
 
 **Objectif :** annuler et rétablir toute modification du CV pendant la session.
 
-- [ ] Implémenter un historique basé sur les états immuables du CV (piles
-  « passé » et « futur »), incluant l'état de session prévu au J1.
-- [ ] Regrouper les frappes successives dans un même champ en une seule étape.
-- [ ] Brancher toutes les modifications existantes sur l'historique : saisie,
+- [x] Implémenter un historique basé sur les états immuables du CV (piles
+  « passé » et « futur »), incluant l'état de session prévu au J1. ⚠ L'historique
+  empile des `EditorDraft` ; il suivra la migration vers `CvSession`. → JD.2
+- [x] Regrouper les frappes successives dans un même champ en une seule étape.
+- [x] Brancher toutes les modifications existantes sur l'historique : saisie,
   ajout, suppression, réorganisation, visibilité des sections.
-- [ ] Raccourcis `Ctrl+Z`, `Ctrl+Y` et `Ctrl+Maj+Z`.
-- [ ] Boutons « Annuler » et « Rétablir », désactivés lorsqu'aucune action n'est
+- [x] Raccourcis `Ctrl+Z`, `Ctrl+Y` et `Ctrl+Maj+Z`.
+- [x] Boutons « Annuler » et « Rétablir », désactivés lorsqu'aucune action n'est
   disponible.
-- [ ] Synchroniser les champs de formulaire avec l'état restauré.
-- [ ] Déclencher la régénération du PDF après une annulation ou un
+- [x] Synchroniser les champs de formulaire avec l'état restauré.
+- [x] Déclencher la régénération du PDF après une annulation ou un
   rétablissement.
 
 **Terminé quand :** toute modification des jalons précédents peut être annulée
 puis rétablie, et le formulaire comme le PDF reflètent l'état restauré.
+
+---
+
+## JD — Résorption des dettes structurelles
+
+**Objectif :** ramener le code sur les fondations posées au J1 et prévues au J2,
+avant que la persistance ne fige la représentation actuelle.
+
+Ce jalon n'ajoute aucune fonctionnalité visible. Il ferme les points restants du
+J2 et du J8, et doit précéder le J5 : `CvDocument.toJson` est destiné à devenir
+la colonne document de la table drift ; enregistrer la structure actuelle
+imposerait une migration de schéma pour en sortir.
+
+Les deux étapes convergent sur la signature du générateur PDF, aujourd'hui
+`(EditorDraft, Map<CvSection, bool>) → bytes` et attendue en
+`(CvDocument, CvDesignSpec) → bytes` : chacune en change une moitié. JD.1 vient
+en premier parce qu'elle est isolée et ne dépend pas de la structure qui porte
+le contenu.
+
+### JD.1 — Décrire les modèles par des données
+
+- [ ] Créer `CvDesignSpec` dans le domaine, avec les quatre groupes de
+  propriétés de la section 5.9 du cahier des charges : structure, en-tête,
+  jetons visuels, décorations de section.
+- [ ] Décrire les trois modèles intégrés par une constante `CvDesignSpec`, le
+  modèle professionnel servant de repli.
+- [ ] Exposer `CvDesign.spec` comme unique correspondance entre l'identifiant du
+  modèle et sa description.
+- [ ] Remplacer dans le générateur PDF chaque test sur `CvDesign` par une
+  lecture dans la description : couleur d'accent, taille et casse des titres,
+  interlettrage, cadre des en-têtes de section.
+- [ ] Vérifier par un test que le générateur ne référence plus `CvDesign`.
+- [ ] Couvrir le rendu de chacune des trois descriptions.
+
+**Terminé quand :** le générateur PDF ne connaît plus que `CvDesignSpec`, et
+ajouter un modèle ne demande qu'une nouvelle constante.
+
+### JD.2 — Brancher le modèle du J1
+
+- [ ] Remplacer `EditorDraft` par `CvSession` dans le provider d'édition,
+  historique compris.
+- [ ] Introduire, par section, des descripteurs reliant le libellé affiché d'un
+  champ à sa lecture et à son écriture typées, afin de conserver le formulaire
+  générique et ses tests.
+- [ ] Rendre au sélecteur de mois son type : `CvMonthYear` plutôt qu'une chaîne
+  formatée.
+- [ ] Traiter « En cours » comme le booléen `CvDateRange.isCurrent`.
+- [ ] Faire lire au générateur PDF un `CvDocument`, et la visibilité des
+  sections depuis `CvPresentationPreferences`.
+- [ ] Supprimer `EditorDraft` et les accès par libellé français
+  (`fields['Prénom']`).
+- [ ] Mettre à jour les tests concernés et couvrir l'aller-retour JSON du
+  document tenu par l'éditeur.
+
+**Terminé quand :** `CvDocument` est la seule représentation d'un CV dans
+l'application, l'aperçu et l'export sont inchangés à contenu égal, et
+`fvm flutter analyze` comme `fvm flutter test` réussissent.
 
 ---
 
@@ -183,8 +272,9 @@ puis rétablie, et le formulaire comme le PDF reflètent l'état restauré.
 
 - [ ] Initialiser la base drift (`drift_flutter`) dans le dossier de données de
   l'application.
-- [ ] Créer la table drift des CV : identifiant, nom, dates, document JSON,
-  avec un schéma versionné et une stratégie de migration.
+- [ ] Créer la table drift des CV : identifiant, nom, dates, document JSON
+  produit par `CvDocument.toJson` (voir JD.2), avec un schéma versionné et une
+  stratégie de migration.
 - [ ] Implémenter le repository : lister, lire, créer, mettre à jour,
   supprimer.
 - [ ] Sauvegarde automatique après modification (debounce).
@@ -212,13 +302,14 @@ session.
 
 **Objectif :** ajouter une photo au CV sans la persister.
 
-- [ ] Sélectionner une image depuis le disque.
-- [ ] Conserver la photo en mémoire, associée au CV, pendant la session
+- [x] Sélectionner une image depuis le disque.
+- [x] Conserver la photo en mémoire, associée au CV, pendant la session
   uniquement.
-- [ ] Exclure la photo du JSON sauvegardé.
-- [ ] Afficher la photo dans le PDF.
-- [ ] Retirer ou remplacer la photo.
-- [ ] Inclure les changements de photo dans l'historique undo/redo.
+- [ ] Exclure la photo du JSON sauvegardé. Rien n'est encore sauvegardé ;
+  à vérifier une fois le J5 en place.
+- [x] Afficher la photo dans le PDF.
+- [x] Retirer ou remplacer la photo.
+- [x] Inclure les changements de photo dans l'historique undo/redo.
 
 **Terminé quand :** la photo apparaît dans le PDF pendant la session et est
 absente après un redémarrage, sans erreur.
@@ -229,13 +320,13 @@ absente après un redémarrage, sans erreur.
 
 **Objectif :** enregistrer localement le PDF paginé déjà validé dans l'aperçu.
 
-- [ ] Bouton « Exporter » avec dialogue d'enregistrement Windows (nom et
+- [x] Bouton « Exporter » avec dialogue d'enregistrement Windows (nom et
   emplacement).
-- [ ] Si le PDF affiché n'est pas à jour, déclencher ou attendre la
+- [x] Si le PDF affiché n'est pas à jour, déclencher ou attendre la
   régénération avant l'export.
-- [ ] Mettre à jour l'aperçu avec ce PDF et exporter exactement les mêmes
+- [x] Mettre à jour l'aperçu avec ce PDF et exporter exactement les mêmes
   octets.
-- [ ] Message clair en cas d'échec de l'export.
+- [x] Message clair en cas d'échec de l'export.
 
 **Terminé quand :** un CV long est exporté sur plusieurs pages, identique à
 l'aperçu, même si l'export est demandé juste après une modification.
@@ -251,16 +342,18 @@ Ce jalon ne dépend que du J5 (le modèle sélectionné doit être persisté) et
 donc être mené en parallèle du J6 et du J7.
 
 - [ ] Décrire chaque modèle intégré par une `CvDesignSpec` : professionnel,
-  moderne et minimaliste. Aucune branche conditionnelle sur l'identifiant du
-  modèle ne doit subsister dans le générateur PDF.
-- [ ] Conserver la structure en une seule colonne pour tous les modèles du MVP.
+  moderne et minimaliste. ⚠ Les trois modèles existent et sont sélectionnables,
+  mais le générateur PDF teste encore l'identifiant du modèle pour choisir ses
+  couleurs et ses décorations. Ces branches doivent disparaître. → JD.1
+- [x] Conserver la structure en une seule colonne pour tous les modèles du MVP.
 - [ ] Persister l'identifiant du modèle avec le CV et retomber sur le modèle
-  professionnel si l'identifiant est inconnu.
-- [ ] Générer les vignettes du catalogue depuis les modèles PDF réels, sur un CV
+  professionnel si l'identifiant est inconnu. ⚠ `CvDesign.fromId` assure déjà le
+  repli ; la persistance attend le J5.
+- [x] Générer les vignettes du catalogue depuis les modèles PDF réels, sur un CV
   d'exemple, et les livrer dans les assets.
-- [ ] Afficher le catalogue : vignette, libellé, description, modèle courant
+- [x] Afficher le catalogue : vignette, libellé, description, modèle courant
   identifié, sélection et fermeture.
-- [ ] Déclencher la régénération du PDF au changement de modèle et inclure ce
+- [x] Déclencher la régénération du PDF au changement de modèle et inclure ce
   changement dans l'historique undo/redo.
 - [ ] Tester qu'un changement de modèle ne modifie ni le contenu, ni l'ordre,
   ni la visibilité des sections.
@@ -305,6 +398,11 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   génération que l'aperçu, grâce au numéro de version introduit au J2.
 - **Choix des packages :** les packages listés au J0 sont des propositions à
   confirmer lors de la mise en place.
+- **Ordre du JD :** JD.2 touche le provider d'édition, les formulaires, le
+  générateur PDF et une bonne partie des tests. La faire passer par des
+  descripteurs de champ plutôt que par des formulaires typés par section garde
+  le diff proportionné ; des formulaires spécifiques n'apporteront quelque chose
+  que le jour où les sections divergeront vraiment.
 - **Compatibilité ATS :** les systèmes ATS lisent le PDF de façon linéaire.
   Une colonne latérale fait entrelacer les compétences avec les intitulés de
   poste et dégrade fortement l'extraction des champs ; le texte placé dans un
