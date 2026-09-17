@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&display=block" rel="stylesheet">
+<style>
+  body { margin:0; background:#E4E7EB; font-family:"Segoe UI","Segoe UI Variable",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#2F5D8C; text-decoration:none; }
+  a:hover { color:#14395E; text-decoration:underline; }
+  .ms { font-family:"Material Symbols Outlined"; font-weight:400; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; display:inline-block; white-space:nowrap; direction:ltr; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</helmet>
+
+<section style="padding:56px 56px 40px;display:flex;flex-direction:column;gap:72px;color:#1A1C1E">
+
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <div style="font-family:ui-monospace,Consolas,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#43474E">CV Maker — Application de bureau Windows · Flutter Material 3</div>
+    <div style="font-size:34px;font-weight:600;letter-spacing:-.01em">Maquettes de conception</div>
+    <div style="font-size:14px;line-height:1.55;color:#43474E;text-wrap:pretty">Six livrables : écran principal (1440 × 900), fenêtre étroite, liste des CV et premier lancement, états et dialogues, modèle de CV A4, tokens de design. Mode clair, densité compacte, couleur de base #2F5D8C.</div>
+  </div>
+
+  <!-- ============ 1 · ÉCRAN PRINCIPAL — INFORMATIONS PERSONNELLES ============ -->
+  <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">1a</span>
+      <span style="font-size:17px;font-weight:600">Écran principal — Informations personnelles · 1440 × 900</span>
+    </div>
+
+    <div data-screen-label="01 Écran principal – Infos perso" style="width:1440px;height:900px;background:#FCFCFF;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(16,24,40,.22);display:flex;flex-direction:column">
+      <!-- barre de fenêtre -->
+      <div style="height:32px;flex:none;background:#EDF0F5;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;padding-left:12px">
+        <span class="ms" style="font-size:16px;color:#2F5D8C">description</span>
+        <span style="font-size:12px;color:#43474E;margin-left:8px">CV Maker — Camille Moreau.cv</span>
+        <div style="margin-left:auto;display:flex">
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#43474E">—</div>
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#43474E">▢</div>
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#43474E">✕</div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr) 620px">
+
+        <!-- NAVIGATION -->
+        <div style="border-right:1px solid #DDE1E8;background:#F5F7FA;display:flex;flex-direction:column;min-height:0">
+          <div style="padding:14px 12px 12px;border-bottom:1px solid #DDE1E8;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E">CV ouvert</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Camille Moreau</div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#E3EAF3" title="Mes CV"><span class="ms" style="font-size:18px;color:#2F5D8C">folder_open</span></div>
+            </div>
+            <div style="font-size:11px;color:#73777F">Modifié aujourd'hui à 14:02</div>
+          </div>
+
+          <div style="flex:1;min-height:0;overflow:hidden;padding:8px 8px 0;display:flex;flex-direction:column;gap:1px">
+            <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E;padding:6px 8px 4px">Sections</div>
+
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;background:#D6E3F2;color:#12385C;font-size:13px;font-weight:600"><span class="ms" style="font-size:18px">person</span><span style="flex:1">Informations personnelles</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">short_text</span><span style="flex:1">Profil professionnel</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">work</span><span style="flex:1">Expériences</span><span style="font-size:11px;color:#73777F">3</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">school</span><span style="flex:1">Formations</span><span style="font-size:11px;color:#73777F">2</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">bolt</span><span style="flex:1">Compétences</span><span style="font-size:11px;color:#73777F">9</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">translate</span><span style="flex:1">Langues</span><span style="font-size:11px;color:#73777F">3</span></div>
+
+            <div style="display:flex;align-items:center;gap:6px;padding:14px 10px 4px">
+              <span style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Sections facultatives</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">verified</span><span style="flex:1">Certifications</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#2F5D8C" title="Affichée dans le CV">visibility</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">folder</span><span style="flex:1">Projets</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#2F5D8C" title="Affichée dans le CV">visibility</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">interests</span><span style="flex:1">Centres d'intérêt</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#9AA0A6" title="Masquée dans le CV">visibility_off</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">group</span><span style="flex:1">Références</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#9AA0A6" title="Masquée dans le CV">visibility_off</span></div>
+          </div>
+
+          <div style="padding:10px 12px;border-top:1px solid #DDE1E8;font-size:11px;color:#73777F;display:flex;align-items:center;gap:6px"><span class="ms" style="font-size:15px">cloud_off</span>Hors ligne — données sur cet ordinateur</div>
+        </div>
+
+        <!-- FORMULAIRE -->
+        <div style="display:flex;flex-direction:column;min-height:0;background:#FCFCFF">
+          <div style="flex:none;padding:14px 20px 12px;border-bottom:1px solid #E7EAEF;display:flex;align-items:center;gap:12px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:18px;font-weight:600">Informations personnelles</div>
+              <div style="font-size:12px;color:#43474E;margin-top:2px">Ces informations apparaissent en haut de votre CV.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px">
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center" title="Annuler (Ctrl+Z)"><span class="ms" style="font-size:19px;color:#2F5D8C">undo</span></div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center" title="Rétablir (Ctrl+Y) — indisponible"><span class="ms" style="font-size:19px;color:#C0C4CA">redo</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#E3F1E7;color:#1E5233;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">check_circle</span>Enregistré</div>
+          </div>
+
+          <div style="flex:1;min-height:0;overflow:hidden;padding:18px 20px 24px;display:flex;flex-direction:column;gap:18px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Prénom</span>
+                <span style="font-size:13px">Camille</span>
+              </div>
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Nom</span>
+                <span style="font-size:13px">Moreau</span>
+              </div>
+            </div>
+
+            <div style="position:relative;height:44px;border:2px solid #2F5D8C;border-radius:4px;padding:0 11px;display:flex;align-items:center">
+              <span style="position:absolute;top:-8px;left:7px;padding:0 4px;background:#FCFCFF;font-size:11px;font-weight:600;color:#2F5D8C">Titre professionnel</span>
+              <span style="font-size:13px">Développeuse Front-End</span>
+              <span style="width:2px;height:18px;background:#2F5D8C;margin-left:1px"></span>
+            </div>
+
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;border:1px solid #DDE1E8;border-radius:12px;background:#F5F7FA">
+              <div style="width:64px;height:64px;border-radius:32px;flex:none;background:#D6E3F2;display:flex;align-items:center;justify-content:center;overflow:hidden"><span class="ms" style="font-size:30px;color:#2F5D8C">account_circle</span></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                <div style="font-size:13px;font-weight:600">Photo (facultative)</div>
+                <div style="display:flex;gap:8px">
+                  <div style="height:32px;padding:0 14px;border-radius:16px;border:1px solid #73777F;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2F5D8C"><span class="ms" style="font-size:16px">upload</span>Choisir une image</div>
+                  <div style="height:32px;padding:0 12px;border-radius:16px;display:flex;align-items:center;font-size:12px;font-weight:600;color:#43474E">Retirer</div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;line-height:1.45;color:#43474E"><span class="ms" style="font-size:15px;color:#73777F">info</span><span>La photo n'est pas enregistrée : elle devra être ajoutée à nouveau au prochain lancement.</span></div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Localisation</span>
+                <span style="font-size:13px">Lyon, France</span>
+              </div>
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Téléphone</span>
+                <span style="font-size:13px">+33 6 12 34 56 78</span>
+              </div>
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">E-mail</span>
+                <span style="font-size:13px">camille.moreau@email.fr</span>
+              </div>
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center">
+                <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Site / portfolio</span>
+                <span style="font-size:13px">camille-moreau.fr</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;font-weight:600">Liens</div>
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid #C3C7CD;border-radius:12px;background:#FCFCFF;padding:6px 8px">
+                <span class="ms" style="font-size:18px;color:#9AA0A6;cursor:grab">drag_indicator</span>
+                <span style="font-size:12px;font-weight:600;width:88px">LinkedIn</span>
+                <span style="flex:1;min-width:0;font-size:12px;color:#43474E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">linkedin.com/in/camillemoreau</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#73777F">edit</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#73777F">delete</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid #C3C7CD;border-radius:12px;background:#FCFCFF;padding:6px 8px">
+                <span class="ms" style="font-size:18px;color:#9AA0A6;cursor:grab">drag_indicator</span>
+                <span style="font-size:12px;font-weight:600;width:88px">GitHub</span>
+                <span style="flex:1;min-width:0;font-size:12px;color:#43474E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">github.com/cmoreau</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#73777F">edit</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#73777F">delete</span>
+              </div>
+              <div style="align-self:flex-start;height:32px;padding:0 14px;border-radius:16px;border:1px solid #73777F;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2F5D8C"><span class="ms" style="font-size:17px">add</span>Ajouter un lien</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- APERÇU PDF -->
+        <div style="border-left:1px solid #DDE1E8;display:flex;flex-direction:column;min-height:0;background:#EDF0F5">
+          <div style="flex:none;height:48px;padding:0 12px;border-bottom:1px solid #DDE1E8;background:#F5F7FA;display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:600;flex:1">Aperçu PDF</span>
+            <div style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:#E3F1E7;color:#1E5233;font-size:11px;font-weight:600"><span class="ms" style="font-size:14px">check_circle</span>À jour</div>
+            <div style="display:flex;align-items:center;gap:2px;border:1px solid #C3C7CD;border-radius:16px;height:32px;padding:0 4px">
+              <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">remove</span>
+              <span style="font-size:12px;width:40px;text-align:center;color:#1A1C1E">100 %</span>
+              <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">add</span>
+            </div>
+            <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center" title="Rafraîchir"><span class="ms" style="font-size:19px;color:#2F5D8C">refresh</span></div>
+            <div style="height:32px;padding:0 14px;border-radius:16px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">download</span>Exporter</div>
+          </div>
+
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0">
+            <!-- page A4 réduite -->
+            <div style="width:372px;height:526px;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.18);font-family:'Noto Sans',sans-serif;padding:26px 28px;display:flex;flex-direction:column;gap:11px;flex:none">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div style="width:44px;height:44px;border-radius:22px;background:#E4E7EB;flex:none;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:22px;color:#9AA0A6">person</span></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;color:#101418">Camille Moreau</div>
+                  <div style="font-size:9px;font-weight:600;color:#2F5D8C;margin-top:1px">Développeuse Front-End</div>
+                  <div style="font-size:6.5px;color:#43474E;margin-top:3px;line-height:1.5">Lyon, France · +33 6 12 34 56 78 · camille.moreau@email.fr<br>camille-moreau.fr · linkedin.com/in/camillemoreau</div>
+                </div>
+              </div>
+              <div style="height:1px;background:#D6DBE1"></div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Profil professionnel</div>
+                <div style="font-size:6.5px;line-height:1.55;color:#2B2F34">Développeuse front-end avec 5 ans d'expérience sur des applications web et de bureau. Spécialisée en Flutter et TypeScript, attentive à l'accessibilité et aux performances.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Expériences</div>
+                <div style="display:flex;flex-direction:column;gap:1px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:7.5px;font-weight:700;color:#101418">Développeuse Front-End — Nexora</span><span style="font-size:6.5px;color:#43474E">sept. 2023 – aujourd'hui</span></div><div style="font-size:6.5px;line-height:1.5;color:#2B2F34">Refonte du portail client (Flutter Web) ; −38 % de temps de chargement.</div></div>
+                <div style="display:flex;flex-direction:column;gap:1px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:7.5px;font-weight:700;color:#101418">Développeuse Web — Atelier Kipli</span><span style="font-size:6.5px;color:#43474E">janv. 2021 – août 2023</span></div><div style="font-size:6.5px;line-height:1.5;color:#2B2F34">Création du design system interne utilisé par 4 équipes.</div></div>
+                <div style="display:flex;flex-direction:column;gap:1px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:7.5px;font-weight:700;color:#101418">Intégratrice Web — Studio Vertige</span><span style="font-size:6.5px;color:#43474E">sept. 2019 – déc. 2020</span></div><div style="font-size:6.5px;line-height:1.5;color:#2B2F34">Intégration de 20+ sites vitrines, alternance.</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Formations</div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:7.5px;font-weight:700;color:#101418">Master Informatique — Université Lyon 1</span><span style="font-size:6.5px;color:#43474E">2019 – 2021</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:7.5px;font-weight:700;color:#101418">Licence MIAGE — Université Lyon 2</span><span style="font-size:6.5px;color:#43474E">2016 – 2019</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Compétences</div>
+                <div style="font-size:6.5px;line-height:1.6;color:#2B2F34">Flutter · Dart · TypeScript · React · HTML/CSS · Tests · Git · Figma · Accessibilité</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Langues</div>
+                <div style="font-size:6.5px;line-height:1.6;color:#2B2F34">Français (langue maternelle) · Anglais (C1) · Espagnol (B1)</div>
+              </div>
+              <div style="margin-top:auto;font-size:5.5px;color:#9AA0A6;text-align:right">1 / 1</div>
+            </div>
+            <div style="font-size:11px;color:#43474E">Page 1 sur 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1b · ÉCRAN PRINCIPAL — EXPÉRIENCES ============ -->
+  <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">1b</span>
+      <span style="font-size:17px;font-weight:600">Écran principal — Expériences (motif de liste, glisser-déposer) · 1440 × 900</span>
+    </div>
+
+    <div data-screen-label="02 Écran principal – Expériences" style="width:1440px;height:900px;background:#FCFCFF;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(16,24,40,.22);display:flex;flex-direction:column">
+      <div style="height:32px;flex:none;background:#EDF0F5;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;padding-left:12px">
+        <span class="ms" style="font-size:16px;color:#2F5D8C">description</span>
+        <span style="font-size:12px;color:#43474E;margin-left:8px">CV Maker — Camille Moreau.cv</span>
+        <div style="margin-left:auto;display:flex">
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#43474E">—</div>
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#43474E">▢</div>
+          <div style="width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#43474E">✕</div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr) 620px">
+        <!-- NAV (Expériences sélectionnée) -->
+        <div style="border-right:1px solid #DDE1E8;background:#F5F7FA;display:flex;flex-direction:column;min-height:0">
+          <div style="padding:14px 12px 12px;border-bottom:1px solid #DDE1E8;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E">CV ouvert</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;min-width:0;font-size:14px;font-weight:600">Camille Moreau</div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#E3EAF3"><span class="ms" style="font-size:18px;color:#2F5D8C">folder_open</span></div>
+            </div>
+            <div style="font-size:11px;color:#73777F">Modifié aujourd'hui à 14:06</div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:8px 8px 0;display:flex;flex-direction:column;gap:1px">
+            <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E;padding:6px 8px 4px">Sections</div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">person</span><span style="flex:1">Informations personnelles</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">short_text</span><span style="flex:1">Profil professionnel</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;background:#D6E3F2;color:#12385C;font-size:13px;font-weight:600"><span class="ms" style="font-size:18px">work</span><span style="flex:1">Expériences</span><span style="font-size:11px">3</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">school</span><span style="flex:1">Formations</span><span style="font-size:11px;color:#73777F">2</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">bolt</span><span style="flex:1">Compétences</span><span style="font-size:11px;color:#73777F">9</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">translate</span><span style="flex:1">Langues</span><span style="font-size:11px;color:#73777F">3</span></div>
+            <div style="padding:14px 10px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Sections facultatives</div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">verified</span><span style="flex:1">Certifications</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#2F5D8C">visibility</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">folder</span><span style="flex:1">Projets</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#2F5D8C">visibility</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">interests</span><span style="flex:1">Centres d'intérêt</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#9AA0A6">visibility_off</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">group</span><span style="flex:1">Références</span><span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#9AA0A6">visibility_off</span></div>
+          </div>
+          <div style="padding:10px 12px;border-top:1px solid #DDE1E8;font-size:11px;color:#73777F;display:flex;align-items:center;gap:6px"><span class="ms" style="font-size:15px">cloud_off</span>Hors ligne — données sur cet ordinateur</div>
+        </div>
+
+        <!-- FORMULAIRE : liste d'expériences -->
+        <div style="display:flex;flex-direction:column;min-height:0;background:#FCFCFF">
+          <div style="flex:none;padding:14px 20px 12px;border-bottom:1px solid #E7EAEF;display:flex;align-items:center;gap:12px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:18px;font-weight:600">Expériences</div>
+              <div style="font-size:12px;color:#43474E;margin-top:2px">Commencez par la plus récente. Faites glisser pour réordonner.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px">
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:19px;color:#2F5D8C">undo</span></div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:19px;color:#2F5D8C">redo</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#EDF0F5;color:#43474E;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px;animation:spin 1.1s linear infinite">progress_activity</span>Enregistrement…</div>
+          </div>
+
+          <div style="flex:1;min-height:0;overflow:hidden;padding:16px 20px 24px;display:flex;flex-direction:column;gap:10px">
+            <!-- carte dépliée -->
+            <div style="border:1px solid #2F5D8C;border-radius:12px;background:#FCFCFF;box-shadow:0 1px 3px rgba(16,24,40,.1)">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 8px 8px 6px;border-bottom:1px solid #E7EAEF">
+                <span class="ms" style="font-size:18px;color:#9AA0A6;cursor:grab">drag_indicator</span>
+                <span style="flex:1;min-width:0;font-size:13px;font-weight:600">Développeuse Front-End · Nexora</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#73777F">delete</span>
+                <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#43474E">expand_less</span>
+              </div>
+              <div style="padding:16px 14px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div style="position:relative;height:42px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Poste</span><span style="font-size:13px">Développeuse Front-End</span></div>
+                  <div style="position:relative;height:42px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Entreprise</span><span style="font-size:13px">Nexora</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;align-items:center">
+                  <div style="position:relative;height:42px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Lieu</span><span style="font-size:13px">Lyon</span></div>
+                  <div style="position:relative;height:42px;border:1px solid #73777F;border-radius:4px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Début</span><span style="font-size:13px;flex:1">09/2023</span><span class="ms" style="font-size:17px;color:#73777F">calendar_month</span></div>
+                  <div style="position:relative;height:42px;border:1px solid #C3C7CD;border-radius:4px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px;background:#F2F3F5"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#9AA0A6">Fin</span><span style="font-size:13px;flex:1;color:#9AA0A6">——</span><span class="ms" style="font-size:17px;color:#C0C4CA">calendar_month</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="ms" style="font-size:20px;color:#2F5D8C">check_box</span>
+                  <span style="font-size:13px">En cours</span>
+                </div>
+                <div style="position:relative;border:1px solid #73777F;border-radius:4px;padding:12px;min-height:88px">
+                  <span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Description / réalisations</span>
+                  <div style="font-size:13px;line-height:1.6;color:#1A1C1E">• Refonte du portail client en Flutter Web : −38 % de temps de chargement.<br>• Mise en place des tests d'intégration (couverture 72 %).<br>• Accompagnement de 2 développeurs juniors.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- carte en cours de glissement -->
+            <div style="border:1px solid #2F5D8C;border-radius:12px;background:#FCFCFF;display:flex;align-items:center;gap:8px;padding:9px 8px 9px 6px;box-shadow:0 8px 20px rgba(47,93,140,.28);transform:translateY(2px)">
+              <span class="ms" style="font-size:18px;color:#2F5D8C;cursor:grabbing">drag_indicator</span>
+              <span style="flex:1;min-width:0;font-size:13px;font-weight:600">Développeuse Web · Atelier Kipli<span style="font-weight:400;color:#43474E"> — janv. 2021 → août 2023</span></span>
+              <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#73777F">delete</span>
+              <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#43474E">expand_more</span>
+            </div>
+            <div style="height:2px;background:#2F5D8C;border-radius:1px;margin:0 4px"></div>
+
+            <div style="border:1px solid #C3C7CD;border-radius:12px;background:#FCFCFF;display:flex;align-items:center;gap:8px;padding:9px 8px 9px 6px">
+              <span class="ms" style="font-size:18px;color:#9AA0A6;cursor:grab">drag_indicator</span>
+              <span style="flex:1;min-width:0;font-size:13px;font-weight:600">Intégratrice Web (alternance) · Studio Vertige<span style="font-weight:400;color:#43474E"> — sept. 2019 → déc. 2020</span></span>
+              <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#73777F">delete</span>
+              <span class="ms" style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#43474E">expand_more</span>
+            </div>
+
+            <div style="align-self:flex-start;height:36px;padding:0 16px;border-radius:18px;background:#D6E3F2;color:#12385C;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-top:4px"><span class="ms" style="font-size:18px">add</span>Ajouter une expérience</div>
+          </div>
+        </div>
+
+        <!-- APERÇU : génération en cours -->
+        <div style="border-left:1px solid #DDE1E8;display:flex;flex-direction:column;min-height:0;background:#EDF0F5">
+          <div style="flex:none;height:48px;padding:0 12px;border-bottom:1px solid #DDE1E8;background:#F5F7FA;display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:600;flex:1">Aperçu PDF</span>
+            <div style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:#E3EAF3;color:#12385C;font-size:11px;font-weight:600"><span class="ms" style="font-size:14px;animation:spin 1.1s linear infinite">progress_activity</span>Génération en cours…</div>
+            <div style="display:flex;align-items:center;gap:2px;border:1px solid #C3C7CD;border-radius:16px;height:32px;padding:0 4px">
+              <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">remove</span>
+              <span style="font-size:12px;width:40px;text-align:center">75 %</span>
+              <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">add</span>
+            </div>
+            <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:19px;color:#2F5D8C">refresh</span></div>
+            <div style="height:32px;padding:0 14px;border-radius:16px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">download</span>Exporter</div>
+          </div>
+          <div style="height:3px;background:#D6E3F2;overflow:hidden;flex:none"><div style="width:40%;height:3px;background:#2F5D8C"></div></div>
+
+          <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 0;position:relative">
+            <div style="width:280px;height:396px;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.18);opacity:.55;padding:20px 22px;display:flex;flex-direction:column;gap:8px;flex:none;font-family:'Noto Sans',sans-serif">
+              <div style="height:14px;width:55%;background:#E4E7EB;border-radius:2px"></div>
+              <div style="height:8px;width:38%;background:#DCE6F1;border-radius:2px"></div>
+              <div style="height:1px;background:#E4E7EB;margin:4px 0"></div>
+              <div style="height:7px;width:30%;background:#DCE6F1;border-radius:2px"></div>
+              <div style="height:5px;width:100%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:5px;width:92%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:7px;width:26%;background:#DCE6F1;border-radius:2px;margin-top:6px"></div>
+              <div style="height:5px;width:100%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:5px;width:96%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:5px;width:88%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:7px;width:26%;background:#DCE6F1;border-radius:2px;margin-top:6px"></div>
+              <div style="height:5px;width:94%;background:#EDEFF2;border-radius:2px"></div>
+              <div style="height:5px;width:80%;background:#EDEFF2;border-radius:2px"></div>
+            </div>
+            <div style="width:280px;height:120px;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.18);opacity:.35;flex:none"></div>
+            <div style="position:absolute;top:210px;display:flex;flex-direction:column;align-items:center;gap:10px">
+              <span class="ms" style="font-size:34px;color:#2F5D8C;animation:spin 1.1s linear infinite">progress_activity</span>
+              <span style="font-size:12px;font-weight:600;color:#12385C;background:#FCFCFF;padding:4px 10px;border-radius:12px">Mise à jour de l'aperçu…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2 · FENÊTRE ÉTROITE ============ -->
+  <div id="2a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">2</span>
+      <span style="font-size:17px;font-weight:600">Fenêtre étroite — 900 × 760 : le formulaire et l'aperçu deviennent deux onglets</span>
+    </div>
+
+    <div style="display:flex;gap:28px;flex-wrap:wrap">
+      <div data-screen-label="03 Fenêtre étroite – Édition" style="width:900px;height:760px;background:#FCFCFF;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(16,24,40,.22);display:flex;flex-direction:column">
+        <div style="height:32px;flex:none;background:#EDF0F5;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;padding:0 0 0 12px">
+          <span class="ms" style="font-size:16px;color:#2F5D8C">description</span><span style="font-size:12px;color:#43474E;margin-left:8px">CV Maker</span>
+          <div style="margin-left:auto;display:flex"><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#43474E">—</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#43474E">▢</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#43474E">✕</div></div>
+        </div>
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr)">
+          <div style="border-right:1px solid #DDE1E8;background:#F5F7FA;display:flex;flex-direction:column;min-height:0">
+            <div style="padding:12px;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;gap:6px">
+              <div style="flex:1;min-width:0;font-size:14px;font-weight:600">Camille Moreau</div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#E3EAF3"><span class="ms" style="font-size:18px;color:#2F5D8C">folder_open</span></div>
+            </div>
+            <div style="padding:8px;display:flex;flex-direction:column;gap:1px">
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;background:#D6E3F2;color:#12385C;font-size:13px;font-weight:600"><span class="ms" style="font-size:18px">person</span>Informations personnelles</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">short_text</span>Profil professionnel</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">work</span>Expériences</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">school</span>Formations</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">bolt</span>Compétences</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">translate</span>Langues</div>
+              <div style="padding:12px 10px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Facultatives</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">verified</span><span style="flex:1">Certifications</span><span class="ms" style="font-size:17px;color:#2F5D8C">visibility</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">folder</span><span style="flex:1">Projets</span><span class="ms" style="font-size:17px;color:#2F5D8C">visibility</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">interests</span><span style="flex:1">Centres d'intérêt</span><span class="ms" style="font-size:17px;color:#9AA0A6">visibility_off</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 4px 0 10px;border-radius:18px;color:#9AA0A6;font-size:13px"><span class="ms" style="font-size:18px;color:#9AA0A6">group</span><span style="flex:1">Références</span><span class="ms" style="font-size:17px;color:#9AA0A6">visibility_off</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;min-height:0">
+            <div style="flex:none;display:flex;height:44px;border-bottom:1px solid #DDE1E8;background:#FCFCFF">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:#2F5D8C;box-shadow:inset 0 -3px 0 #2F5D8C"><span class="ms" style="font-size:18px">edit_note</span>Édition</div>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:#43474E"><span class="ms" style="font-size:18px;color:#73777F">picture_as_pdf</span>Aperçu</div>
+            </div>
+            <div style="flex:none;padding:12px 16px;border-bottom:1px solid #E7EAEF;display:flex;align-items:center;gap:10px">
+              <div style="flex:1;min-width:0;font-size:16px;font-weight:600">Informations personnelles</div>
+              <div style="width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:18px;color:#2F5D8C">undo</span></div>
+              <div style="width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:18px;color:#C0C4CA">redo</span></div>
+              <div style="display:flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:13px;background:#E3F1E7;color:#1E5233;font-size:11px;font-weight:600"><span class="ms" style="font-size:15px">check_circle</span>Enregistré</div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Prénom</span><span style="font-size:13px">Camille</span></div>
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Nom</span><span style="font-size:13px">Moreau</span></div>
+              </div>
+              <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Titre professionnel</span><span style="font-size:13px">Développeuse Front-End</span></div>
+              <div style="display:flex;gap:12px;align-items:center;padding:10px;border:1px solid #DDE1E8;border-radius:12px;background:#F5F7FA">
+                <div style="width:52px;height:52px;border-radius:26px;flex:none;background:#D6E3F2;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:26px;color:#2F5D8C">account_circle</span></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                  <div style="font-size:12px;font-weight:600">Photo (facultative)</div>
+                  <div style="font-size:11px;line-height:1.4;color:#43474E">Non enregistrée : à ajouter de nouveau au prochain lancement.</div>
+                </div>
+                <div style="height:32px;padding:0 12px;border-radius:16px;border:1px solid #73777F;display:flex;align-items:center;font-size:12px;font-weight:600;color:#2F5D8C">Choisir…</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Localisation</span><span style="font-size:13px">Lyon, France</span></div>
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Téléphone</span><span style="font-size:13px">+33 6 12 34 56 78</span></div>
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">E-mail</span><span style="font-size:13px">camille.moreau@email.fr</span></div>
+                <div style="position:relative;height:44px;border:1px solid #73777F;border-radius:4px;padding:0 12px;display:flex;align-items:center"><span style="position:absolute;top:-7px;left:8px;padding:0 4px;background:#FCFCFF;font-size:11px;color:#43474E">Site / portfolio</span><span style="font-size:13px">camille-moreau.fr</span></div>
+              </div>
+              <div style="align-self:flex-start;height:32px;padding:0 14px;border-radius:16px;border:1px solid #73777F;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2F5D8C"><span class="ms" style="font-size:17px">add</span>Ajouter un lien</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-screen-label="04 Fenêtre étroite – Aperçu" style="width:900px;height:760px;background:#FCFCFF;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(16,24,40,.22);display:flex;flex-direction:column">
+        <div style="height:32px;flex:none;background:#EDF0F5;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;padding-left:12px">
+          <span class="ms" style="font-size:16px;color:#2F5D8C">description</span><span style="font-size:12px;color:#43474E;margin-left:8px">CV Maker</span>
+          <div style="margin-left:auto;display:flex"><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#43474E">—</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#43474E">▢</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#43474E">✕</div></div>
+        </div>
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr)">
+          <div style="border-right:1px solid #DDE1E8;background:#F5F7FA;display:flex;flex-direction:column">
+            <div style="padding:12px;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;gap:6px">
+              <div style="flex:1;min-width:0;font-size:14px;font-weight:600">Camille Moreau</div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#E3EAF3"><span class="ms" style="font-size:18px;color:#2F5D8C">folder_open</span></div>
+            </div>
+            <div style="padding:8px;display:flex;flex-direction:column;gap:1px">
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;background:#D6E3F2;color:#12385C;font-size:13px;font-weight:600"><span class="ms" style="font-size:18px">person</span>Informations personnelles</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">short_text</span>Profil professionnel</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">work</span>Expériences</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">school</span>Formations</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">bolt</span>Compétences</div>
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:18px;color:#43474E;font-size:13px"><span class="ms" style="font-size:18px;color:#73777F">translate</span>Langues</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;min-height:0;background:#EDF0F5">
+            <div style="flex:none;display:flex;height:44px;border-bottom:1px solid #DDE1E8;background:#FCFCFF">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:#43474E"><span class="ms" style="font-size:18px;color:#73777F">edit_note</span>Édition</div>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:#2F5D8C;box-shadow:inset 0 -3px 0 #2F5D8C"><span class="ms" style="font-size:18px">picture_as_pdf</span>Aperçu</div>
+            </div>
+            <div style="flex:none;height:48px;padding:0 12px;border-bottom:1px solid #DDE1E8;background:#F5F7FA;display:flex;align-items:center;gap:8px">
+              <div style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:#E3F1E7;color:#1E5233;font-size:11px;font-weight:600;flex:1;max-width:96px"><span class="ms" style="font-size:14px">check_circle</span>À jour</div>
+              <div style="display:flex;align-items:center;gap:2px;border:1px solid #C3C7CD;border-radius:16px;height:32px;padding:0 4px">
+                <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">remove</span>
+                <span style="font-size:12px;width:40px;text-align:center">85 %</span>
+                <span class="ms" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#43474E">add</span>
+              </div>
+              <div style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:19px;color:#2F5D8C">refresh</span></div>
+              <div style="height:32px;padding:0 14px;border-radius:16px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">download</span>Exporter</div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0">
+              <div style="width:340px;height:481px;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.18);font-family:'Noto Sans',sans-serif;padding:24px 26px;display:flex;flex-direction:column;gap:10px;flex:none">
+                <div style="display:flex;gap:11px;align-items:center">
+                  <div style="width:40px;height:40px;border-radius:20px;background:#E4E7EB;flex:none;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:20px;color:#9AA0A6">person</span></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:700;color:#101418">Camille Moreau</div>
+                    <div style="font-size:8.5px;font-weight:600;color:#2F5D8C">Développeuse Front-End</div>
+                    <div style="font-size:6px;color:#43474E;margin-top:3px;line-height:1.5">Lyon, France · +33 6 12 34 56 78 · camille.moreau@email.fr<br>camille-moreau.fr · linkedin.com/in/camillemoreau</div>
+                  </div>
+                </div>
+                <div style="height:1px;background:#D6DBE1"></div>
+                <div style="font-size:7px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C">Profil professionnel</div>
+                <div style="font-size:6px;line-height:1.55;color:#2B2F34">Développeuse front-end avec 5 ans d'expérience sur des applications web et de bureau. Spécialisée en Flutter et TypeScript.</div>
+                <div style="font-size:7px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C;margin-top:4px">Expériences</div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <div><div style="display:flex;justify-content:space-between"><span style="font-size:7px;font-weight:700;color:#101418">Développeuse Front-End — Nexora</span><span style="font-size:6px;color:#43474E">2023 – auj.</span></div><div style="font-size:6px;line-height:1.5;color:#2B2F34">Refonte du portail client, −38 % de temps de chargement.</div></div>
+                  <div><div style="display:flex;justify-content:space-between"><span style="font-size:7px;font-weight:700;color:#101418">Développeuse Web — Atelier Kipli</span><span style="font-size:6px;color:#43474E">2021 – 2023</span></div><div style="font-size:6px;line-height:1.5;color:#2B2F34">Design system interne utilisé par 4 équipes.</div></div>
+                  <div><div style="display:flex;justify-content:space-between"><span style="font-size:7px;font-weight:700;color:#101418">Intégratrice Web — Studio Vertige</span><span style="font-size:6px;color:#43474E">2019 – 2020</span></div><div style="font-size:6px;line-height:1.5;color:#2B2F34">20+ sites vitrines intégrés, en alternance.</div></div>
+                </div>
+                <div style="font-size:7px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#2F5D8C;margin-top:4px">Formations</div>
+                <div style="font-size:6px;line-height:1.6;color:#2B2F34">Master Informatique — Université Lyon 1 (2019–2021)<br>Licence MIAGE — Université Lyon 2 (2016–2019)</div>
+                <div style="margin-top:auto;font-size:5.5px;color:#9AA0A6;text-align:right">1 / 1</div>
+              </div>
+              <div style="font-size:11px;color:#43474E">Page 1 sur 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3 · LISTE DES CV + PREMIER LANCEMENT ============ -->
+  <div id="3a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">3</span>
+      <span style="font-size:17px;font-weight:600">Liste des CV (dialogue) et premier lancement</span>
+    </div>
+
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <!-- dialogue liste des CV -->
+      <div data-screen-label="05 Liste des CV" style="width:700px;height:520px;border-radius:8px;background:#E7EAEF;display:flex;align-items:center;justify-content:center;box-shadow:0 18px 50px rgba(16,24,40,.22);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:rgba(16,24,40,.32)"></div>
+        <div style="position:relative;width:560px;background:#FCFCFF;border-radius:28px;box-shadow:0 12px 40px rgba(16,24,40,.3);padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="flex:1"><div style="font-size:20px;font-weight:600">Mes CV</div><div style="font-size:12px;color:#43474E;margin-top:3px">3 CV enregistrés sur cet ordinateur</div></div>
+            <div style="height:36px;padding:0 16px;border-radius:18px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600"><span class="ms" style="font-size:18px">add</span>Créer</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border:1px solid #2F5D8C;background:#EEF4FA;border-radius:12px">
+              <span class="ms" style="font-size:22px;color:#2F5D8C">description</span>
+              <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Camille Moreau</div><div style="font-size:11px;color:#43474E;margin-top:1px">Modifié aujourd'hui à 14:06 · Ouvert</div></div>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">drive_file_rename_outline</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">content_copy</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">delete</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border:1px solid #DDE1E8;border-radius:12px">
+              <span class="ms" style="font-size:22px;color:#73777F">description</span>
+              <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Candidature Nexora — senior</div><div style="font-size:11px;color:#43474E;margin-top:1px">Modifié le 12 septembre 2026</div></div>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">drive_file_rename_outline</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">content_copy</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">delete</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border:1px solid #DDE1E8;border-radius:12px">
+              <span class="ms" style="font-size:22px;color:#73777F">description</span>
+              <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">CV anglais</div><div style="font-size:11px;color:#43474E;margin-top:1px">Modifié le 3 août 2026</div></div>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">drive_file_rename_outline</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">content_copy</span>
+              <span class="ms" style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#43474E">delete</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding-top:4px">
+            <div style="font-size:11px;color:#73777F;flex:1">Au démarrage, le dernier CV modifié est rouvert.</div>
+            <div style="height:36px;padding:0 16px;border-radius:18px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#2F5D8C">Fermer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- premier lancement -->
+      <div data-screen-label="06 Premier lancement" style="width:700px;height:520px;background:#FCFCFF;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(16,24,40,.22);display:flex;flex-direction:column">
+        <div style="height:32px;flex:none;background:#EDF0F5;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;padding-left:12px">
+          <span class="ms" style="font-size:16px;color:#2F5D8C">description</span><span style="font-size:12px;color:#43474E;margin-left:8px">CV Maker</span>
+          <div style="margin-left:auto;display:flex"><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#43474E">—</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#43474E">▢</div><div style="width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#43474E">✕</div></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px;text-align:center">
+          <div style="width:96px;height:96px;border-radius:48px;background:#E3EAF3;display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:44px;color:#2F5D8C">note_add</span></div>
+          <div style="font-size:24px;font-weight:600">Bienvenue dans CV Maker</div>
+          <div style="font-size:14px;line-height:1.6;color:#43474E;max-width:420px;text-wrap:pretty">Remplissez vos informations section par section : le CV en PDF se met à jour à côté de vous. Tout reste sur votre ordinateur.</div>
+          <div style="height:40px;padding:0 24px;border-radius:20px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-top:4px"><span class="ms" style="font-size:20px">add</span>Créer mon CV</div>
+          <div style="font-size:12px;color:#73777F;display:flex;align-items:center;gap:6px"><span class="ms" style="font-size:16px">cloud_off</span>Fonctionne hors ligne, sans compte</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 · ÉTATS, CONFIRMATIONS, ERREURS ============ -->
+  <div id="4a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">4</span>
+      <span style="font-size:17px;font-weight:600">États, confirmations, erreurs et export</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:22px;background:#FCFCFF;border-radius:8px;padding:26px;box-shadow:0 10px 30px rgba(16,24,40,.14);width:1440px">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Indicateur de sauvegarde (en-tête du formulaire)</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#E3F1E7;color:#1E5233;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">check_circle</span>Enregistré</div>
+          <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#EDF0F5;color:#43474E;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px;animation:spin 1.1s linear infinite">progress_activity</span>Enregistrement…</div>
+          <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#FFDAD6;color:#8C1D18;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">error</span>Erreur d'enregistrement</div>
+          <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 10px;border-radius:14px;background:#FFDAD6;color:#8C1D18;font-size:12px;font-weight:600"><span class="ms" style="font-size:16px">error</span>Erreur d'enregistrement<span style="height:24px;padding:0 10px;border-radius:12px;background:#8C1D18;color:#fff;display:flex;align-items:center;font-size:11px;margin-left:6px">Réessayer</span></div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#E7EAEF"></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">États de l'aperçu PDF</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="width:300px;border:1px solid #DDE1E8;border-radius:12px;overflow:hidden">
+            <div style="height:44px;padding:0 10px;background:#F5F7FA;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:600;flex:1">Aperçu PDF</span><div style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:12px;background:#E3F1E7;color:#1E5233;font-size:11px;font-weight:600"><span class="ms" style="font-size:14px">check_circle</span>À jour</div></div>
+            <div style="height:130px;background:#EDF0F5;display:flex;align-items:center;justify-content:center"><div style="width:84px;height:110px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.16)"></div></div>
+          </div>
+          <div style="width:300px;border:1px solid #DDE1E8;border-radius:12px;overflow:hidden">
+            <div style="height:44px;padding:0 10px;background:#F5F7FA;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:600;flex:1">Aperçu PDF</span><div style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:12px;background:#E3EAF3;color:#12385C;font-size:11px;font-weight:600"><span class="ms" style="font-size:14px;animation:spin 1.1s linear infinite">progress_activity</span>Génération…</div></div>
+            <div style="height:3px;background:#D6E3F2"><div style="width:45%;height:3px;background:#2F5D8C"></div></div>
+            <div style="height:127px;background:#EDF0F5;display:flex;align-items:center;justify-content:center"><div style="width:84px;height:110px;background:#fff;opacity:.5;box-shadow:0 2px 8px rgba(16,24,40,.16)"></div></div>
+          </div>
+          <div style="width:300px;border:1px solid #DDE1E8;border-radius:12px;overflow:hidden">
+            <div style="height:44px;padding:0 10px;background:#F5F7FA;border-bottom:1px solid #DDE1E8;display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:600;flex:1">Aperçu PDF</span><div style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:12px;background:#FFDAD6;color:#8C1D18;font-size:11px;font-weight:600"><span class="ms" style="font-size:14px">error</span>Erreur</div></div>
+            <div style="height:130px;background:#EDF0F5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center">
+              <span class="ms" style="font-size:24px;color:#8C1D18">error</span>
+              <div style="font-size:11px;line-height:1.45;color:#43474E">Le PDF n'a pas pu être généré.</div>
+              <div style="height:28px;padding:0 12px;border-radius:14px;border:1px solid #8C1D18;color:#8C1D18;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600"><span class="ms" style="font-size:15px">refresh</span>Réessayer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#E7EAEF"></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Confirmations (Dialog)</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="width:400px;background:#FCFCFF;border-radius:28px;box-shadow:0 8px 28px rgba(16,24,40,.22);padding:24px;display:flex;flex-direction:column;gap:12px">
+            <span class="ms" style="font-size:24px;color:#8C1D18">delete</span>
+            <div style="font-size:18px;font-weight:600">Supprimer ce CV ?</div>
+            <div style="font-size:13px;line-height:1.55;color:#43474E">« Candidature Nexora — senior » sera supprimé définitivement de cet ordinateur. Cette action est irréversible.</div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+              <div style="height:36px;padding:0 16px;border-radius:18px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#2F5D8C">Annuler</div>
+              <div style="height:36px;padding:0 16px;border-radius:18px;background:#8C1D18;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:600">Supprimer</div>
+            </div>
+          </div>
+          <div style="width:400px;background:#FCFCFF;border-radius:28px;box-shadow:0 8px 28px rgba(16,24,40,.22);padding:24px;display:flex;flex-direction:column;gap:12px">
+            <span class="ms" style="font-size:24px;color:#8C1D18">delete</span>
+            <div style="font-size:18px;font-weight:600">Supprimer cette expérience ?</div>
+            <div style="font-size:13px;line-height:1.55;color:#43474E">« Développeuse Web · Atelier Kipli » sera retirée de votre CV. Vous pourrez annuler avec Ctrl+Z.</div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+              <div style="height:36px;padding:0 16px;border-radius:18px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#2F5D8C">Annuler</div>
+              <div style="height:36px;padding:0 16px;border-radius:18px;background:#8C1D18;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:600">Supprimer</div>
+            </div>
+          </div>
+          <div style="width:400px;background:#FCFCFF;border-radius:28px;box-shadow:0 8px 28px rgba(16,24,40,.22);padding:24px;display:flex;flex-direction:column;gap:14px">
+            <div style="font-size:18px;font-weight:600">Renommer le CV</div>
+            <div style="position:relative;height:48px;border:2px solid #2F5D8C;border-radius:4px;padding:0 11px;display:flex;align-items:center">
+              <span style="position:absolute;top:-8px;left:7px;padding:0 4px;background:#FCFCFF;font-size:11px;font-weight:600;color:#2F5D8C">Nom du CV</span>
+              <span style="font-size:14px">Candidature Nexora — senior</span><span style="width:2px;height:20px;background:#2F5D8C;margin-left:1px"></span>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              <div style="height:36px;padding:0 16px;border-radius:18px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#2F5D8C">Annuler</div>
+              <div style="height:36px;padding:0 16px;border-radius:18px;background:#2F5D8C;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:600">Renommer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#E7EAEF"></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Export — notifications « toast » (empilées en bas à droite de la fenêtre ; la boîte d'enregistrement est celle de Windows)</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+          <div style="width:400px;background:#FCFCFF;border:1px solid #DDE1E8;border-left:4px solid #2F5D8C;border-radius:12px;padding:12px 10px 12px 14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 10px 24px rgba(16,24,40,.16)">
+            <span class="ms" style="font-size:20px;color:#2F5D8C;animation:spin 1.1s linear infinite;margin-top:1px">progress_activity</span>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">Mise à jour du PDF…</div><div style="font-size:12px;color:#43474E;margin-top:2px">L'export démarrera dès que l'aperçu sera à jour.</div></div>
+            <span class="ms" style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#73777F">close</span>
+          </div>
+          <div style="width:400px;background:#FCFCFF;border:1px solid #DDE1E8;border-left:4px solid #1E5233;border-radius:12px;padding:12px 10px 12px 14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 10px 24px rgba(16,24,40,.16)">
+            <span class="ms" style="font-size:20px;color:#1E5233;margin-top:1px">check_circle</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">PDF exporté</div>
+              <div style="font-size:12px;color:#43474E;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Documents\CV\CV_Camille_Moreau.pdf</div>
+              <div style="height:30px;padding:0 12px;border-radius:15px;border:1px solid #73777F;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2F5D8C;margin-top:8px"><span class="ms" style="font-size:16px">folder_open</span>Ouvrir le dossier</div>
+            </div>
+            <span class="ms" style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#73777F">close</span>
+          </div>
+          <div style="width:400px;background:#FCFCFF;border:1px solid #F3CFCB;border-left:4px solid #8C1D18;border-radius:12px;padding:12px 10px 12px 14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 10px 24px rgba(16,24,40,.16)">
+            <span class="ms" style="font-size:20px;color:#8C1D18;margin-top:1px">error</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">L'export a échoué</div>
+              <div style="font-size:12px;color:#43474E;margin-top:2px;line-height:1.45">Le fichier est ouvert dans une autre application. Fermez-le puis réessayez.</div>
+              <div style="height:30px;padding:0 12px;border-radius:15px;border:1px solid #8C1D18;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#8C1D18;margin-top:8px"><span class="ms" style="font-size:16px">refresh</span>Réessayer</div>
+            </div>
+            <span class="ms" style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#73777F">close</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-end;margin-top:6px">
+          <div style="width:420px;height:200px;border:1px solid #DDE1E8;border-radius:8px;background:#EDF0F5;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:24px;background:#F5F7FA;border-bottom:1px solid #DDE1E8"></div>
+            <div style="position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;width:300px">
+              <div style="background:#FCFCFF;border:1px solid #DDE1E8;border-left:4px solid #1E5233;border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(16,24,40,.16)">
+                <span class="ms" style="font-size:17px;color:#1E5233">check_circle</span><span style="flex:1;font-size:12px;font-weight:600">PDF exporté</span><span class="ms" style="font-size:15px;color:#73777F">close</span>
+              </div>
+              <div style="background:#FCFCFF;border:1px solid #DDE1E8;border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(16,24,40,.12);opacity:.7;transform:scale(.97)">
+                <span class="ms" style="font-size:17px;color:#2F5D8C">info</span><span style="flex:1;font-size:12px">Aperçu à jour</span><span class="ms" style="font-size:15px;color:#73777F">close</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:12px;line-height:1.6;color:#43474E;max-width:420px">Position : coin inférieur droit, 16 px des bords, empilement vertical (3 maximum, le plus récent en bas). Disparition automatique après 4 s (6 s avec action), bouton de fermeture toujours présent ; entrée en glissement + fondu de 180 ms. Implémentation Flutter : <span style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px">Overlay</span> + <span style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px">AnimatedSlide</span> plutôt que <span style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px">SnackBar</span>.</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#E7EAEF"></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">État vide d'une liste</div>
+        <div style="width:520px;border:1px dashed #C3C7CD;border-radius:12px;background:#F8F9FB;padding:28px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+          <span class="ms" style="font-size:28px;color:#9AA0A6">work</span>
+          <div style="font-size:14px;font-weight:600">Aucune expérience pour l'instant</div>
+          <div style="font-size:12px;color:#43474E;max-width:300px;line-height:1.5">Ajoutez votre poste le plus récent en premier : il apparaîtra aussitôt dans l'aperçu.</div>
+          <div style="height:36px;padding:0 16px;border-radius:18px;background:#2F5D8C;color:#fff;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-top:4px"><span class="ms" style="font-size:18px">add</span>Ajouter une expérience</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 · MODÈLE DE CV A4 ============ -->
+  <div id="5a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">5</span>
+      <span style="font-size:17px;font-weight:600">Modèle « professionnel » — A4 210 × 297 mm, Noto Sans, texte sélectionnable</span>
+    </div>
+    <div style="font-size:13px;color:#43474E;max-width:900px;line-height:1.55">Marges 18 mm ; corps 10 pt ; une seule couleur d'accent (#2F5D8C) réservée aux titres de section et au titre professionnel. Les titres de section restent solidaires du premier élément qui les suit (pas de titre seul en bas de page).</div>
+
+    <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+      <!-- version 1 page avec photo -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:600;color:#43474E">A · Une page, avec photo</div>
+        <div data-screen-label="07 CV A4 – 1 page avec photo" style="width:794px;height:1123px;background:#fff;box-shadow:0 14px 40px rgba(16,24,40,.24);font-family:'Noto Sans',sans-serif;color:#1B1F23;padding:68px;display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;gap:24px;align-items:center">
+            <div style="width:96px;height:96px;border-radius:48px;flex:none;background:#EDF0F5;border:1px solid #DDE1E8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+              <span class="ms" style="font-size:30px;color:#9AA0A6">person</span>
+              <span style="font-family:ui-monospace,Consolas,monospace;font-size:7px;color:#9AA0A6;letter-spacing:.04em">PHOTO</span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:31px;font-weight:700;letter-spacing:-.015em;line-height:1.1">Camille Moreau</div>
+              <div style="font-size:15px;font-weight:600;color:#2F5D8C;margin-top:4px">Développeuse Front-End</div>
+              <div style="font-size:11.5px;line-height:1.7;color:#3A3F45;margin-top:8px">Lyon, France · +33 6 12 34 56 78 · camille.moreau@email.fr<br>camille-moreau.fr · linkedin.com/in/camillemoreau · github.com/cmoreau</div>
+            </div>
+          </div>
+          <div style="height:1.5px;background:#2F5D8C"></div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Profil professionnel</div>
+            <div style="font-size:13px;line-height:1.6;color:#1B1F23;text-wrap:pretty">Développeuse front-end avec 5 ans d'expérience sur des applications web et de bureau. Spécialisée en Flutter et TypeScript, attentive à l'accessibilité, aux performances et à la qualité du code. À la recherche d'un poste où la conception d'interfaces et la performance comptent autant que la livraison.</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Expériences</div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Développeuse Front-End — Nexora</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">sept. 2023 – aujourd'hui</span></div>
+              <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+              <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Refonte du portail client en Flutter Web : −38 % de temps de chargement.<br>• Mise en place des tests d'intégration, couverture portée à 72 %.<br>• Accompagnement de deux développeurs juniors et revues de code hebdomadaires.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Développeuse Web — Atelier Kipli</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">janv. 2021 – août 2023</span></div>
+              <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Villeurbanne, France</div>
+              <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Création du design system interne, utilisé par 4 équipes produit.<br>• Développement de l'espace client (React, TypeScript) : 40 000 visiteurs / mois.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Intégratrice Web (alternance) — Studio Vertige</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">sept. 2019 – déc. 2020</span></div>
+              <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+              <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Intégration de plus de 20 sites vitrines responsives pour des clients PME.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Formations</div>
+            <div>
+              <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Master Informatique — Université Lyon 1</span><span style="font-size:11.5px;color:#3A3F45">2019 – 2021</span></div>
+              <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Licence MIAGE — Université Lyon 2</span><span style="font-size:11.5px;color:#3A3F45">2016 – 2019</span></div>
+              <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Compétences</div>
+            <div style="font-size:12.5px;line-height:1.7"><strong style="font-weight:700">Langages &amp; frameworks</strong> — Dart / Flutter, TypeScript, React, HTML, CSS<br><strong style="font-weight:700">Méthodes &amp; outils</strong> — Git, tests automatisés, CI, Figma, accessibilité (WCAG AA)</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Langues</div>
+            <div style="font-size:12.5px;line-height:1.7">Français — langue maternelle · Anglais — C1 · Espagnol — B1</div>
+          </div>
+
+          <div style="margin-top:auto;display:flex;justify-content:flex-end;font-size:9.5px;color:#9AA0A6">1 / 1</div>
+        </div>
+      </div>
+
+      <!-- version 2 pages sans photo -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:600;color:#43474E">B · Deux pages, sans photo (sections facultatives affichées)</div>
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div data-screen-label="08 CV A4 – page 1 sans photo" style="width:794px;height:1123px;background:#fff;box-shadow:0 14px 40px rgba(16,24,40,.24);font-family:'Noto Sans',sans-serif;color:#1B1F23;padding:68px;display:flex;flex-direction:column;gap:20px">
+            <div>
+              <div style="font-size:31px;font-weight:700;letter-spacing:-.015em;line-height:1.1">Camille Moreau</div>
+              <div style="font-size:15px;font-weight:600;color:#2F5D8C;margin-top:4px">Développeuse Front-End</div>
+              <div style="font-size:11.5px;line-height:1.7;color:#3A3F45;margin-top:8px">Lyon, France · +33 6 12 34 56 78 · camille.moreau@email.fr · camille-moreau.fr<br>linkedin.com/in/camillemoreau · github.com/cmoreau</div>
+            </div>
+            <div style="height:1.5px;background:#2F5D8C"></div>
+
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Profil professionnel</div>
+              <div style="font-size:13px;line-height:1.6;text-wrap:pretty">Développeuse front-end avec 5 ans d'expérience sur des applications web et de bureau. Spécialisée en Flutter et TypeScript, attentive à l'accessibilité, aux performances et à la qualité du code.</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Expériences</div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Développeuse Front-End — Nexora</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">sept. 2023 – aujourd'hui</span></div>
+                <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Refonte du portail client en Flutter Web : −38 % de temps de chargement.<br>• Mise en place des tests d'intégration, couverture portée à 72 %.<br>• Accompagnement de deux développeurs juniors et revues de code hebdomadaires.<br>• Pilotage de la migration vers Material 3 sur 34 écrans.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Développeuse Web — Atelier Kipli</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">janv. 2021 – août 2023</span></div>
+                <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Villeurbanne, France</div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Création du design system interne, utilisé par 4 équipes produit.<br>• Développement de l'espace client (React, TypeScript) : 40 000 visiteurs / mois.<br>• Réduction de 25 % du temps de build en industrialisant la CI.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Intégratrice Web (alternance) — Studio Vertige</span><span style="font-size:11.5px;color:#3A3F45;white-space:nowrap">sept. 2019 – déc. 2020</span></div>
+                <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:3px">• Intégration de plus de 20 sites vitrines responsives pour des clients PME.<br>• Rédaction de la documentation d'intégration reprise par l'équipe.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Formations</div>
+              <div>
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Master Informatique — Université Lyon 1</span><span style="font-size:11.5px;color:#3A3F45">2019 – 2021</span></div>
+                <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:2px">Spécialité génie logiciel. Mémoire sur le rendu d'interfaces multiplateformes.</div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Licence MIAGE — Université Lyon 2</span><span style="font-size:11.5px;color:#3A3F45">2016 – 2019</span></div>
+                <div style="font-size:11.5px;font-style:italic;color:#3A3F45">Lyon, France</div>
+              </div>
+            </div>
+
+            <div style="margin-top:auto;display:flex;justify-content:flex-end;font-size:9.5px;color:#9AA0A6">1 / 2</div>
+          </div>
+
+          <div data-screen-label="09 CV A4 – page 2 sans photo" style="width:794px;height:1123px;background:#fff;box-shadow:0 14px 40px rgba(16,24,40,.24);font-family:'Noto Sans',sans-serif;color:#1B1F23;padding:68px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Compétences</div>
+              <div style="font-size:12.5px;line-height:1.7"><strong style="font-weight:700">Langages &amp; frameworks</strong> — Dart / Flutter, TypeScript, React, HTML, CSS<br><strong style="font-weight:700">Méthodes &amp; outils</strong> — Git, tests automatisés, CI/CD, Figma, accessibilité (WCAG AA)<br><strong style="font-weight:700">Bases de données</strong> — SQLite, PostgreSQL</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Langues</div>
+              <div style="font-size:12.5px;line-height:1.7">Français — langue maternelle · Anglais — C1 (TOEIC 945) · Espagnol — B1</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Certifications</div>
+              <div style="font-size:12.5px;line-height:1.7"><strong style="font-weight:700">Flutter Certified Developer</strong> — Google, 2024<br><strong style="font-weight:700">Accessibilité numérique (RGAA)</strong> — Access42, 2023</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Projets</div>
+              <div>
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Kanji Deck — application de révision hors ligne</span><span style="font-size:11.5px;color:#3A3F45">2025</span></div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:3px">Application Flutter desktop et mobile, 3 000 utilisateurs, stockage local chiffré.</div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:13.5px;font-weight:700">Contributions open source — package flutter_pdf_view</span><span style="font-size:11.5px;color:#3A3F45">2023 – 2024</span></div>
+                <div style="font-size:12.5px;line-height:1.6;margin-top:3px">12 correctifs acceptés dont le rendu incrémental des pages.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Centres d'intérêt</div>
+              <div style="font-size:12.5px;line-height:1.7">Typographie · Course à pied (semi-marathon) · Bénévolat associatif en médiation numérique</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C">Références</div>
+              <div style="font-size:12.5px;line-height:1.7">Sonia Berthier — Lead Developer, Nexora · sonia.berthier@nexora.fr<br>Marc Tessier — Directeur technique, Atelier Kipli · sur demande</div>
+            </div>
+
+            <div style="margin-top:auto;display:flex;justify-content:flex-end;font-size:9.5px;color:#9AA0A6">2 / 2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6 · TOKENS ============ -->
+  <div id="6a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:#2F5D8C;color:#fff">6</span>
+      <span style="font-size:17px;font-weight:600">Tokens de design — à traduire en <span style="font-family:ui-monospace,Consolas,monospace;font-size:15px">ThemeData</span></span>
+    </div>
+
+    <div style="width:1440px;background:#FCFCFF;border-radius:8px;padding:28px;box-shadow:0 10px 30px rgba(16,24,40,.14);display:flex;flex-direction:column;gap:26px">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Couleurs — ColorScheme.fromSeed(seedColor: Color(0xFF2F5D8C))</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#2F5D8C"></div><div style="font-size:12px;font-weight:600">primary</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#2F5D8C</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#D6E3F2"></div><div style="font-size:12px;font-weight:600">secondaryContainer</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#D6E3F2</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#12385C"></div><div style="font-size:12px;font-weight:600">onSecondaryContainer</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#12385C</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#FCFCFF;border:1px solid #DDE1E8"></div><div style="font-size:12px;font-weight:600">surface</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#FCFCFF</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#F5F7FA;border:1px solid #DDE1E8"></div><div style="font-size:12px;font-weight:600">surfaceContainerLow</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#F5F7FA</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#EDF0F5;border:1px solid #DDE1E8"></div><div style="font-size:12px;font-weight:600">surfaceContainer</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#EDF0F5</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#1A1C1E"></div><div style="font-size:12px;font-weight:600">onSurface</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#1A1C1E</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#43474E"></div><div style="font-size:12px;font-weight:600">onSurfaceVariant</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#43474E</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#73777F"></div><div style="font-size:12px;font-weight:600">outline</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#73777F</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#DDE1E8"></div><div style="font-size:12px;font-weight:600">outlineVariant</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#DDE1E8</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#8C1D18"></div><div style="font-size:12px;font-weight:600">error</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#8C1D18</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:8px;background:#E3F1E7"></div><div style="font-size:12px;font-weight:600">successContainer</div><div style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">#E3F1E7 / #1E5233</div></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:28px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Typographie — interface (Segoe UI)</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:24px;font-weight:600;flex:1">Titre d'écran</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">headlineSmall · 24/600</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:18px;font-weight:600;flex:1">Titre de section</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">titleLarge · 18/600</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:14px;font-weight:600;flex:1">Titre de carte</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">titleMedium · 14/600</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:13px;flex:1">Texte courant et champs</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">bodyMedium · 13/400</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:12px;color:#43474E;flex:1">Texte secondaire</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">bodySmall · 12/400</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#43474E;flex:1">Sur-titre</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">labelSmall · 11/500 · +0.06em</span></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E;margin-top:8px">Typographie — PDF (Noto Sans)</div>
+          <div style="font-family:'Noto Sans',sans-serif;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:31px;font-weight:700;flex:1">Nom</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">23 pt / 700</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:15px;font-weight:600;color:#2F5D8C;flex:1">Titre professionnel</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">11 pt / 600</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5D8C;flex:1">Titre de section</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">8 pt / 700 · +0.14em</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:13.5px;font-weight:700;flex:1">Intitulé de poste</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">10 pt / 700</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:12.5px;flex:1">Corps du CV</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">9.5 pt / 400 · 1.6</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:11.5px;font-style:italic;color:#3A3F45;flex:1">Lieu, dates</span><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#43474E">8.5 pt / italique</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Espacements (densité compacte)</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:4px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">4 px</span><span style="font-size:12px;color:#43474E">interstice d'icônes</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:8px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">8 px</span><span style="font-size:12px;color:#43474E">entre cartes de liste</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:12px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">12 px</span><span style="font-size:12px;color:#43474E">entre champs d'une rangée</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:16px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">16 px</span><span style="font-size:12px;color:#43474E">padding des panneaux</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:20px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">20 px</span><span style="font-size:12px;color:#43474E">gouttière du formulaire</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:16px;background:#2F5D8C"></div><span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;width:48px">24 px</span><span style="font-size:12px;color:#43474E">padding des dialogues</span></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E;margin-top:8px">Dimensions clés</div>
+          <div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.9;color:#43474E">
+            navigation : 240 px<br>aperçu PDF : 620 px (min. 420)<br>bascule onglets : &lt; 1100 px<br>hauteur de rangée nav : 36 px<br>champ (compact) : 44 px<br>IconButton : 32 px<br>barre d'outils aperçu : 48 px<br>marge PDF : 18 mm (68 px @96 dpi)
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E">Rayons &amp; élévations</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;border:1px solid #73777F;border-radius:4px"></div><div><div style="font-size:12px;font-weight:600">4 px</div><div style="font-size:11px;color:#43474E">TextField</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;border:1px solid #C3C7CD;border-radius:12px"></div><div><div style="font-size:12px;font-weight:600">12 px</div><div style="font-size:11px;color:#43474E">cartes de liste</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;background:#2F5D8C;border-radius:18px"></div><div><div style="font-size:12px;font-weight:600">18 px (stadium)</div><div style="font-size:11px;color:#43474E">boutons, rangées de nav</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;background:#FCFCFF;border:1px solid #DDE1E8;border-radius:28px"></div><div><div style="font-size:12px;font-weight:600">28 px</div><div style="font-size:11px;color:#43474E">Dialog</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;background:#FCFCFF;border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.18)"></div><div><div style="font-size:12px;font-weight:600">elevation 1</div><div style="font-size:11px;color:#43474E">carte dépliée</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:56px;height:36px;background:#FCFCFF;border-radius:12px;box-shadow:0 8px 20px rgba(47,93,140,.28)"></div><div><div style="font-size:12px;font-weight:600">elevation 6</div><div style="font-size:11px;color:#43474E">élément glissé, Dialog</div></div></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#43474E;margin-top:8px">Temporisations</div>
+          <div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.9;color:#43474E">
+            sauvegarde auto : 600 ms après la frappe<br>régénération PDF : 900 ms après la frappe<br>transition d'onglet : 200 ms<br>toast : 4 s (6 s si action)<br>entrée du toast : 180 ms
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>
