@@ -32,7 +32,8 @@ Le produit minimum viable comprend :
 1. un éditeur de CV organisé en sections ;
 2. un aperçu affichant directement le PDF généré, avec un bouton de
    rafraîchissement ;
-3. un modèle de CV professionnel ;
+3. un catalogue de modèles de CV intégrés, en une seule colonne, dont un
+   modèle professionnel par défaut ;
 4. l'ajout, la modification, la suppression et la réorganisation des éléments
    répétables ;
 5. l'annulation et le rétablissement des modifications (undo/redo) ;
@@ -122,7 +123,43 @@ L'utilisateur peut ajouter, supprimer et réordonner les formations.
 
 Chaque section facultative peut être affichée ou masquée dans le CV.
 
-### 5.9 Aperçu PDF
+### 5.9 Catalogue de modèles
+
+- Un catalogue affiche les modèles disponibles sous forme de vignettes
+  accompagnées d'un libellé et d'une courte description.
+- Les vignettes sont livrées avec l'application et consultables hors ligne.
+- Le choix d'un modèle change uniquement la mise en forme : le contenu saisi,
+  l'ordre et la visibilité des sections sont conservés à l'identique.
+- Le modèle sélectionné est enregistré avec le CV et retrouvé à la réouverture.
+- Le changement de modèle déclenche la régénération du PDF.
+
+Un modèle est décrit par quatre groupes de propriétés, indépendants les uns des
+autres :
+
+1. **structure** : nombre de colonnes et, le cas échéant, position de la colonne
+   latérale et sections qui y sont placées ;
+2. **en-tête** : bandeau pleine largeur ou non, alignement, présence et forme de
+   la photo ;
+3. **jetons visuels** : couleur d'accent, couleurs de texte, police, échelle
+   typographique, interlignes et marges ;
+4. **décorations de section** : style des titres, filets de séparation, style
+   des puces et rendu des compétences.
+
+Pour le MVP, tous les modèles intégrés utilisent la structure en une seule
+colonne. Les modèles à colonne latérale sont hors périmètre initial : les
+systèmes ATS lisent le PDF de façon linéaire et entrelacent le contenu des deux
+colonnes, ce qui dégrade fortement l'extraction des champs. Cette contrainte
+vaut également pour les évolutions : quelle que soit la structure retenue, les
+widgets du PDF doivent être émis dans l'ordre de lecture attendu par un
+humain, et le texte ne doit jamais être placé dans un en-tête de page.
+
+La distinction entre les groupes 1-2 et le groupe 3 est structurante : les
+jetons visuels sont destinés à devenir personnalisables par l'utilisateur
+indépendamment du modèle choisi, comme le proposent les éditeurs de CV en
+ligne. Le générateur PDF doit donc lire ces propriétés depuis une description
+de modèle, et non les coder en dur.
+
+### 5.10 Aperçu PDF
 
 - L'aperçu affiche directement le PDF généré à partir des données du CV : ce
   qui est affiché est exactement ce qui sera exporté.
@@ -131,7 +168,7 @@ Chaque section facultative peut être affichée ou masquée dans le CV.
 - Un indicateur signale qu'une génération est en cours.
 - L'aperçu permet le zoom et le défilement entre les pages.
 
-### 5.10 Annuler / Rétablir
+### 5.11 Annuler / Rétablir
 
 - Annuler la dernière modification (`Ctrl+Z`).
 - Rétablir une modification annulée (`Ctrl+Y` ou `Ctrl+Maj+Z`).
@@ -139,7 +176,8 @@ Chaque section facultative peut être affichée ou masquée dans le CV.
   n'est disponible.
 - L'historique couvre toutes les modifications du CV effectuées pendant la
   session actuelle : saisie, renommage, ajout, suppression, réorganisation,
-  affichage ou masquage des sections et changements de photo.
+  affichage ou masquage des sections, changement de modèle et changements de
+  photo.
 - Les frappes successives dans un même champ sont regroupées en une seule
   étape d'historique.
 - L'historique est propre à chaque CV et n'est pas conservé après la fermeture
@@ -147,7 +185,7 @@ Chaque section facultative peut être affichée ou masquée dans le CV.
   conserve leurs historiques respectifs. Une nouvelle session démarre avec
   un historique vide.
 
-### 5.11 Export PDF
+### 5.12 Export PDF
 
 - Exporter toutes les pages dans un unique fichier PDF.
 - Si les dernières modifications ne sont pas encore reflétées dans le PDF,
@@ -210,12 +248,17 @@ CvDocument
 ├── certifications[]
 ├── projets[]
 ├── centres d'intérêt[]
-└── préférences de présentation (ordre et visibilité des sections)
+└── préférences de présentation (modèle sélectionné, ordre et visibilité des
+    sections)
 ```
 
 Chaque élément répétable possède un identifiant stable et un ordre d'affichage.
 Les données métier restent indépendantes du modèle visuel afin de pouvoir
-ajouter d'autres thèmes ultérieurement.
+ajouter d'autres thèmes ultérieurement. Le CV enregistre uniquement
+l'identifiant du modèle sélectionné, jamais sa description : celle-ci est
+fournie par le catalogue, ce qui permet de faire évoluer un modèle sans migrer
+les CV existants. Un identifiant inconnu à la lecture retombe sur le modèle
+professionnel par défaut.
 
 Le modèle est immuable : chaque modification produit un nouvel état du CV, ce
 qui permet de construire l'historique undo/redo.
@@ -285,6 +328,8 @@ Le MVP est considéré comme terminé lorsque :
   exporté ;
 - les listes d'expériences et de formations peuvent être réorganisées ;
 - les sections facultatives peuvent être masquées ;
+- le catalogue permet de changer de modèle et le PDF reflète ce choix sans
+  perte de contenu ;
 - un CV long est réparti sur plusieurs pages A4 ;
 - le PDF exporté est identique à celui affiché ;
 - un export demandé avant la mise à jour du PDF attend la régénération
@@ -297,8 +342,14 @@ Les fonctions suivantes pourront être étudiées après le MVP :
 
 - prise en charge de plateformes autres que Windows ;
 - stockage persistant des photos avec les CV ;
-- modèles graphiques supplémentaires ;
-- personnalisation avancée des couleurs et des polices ;
+- modèles à deux colonnes ou à colonne latérale, et le moteur de zones
+  correspondant ;
+- ajout de modèles par l'utilisateur sans recompilation, via un manifeste
+  déposé dans un dossier local ;
+- personnalisation avancée des couleurs et des polices par l'utilisateur,
+  indépendamment du modèle choisi ;
+- rendus enrichis des compétences (points, étoiles, barres de niveau) et icônes
+  de section ;
 - import depuis LinkedIn ou depuis un CV existant ;
 - suggestions de rédaction assistées par intelligence artificielle ;
 - traduction automatique ;
@@ -312,8 +363,10 @@ Les fonctions suivantes pourront être étudiées après le MVP :
 1. Mettre en place l'architecture, le thème et la navigation.
 2. Créer les modèles de données immuables.
 3. Développer les formulaires des sections principales.
-4. Construire le premier modèle de CV en PDF et l'aperçu sur le côté droit.
+4. Construire le générateur PDF piloté par une description de modèle, le modèle
+   professionnel par défaut et l'aperçu sur le côté droit.
 5. Ajouter le système undo/redo.
 6. Ajouter la sauvegarde locale SQLite et la gestion de plusieurs CV.
 7. Implémenter la pagination et l'export PDF.
-8. Renforcer les tests et la gestion des erreurs.
+8. Ajouter les autres modèles intégrés et le catalogue de sélection.
+9. Renforcer les tests et la gestion des erreurs.

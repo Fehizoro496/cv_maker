@@ -5,6 +5,8 @@ import 'package:cv_maker/features/cv/presentation/section_visibility_provider.da
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_navigation.dart';
 import 'package:flutter/material.dart';
+import 'package:cv_maker/features/cv/domain/cv_design.dart';
+import 'package:cv_maker/features/cv/presentation/editor_draft_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,6 +33,21 @@ void main() {
   }
 
   Finder rowOf(CvSection section) => find.byKey(ValueKey(section));
+
+  testWidgets('design selector updates the draft and follows undo', (
+    tester,
+  ) async {
+    await pumpNavigation(tester);
+    await tester.tap(find.text('Catalogue des designs'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choisir Moderne'));
+    await tester.pumpAndSettle();
+    expect(container.read(editorDraftProvider).design, CvDesign.modern);
+    container.read(editorDraftProvider.notifier).undo();
+    await tester.pumpAndSettle();
+    expect(find.text('Professionnel'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<CvDesign>), findsNothing);
+  });
 
   Text labelOf(WidgetTester tester, CvSection section) => tester.widget<Text>(
     find.descendant(of: rowOf(section), matching: find.text(section.label)),

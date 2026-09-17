@@ -1,4 +1,4 @@
-import 'package:cv_maker/features/cv/presentation/cv_month_year.dart';
+import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
