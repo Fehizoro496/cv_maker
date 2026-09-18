@@ -8,6 +8,7 @@ import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/cv_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/long_cv.dart';
 import '../../../../helpers/pdf_bytes.dart';
 
 /// Le nombre de pages réellement présentes dans le PDF.
@@ -186,6 +187,99 @@ void main() {
       ),
       isNot(pdfFingerprint(await buildCvPdf(document, classicDesignSpec))),
     );
+  });
+
+  group('chaque section pagine sous un contenu long', () {
+    for (final section in CvSection.values) {
+      // Les informations personnelles forment l'en-tête, pas une section.
+      if (section == CvSection.personalInfo) continue;
+
+      test(section.name, () async {
+        final short = await buildCvPdf(
+          longCvFor(section, count: 8),
+          classicDesignSpec,
+        );
+        final long = await buildCvPdf(
+          longCvFor(section, count: 24),
+          classicDesignSpec,
+        );
+
+        // Aucune page ne déborde, et le format ne change pas sous la charge.
+        expect(isA4Portrait(short), isTrue);
+        expect(isA4Portrait(long), isTrue);
+
+        // Le contenu supplémentaire est réellement émis, et non tronqué :
+        // le document grandit avec lui.
+        expect(pdfFingerprint(long), isNot(pdfFingerprint(short)));
+        expect(long.length, greaterThan(short.length));
+        expect(
+          pageCount(long),
+          greaterThanOrEqualTo(pageCount(short)),
+          reason: 'la pagination ne perd pas de pages en route',
+        );
+      });
+    }
+  });
+
+  group('un contenu plus haut qu’une page se répartit', () {
+    // Régression : un seul widget indivisible plus haut qu'une page faisait
+    // échouer la génération, et donc l'aperçu comme l'export.
+
+    test('une description d’un seul paragraphe fleuve', () async {
+      final document = exampleCvDocument();
+      final flood = List.generate(2000, (i) => 'mot$i').join(' ');
+      final bytes = await buildCvPdf(
+        document.copyWith(
+          experiences: [
+            document.experiences.first.copyWith(description: flood),
+          ],
+        ),
+        classicDesignSpec,
+      );
+      expect(pageCount(bytes), greaterThan(1));
+      expect(isA4Portrait(bytes), isTrue);
+    });
+
+    test('un profil professionnel d’un seul paragraphe fleuve', () async {
+      final flood = List.generate(2000, (i) => 'mot$i').join(' ');
+      final bytes = await buildCvPdf(
+        exampleCvDocument().copyWith(profile: flood),
+        classicDesignSpec,
+      );
+      expect(pageCount(bytes), greaterThan(1));
+      expect(isA4Portrait(bytes), isTrue);
+    });
+
+    test('une liste de compétences plus longue qu’une page', () async {
+      final bytes = await buildCvPdf(
+        longCvFor(CvSection.skills, count: 200),
+        classicDesignSpec,
+      );
+      expect(pageCount(bytes), greaterThan(1));
+      expect(isA4Portrait(bytes), isTrue);
+    });
+
+    test('un texte de longueur ordinaire reste d’un seul tenant', () async {
+      // Le découpage ne doit se déclencher que sous la charge : un profil
+      // habituel garde exactement le rendu qu'il avait.
+      final document = exampleCvDocument();
+      expect(document.profile.length, lessThan(600));
+      final bytes = await buildCvPdf(document, classicDesignSpec);
+      expect(isA4Portrait(bytes), isTrue);
+    });
+  });
+
+  group('tous les modèles supportent un contenu long', () {
+    for (final design in CvDesign.values) {
+      test(design.name, () async {
+        final bytes = await buildCvPdf(
+          longCvFor(CvSection.experiences, count: 24),
+          design.spec,
+        );
+        expect(pageCount(bytes), greaterThan(1));
+        expect(isA4Portrait(bytes), isTrue);
+      });
+    }
   });
 
   test(

@@ -82,10 +82,50 @@ Future<Uint8List> buildCvPdf(
     ),
   );
 
+  /// Un texte qui accepte d'être coupé entre deux pages.
+  ///
+  /// Sans cela, un paragraphe plus haut qu'une page bloque la génération :
+  /// `MultiPage` scinde une colonne entre ses enfants, mais pas un enfant
+  /// indivisible. Une description fleuve ou une longue liste de compétences
+  /// faisait ainsi échouer l'aperçu.
+  pw.Widget flowingText(String text, {pw.TextStyle? style}) =>
+      pw.Text(text, style: style, overflow: pw.TextOverflow.span);
+
   /// Les lignes d'une description, préfixées comme le demande le modèle.
   Iterable<pw.Widget> descriptionLines(String description) => description
       .split('\n')
-      .map((line) => pw.Text('${style.bulletPrefix}$line'));
+      .map((line) => flowingText('${style.bulletPrefix}$line'));
+
+  /// Un titre de section suivi de son texte, coupable entre deux pages.
+  ///
+  /// Le titre voyage dans le même widget que le début de son texte : il ne
+  /// peut donc pas rester seul en bas d'une page. Mais `MultiPage` ne scinde
+  /// une colonne qu'entre ses enfants, jamais à l'intérieur de l'un d'eux :
+  /// seul un fragment borné accompagne le titre, le reste suit comme frère et
+  /// se répartit librement sur les pages suivantes.
+  Iterable<pw.Widget> titledText(String sectionLabel, String text) {
+    final lines = text.split('\n');
+    final first = lines.first;
+    // Environ sept lignes : de quoi tenir avec le titre sur n'importe quelle
+    // page, sans couper les textes de longueur ordinaire.
+    const maxWithTitle = 600;
+    var head = first;
+    var tail = '';
+    if (first.length > maxWithTitle) {
+      final cut = first.lastIndexOf(' ', maxWithTitle);
+      final at = cut <= 0 ? maxWithTitle : cut;
+      head = first.substring(0, at);
+      tail = first.substring(at).trimLeft();
+    }
+    return [
+      pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [heading(sectionLabel), flowingText(head)],
+      ),
+      if (tail.isNotEmpty) flowingText(tail),
+      ...lines.skip(1).map(flowingText),
+    ];
+  }
 
   /// Le libellé d'une période : « sept. 2023 – aujourd'hui ».
   String periodLabel(CvDateRange period) => [
@@ -151,12 +191,7 @@ Future<Uint8List> buildCvPdf(
   ) {
     final text = values.where((value) => value.isNotEmpty).join(separator);
     if (text.isEmpty) return const [];
-    return [
-      pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [heading(sectionLabel), pw.Text(text)],
-      ),
-    ];
+    return titledText(sectionLabel, text);
   }
 
   /// Les éléments d'une section, chacun avec son intitulé et sa description.
@@ -191,17 +226,9 @@ Future<Uint8List> buildCvPdf(
     return widgets;
   }
 
-  /// Le profil professionnel : le titre reste avec sa première ligne.
-  Iterable<pw.Widget> profileSection(String sectionLabel, String profile) {
-    final lines = profile.split('\n');
-    return [
-      pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [heading(sectionLabel), pw.Text(lines.first)],
-      ),
-      ...lines.skip(1).map(pw.Text.new),
-    ];
-  }
+  /// Le profil professionnel : le titre reste avec le début de son texte.
+  Iterable<pw.Widget> profileSection(String sectionLabel, String profile) =>
+      titledText(sectionLabel, profile);
 
   String joined(Iterable<String> parts) =>
       parts.where((part) => part.isNotEmpty).join(separator);

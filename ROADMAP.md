@@ -45,7 +45,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 
 ### Au 18 septembre 2026
 
-`fvm flutter analyze` ne signale aucun problème et les 235 tests passent.
+`fvm flutter analyze` ne signale aucun problème et les 253 tests passent.
 
 Le jalon JD a résorbé les deux dettes structurelles qui bloquaient la fin du
 J2 : `CvDocument` est désormais la seule représentation d'un CV dans
@@ -103,6 +103,24 @@ Les jalons **JN** et **J8** sont livrés. Trois points à connaître :
   deux assertions antérieures étaient dans ce second cas ;
 - le JZ reste à faire : le catalogue ne propose que cinq des huit modèles du
   handoff.
+
+Le dernier point du **J3** est levé, et sa vérification a mis au jour deux
+défauts du générateur, tous deux corrigés :
+
+1. **Un paragraphe plus haut qu'une page faisait échouer la génération**, et
+   donc l'aperçu comme l'export. `MultiPage` ne coupe un texte que si celui-ci
+   l'autorise explicitement ; ce n'était pas le cas. Une description fleuve
+   d'environ mille mots suffisait à bloquer l'application.
+2. **Une liste de compétences ou de langues dépassant une page échouait
+   également**, pour une raison voisine : `MultiPage` scinde une colonne entre
+   ses enfants, jamais à l'intérieur de l'un d'eux. Le texte long devait donc
+   sortir de la colonne qui porte le titre de section. Seul un fragment borné
+   accompagne désormais le titre, ce qui préserve la règle du titre solidaire
+   sans rendre le bloc indivisible.
+
+Les CV de taille ordinaire ne sont pas affectés par ces corrections : le
+découpage ne se déclenche qu'au-delà d'environ sept lignes de texte sous un
+titre de section.
 
 ---
 
@@ -218,9 +236,11 @@ l'aperçu, sans titre isolé ni contenu tronqué.
 - [x] Afficher ou masquer chaque section facultative.
 - [x] Confirmation avant les suppressions importantes.
 - [x] Rendre toutes ces sections dans le modèle PDF.
-- [ ] Vérifier la pagination de chaque section avec des contenus longs en
-  réutilisant le moteur validé au J2. ⚠ Un seul test couvre les sections
-  répétées ; les autres ne sont pas vérifiées individuellement.
+- [x] Vérifier la pagination de chaque section avec des contenus longs en
+  réutilisant le moteur validé au J2. Chaque section est éprouvée
+  individuellement, sur les cinq modèles, avec vérification du format A4 et de
+  la croissance du document. Ce travail a révélé deux défauts du générateur,
+  corrigés : voir ci-dessous.
 
 **Terminé quand :** chaque section est éditable et visible dans le PDF, et les
 sections masquées n'y apparaissent plus.
@@ -573,3 +593,9 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   expirer `pumpAndSettle`. Les notifications d'attente utilisent donc une icône
   fixe, et les vignettes du catalogue sont remplacées dans les tests d'interface
   plutôt que générées.
+- **Widgets indivisibles dans le PDF :** `MultiPage` ne répartit sur plusieurs
+  pages qu'un widget qui sait se couper, et ne scinde une colonne qu'entre ses
+  enfants. Tout contenu de hauteur non bornée doit donc être émis comme frère
+  du titre de section, avec `TextOverflow.span`, et jamais comme son enfant.
+  C'est la contrainte à garder en tête en ajoutant une section au générateur,
+  et notamment pour les sections personnalisées du JS.
