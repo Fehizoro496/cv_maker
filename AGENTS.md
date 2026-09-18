@@ -47,6 +47,16 @@ fvm dart run build_runner build --delete-conflicting-outputs
 
 ## Commits
 
+- **Attendre l'approbation avant tout commit.** Un agent ne lance jamais
+  `git commit` de sa propre initiative, même lorsque `fvm flutter analyze` et
+  `fvm flutter test` passent. Il laisse ses modifications dans l'arbre de
+  travail, expose ce qui a changé et propose un message de commit ; le commit
+  n'a lieu qu'après un accord explicite.
+- La même règle s'applique à tout ce qui réécrit ou publie l'historique :
+  `git commit --amend`, `git rebase`, `git reset`, `git revert`, `git push`,
+  ainsi que l'ouverture d'une pull request.
+- Une approbation vaut pour le commit présenté, et pour lui seul : elle ne
+  s'étend pas aux commits suivants.
 - Les agents **ne doivent pas** être mentionnés dans les commits : aucune ligne `Co-Authored-By` pour un agent ou une IA (Claude, Copilot, Codex, etc.), ni de mention « Generated with … ».
 - Il en va de même pour les descriptions de pull requests.
 - Les messages de commit sont rédigés **en anglais** et suivent la convention [Conventional Commits](https://www.conventionalcommits.org) :
