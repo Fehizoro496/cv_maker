@@ -32,14 +32,42 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J3    | Formulaires de toutes les sections          | J2        | Terminé |
 | J4    | Undo / redo                                 | J3        | Terminé |
 | JD    | Résorption des dettes structurelles         | J4        | Terminé |
-| J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
-| J6    | Photo de session                            | J5        | Terminé |
+| J6    | Photo de session                            | JD        | Terminé |
 | J7    | Export PDF                                  | J6        | Terminé |
 | JN    | Notifications                               | J7        | Terminé |
 | J8    | Catalogue de modèles et réglages            | JD, JN    | Terminé |
+| JS    | Sections personnalisées                     | JD        | À faire |
+| J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
-| JS    | Sections personnalisées                     | J3, J5    | À faire |
-| J9    | Finitions et validation du MVP              | J8, JZ, JS | À faire |
+| J9    | Finitions et validation du MVP              | J5, JZ, JS | À faire |
+
+### Ordre conseillé pour les jalons restants
+
+**JS → J5 → JZ → J9.** Les identifiants des jalons sont conservés pour ne pas
+casser les références ; leur numéro ne définit pas l'ordre d'implémentation.
+La colonne « Dépend de » indique les prérequis techniques, pas les priorités.
+
+1. **JS — Sections personnalisées :** compléter le contenu de `CvDocument`,
+   sa sérialisation, les formulaires, l'historique et le rendu PDF sur les cinq
+   modèles existants. SQLite n'est pas nécessaire pour ces travaux. Faire JS
+   avant J5 évite de modifier le format JSON juste après sa première mise sur
+   disque ; cela ne supprime pas le besoin d'une stratégie de migration.
+2. **J5 — Persistance et multi-CV :** rendre le travail durable avec le
+   document ainsi complété. Valider ici la réouverture des sections
+   personnalisées et des réglages du catalogue, ainsi que l'isolation des
+   photos et des historiques entre CV. La sauvegarde est prioritaire sur
+   l'ajout des trois modèles restants pour rendre l'application utilisable
+   au quotidien.
+3. **JZ — Moteur de zones :** compléter les huit modèles et éprouver leur
+   pagination avec les sections standard et personnalisées. JZ ne dépend
+   pas de SQLite et pourrait être réalisé avant J5 si le rendu devient la
+   priorité ; son placement ici est un choix de livraison.
+4. **J9 — Validation du MVP :** réunir persistance, sections personnalisées
+   et huit modèles dans les scénarios de bout en bout.
+
+J5 ne bloque donc ni J6, ni J7, ni J8, déjà livrés en session, ni le
+développement de JS ou JZ. Il reste indispensable avant la validation du
+MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ## État du projet
 
@@ -54,8 +82,8 @@ l'application, et le générateur PDF ne lit sa mise en forme que dans une
 
 Le **J5 reste entier** : `drift` et `drift_flutter` figurent dans
 `pubspec.yaml` mais ne sont utilisés nulle part. Rien n'est persisté d'un
-lancement à l'autre, ce qui laisse en suspens le dernier point du J8 —
-retrouver le modèle choisi à la réouverture. `CvDocument.toJson` est prêt à
+lancement à l'autre : retrouver le modèle choisi au J8 à la réouverture
+reste une validation d'intégration à réaliser au J5. `CvDocument.toJson` est prêt à
 devenir la colonne document de la table drift.
 
 Trois changements de comportement introduits par le JD, à connaître :
@@ -351,6 +379,11 @@ l'application, l'aperçu et l'export sont inchangés à contenu égal, et
 - [ ] Conserver un historique undo/redo distinct par CV pendant la session, et
   inclure le renommage dans l'historique.
 - [ ] Démarrer chaque nouvelle session avec un historique vide.
+- [ ] Vérifier après réouverture les sections personnalisées du JS (si JS
+  est livré, comme prévu dans l'ordre conseillé), leur contenu, leur ordre
+  et leur visibilité, ainsi que le modèle et les réglages du J8.
+- [ ] Vérifier que les photos du J6 restent propres à chaque CV pendant la
+  session, ne sont jamais écrites en base et disparaissent au redémarrage.
 
 **Terminé quand :** les CV et leurs modifications sont retrouvés après un
 redémarrage, et changer de CV conserve l'historique de chacun pendant la
@@ -372,7 +405,8 @@ session.
 - [x] Inclure les changements de photo dans l'historique undo/redo.
 
 **Terminé quand :** la photo apparaît dans le PDF pendant la session et est
-absente après un redémarrage, sans erreur.
+exclue du JSON du document. La vérification après réouverture d'un CV
+persisté relève du J5.
 
 ---
 
@@ -465,8 +499,9 @@ dès ce jalon.
   annulation puis à un rétablissement.
 
 **Terminé quand :** l'utilisateur choisit un modèle et ses deux réglages dans le
-catalogue, l'aperçu et l'export les reflètent, le choix est retrouvé après un
-redémarrage et aucun contenu n'est perdu au passage d'un modèle à l'autre.
+catalogue, l'aperçu et l'export les reflètent, et aucun contenu n'est perdu au
+passage d'un modèle à l'autre. La conservation du choix après redémarrage
+est validée au J5.
 
 ---
 
@@ -491,6 +526,8 @@ l'ordre de lecture attendu par les systèmes ATS.
   lecture humaine, quel que soit le modèle.
 - [ ] Vérifier qu'aucun modèle ne place de texte dans un en-tête de page ni ne
   le rend sous forme d'image.
+- [ ] Si JS est livré, comme prévu dans l'ordre conseillé, vérifier le rendu
+  et la pagination de ses trois types de contenu sur les huit modèles.
 
 **Terminé quand :** les huit modèles du catalogue sont disponibles, et le texte
 d'un modèle à bandeau s'extrait dans l'ordre de lecture attendu.
@@ -524,8 +561,9 @@ standard ne couvrent pas.
   l'historique undo/redo.
 
 **Terminé quand :** l'utilisateur crée une section de chaque type, la remplit,
-la renomme, la masque et la supprime ; le PDF la reflète et elle est retrouvée
-après un redémarrage.
+la renomme, la masque et la supprime ; le PDF la reflète, l'historique restaure
+ces opérations et la sérialisation JSON conserve toutes ses données. La
+réouverture après redémarrage est validée au J5.
 
 ---
 
