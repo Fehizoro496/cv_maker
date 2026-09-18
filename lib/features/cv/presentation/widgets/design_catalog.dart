@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
+import '../../../../shared/widgets/color_picker_dialog.dart';
 import '../../domain/cv_design.dart';
 import '../../domain/cv_design_spec.dart';
 import '../catalog_preview_provider.dart';
@@ -21,14 +22,14 @@ class DesignCatalog extends ConsumerStatefulWidget {
   const DesignCatalog({
     super.key,
     required this.selected,
-    required this.accent,
+    required this.accentArgb,
     required this.showPhoto,
     this.hasPhoto = false,
   });
 
   /// Le modèle, la couleur et l'affichage de la photo enregistrés dans le CV.
   final CvDesign selected;
-  final CvAccent accent;
+  final int accentArgb;
   final bool showPhoto;
 
   /// Sans photo dans la session, le réglage correspondant reste indisponible.
@@ -51,11 +52,20 @@ class DesignCatalog extends ConsumerStatefulWidget {
 
 class _DesignCatalogState extends ConsumerState<DesignCatalog> {
   late CvDesign _design = widget.selected;
-  late CvAccent _accent = widget.accent;
+  late int _accentArgb = widget.accentArgb;
   late bool _showPhoto = widget.showPhoto;
 
+  /// Le choix en cours de composition, prévisualisé en grand.
   CatalogChoice get _choice =>
-      (design: _design, accent: _accent, showPhoto: _showPhoto);
+      (design: _design, accentArgb: _accentArgb, showPhoto: _showPhoto);
+
+  /// Les réglages tels qu'ils étaient à l'ouverture.
+  ///
+  /// Les vignettes des modèles non sélectionnés s'y tiennent : changer une
+  /// couleur ne régénère alors que l'aperçu du modèle choisi, et non toute la
+  /// grille.
+  ({int accentArgb, bool showPhoto}) get _baseline =>
+      (accentArgb: widget.accentArgb, showPhoto: widget.showPhoto);
 
   @override
   Widget build(BuildContext context) => Dialog(
@@ -82,15 +92,15 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
                     constraints.maxWidth < DesignCatalog.wideBreakpoint;
                 final grid = _TemplateGrid(
                   selected: _design,
-                  accent: _accent,
-                  showPhoto: _showPhoto,
+                  selectedChoice: _choice,
+                  baseline: _baseline,
                   insideScrollView: narrow,
                   onSelected: (design) => setState(() => _design = design),
                 );
                 final settings = _SettingsPanel(
                   choice: _choice,
                   hasPhoto: widget.hasPhoto,
-                  onAccent: (accent) => setState(() => _accent = accent),
+                  onAccent: (argb) => setState(() => _accentArgb = argb),
                   onShowPhoto: (value) => setState(() => _showPhoto = value),
                 );
                 // En fenêtre étroite, le panneau passe sous la grille.
@@ -176,15 +186,20 @@ class _Header extends StatelessWidget {
 class _TemplateGrid extends StatelessWidget {
   const _TemplateGrid({
     required this.selected,
-    required this.accent,
-    required this.showPhoto,
+    required this.selectedChoice,
+    required this.baseline,
     required this.onSelected,
     this.insideScrollView = false,
   });
 
   final CvDesign selected;
-  final CvAccent accent;
-  final bool showPhoto;
+
+  /// Le choix complet appliqué à la vignette du modèle sélectionné.
+  final CatalogChoice selectedChoice;
+
+  /// Les réglages appliqués aux autres vignettes, figés à l'ouverture.
+  final ({int accentArgb, bool showPhoto}) baseline;
+
   final ValueChanged<CvDesign> onSelected;
 
   /// Vrai lorsque la grille est posée dans un parent qui défile déjà.
@@ -227,10 +242,19 @@ class _TemplateGrid extends StatelessWidget {
         itemCount: CvDesign.values.length,
         itemBuilder: (context, index) {
           final design = CvDesign.values[index];
+          final isSelected = design == selected;
           return _TemplateCard(
             design: design,
-            isSelected: design == selected,
-            choice: (design: design, accent: accent, showPhoto: showPhoto),
+            isSelected: isSelected,
+            // Les autres vignettes gardent les réglages d'ouverture : elles ne
+            // se régénèrent donc pas à chaque changement de couleur.
+            choice: isSelected
+                ? selectedChoice
+                : (
+                    design: design,
+                    accentArgb: baseline.accentArgb,
+                    showPhoto: baseline.showPhoto,
+                  ),
             onSelected: () => onSelected(design),
           );
         },
@@ -414,7 +438,7 @@ class _SettingsPanel extends StatelessWidget {
 
   final CatalogChoice choice;
   final bool hasPhoto;
-  final ValueChanged<CvAccent> onAccent;
+  final ValueChanged<int> onAccent;
   final ValueChanged<bool> onShowPhoto;
 
   @override
@@ -457,21 +481,10 @@ class _SettingsPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (final accent in CvAccent.values) ...[
-                      if (accent != CvAccent.values.first)
-                        const SizedBox(width: 10),
-                      _AccentDot(
-                        accent: accent,
-                        isSelected: accent == choice.accent,
-                        // Un modèle sans couleur ignore ce réglage.
-                        onSelected: ignoresAccent
-                            ? null
-                            : () => onAccent(accent),
-                      ),
-                    ],
-                  ],
+                _AccentField(
+                  argb: choice.accentArgb,
+                  // Un modèle sans couleur ignore ce réglage.
+                  onChanged: ignoresAccent ? null : onAccent,
                 ),
                 if (ignoresAccent) ...[
                   const SizedBox(height: 8),
@@ -528,49 +541,68 @@ class _SettingsPanel extends StatelessWidget {
   }
 }
 
-class _AccentDot extends StatelessWidget {
-  const _AccentDot({
-    required this.accent,
-    required this.isSelected,
-    required this.onSelected,
-  });
+/// La couleur d'accent courante et son accès au sélecteur de couleur.
+class _AccentField extends StatelessWidget {
+  const _AccentField({required this.argb, required this.onChanged});
 
-  final CvAccent accent;
-  final bool isSelected;
-  final VoidCallback? onSelected;
+  final int argb;
+
+  /// `null` lorsque le modèle choisi n'utilise aucune couleur.
+  final ValueChanged<int>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(accent.color);
-    return Tooltip(
-      message: accent.label,
-      child: Semantics(
-        selected: isSelected,
-        button: true,
-        label: accent.label,
-        child: InkWell(
-          onTap: onSelected,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: onSelected == null ? color.withValues(alpha: .35) : color,
-              shape: BoxShape.circle,
-              // Deux anneaux : un blanc contre la pastille, puis sa couleur.
-              border: isSelected
-                  ? Border.all(color: AppColors.surface, width: 2)
-                  : null,
-              boxShadow: isSelected
-                  ? [BoxShadow(color: color, spreadRadius: 2)]
-                  : null,
-            ),
-            child: isSelected
-                ? const Icon(Icons.check, size: 17, color: Colors.white)
-                : null,
+    final color = Color(argb);
+    final enabled = onChanged != null;
+    return Row(
+      children: [
+        Container(
+          key: const Key('accent-swatch'),
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: enabled ? color : color.withValues(alpha: .35),
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.cardBorder),
           ),
         ),
-      ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            ColorPickerDialog.hexOf(color),
+            style: TextStyle(
+              fontSize: 12,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              color: enabled ? AppColors.onSurface : AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: enabled
+              ? () async {
+                  final chosen = await showColorPicker(
+                    context,
+                    initial: color,
+                    suggestions: [
+                      for (final accent in CvAccent.palette) Color(accent),
+                    ],
+                  );
+                  if (chosen != null) onChanged!(chosen.toARGB32());
+                }
+              : null,
+          icon: const Icon(Icons.palette_outlined, size: 16),
+          label: const Text('Choisir'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 34),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: const StadiumBorder(),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

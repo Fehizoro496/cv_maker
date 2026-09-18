@@ -33,8 +33,8 @@ Le produit minimum viable comprend :
 2. un aperçu affichant directement le PDF généré, avec un bouton de
    rafraîchissement ;
 3. un catalogue de huit modèles de CV intégrés, dont un modèle classique par
-   défaut, accompagné de deux réglages : la couleur d'accent, choisie dans une
-   palette fermée, et l'affichage de la photo ;
+   défaut, accompagné de deux réglages : la couleur d'accent, choisie
+   librement, et l'affichage de la photo ;
 4. des sections personnalisées créées par l'utilisateur, de trois types ;
 5. l'ajout, la modification, la suppression et la réorganisation des éléments
    répétables ;
@@ -140,10 +140,15 @@ interrupteur de visibilité.
   l'ordre et la visibilité des sections sont conservés à l'identique. Un modèle
   qui n'a pas de place pour la photo l'ignore sans la supprimer.
 - Deux réglages accompagnent le choix du modèle :
-  - la **couleur d'accent**, choisie dans une palette fermée de cinq valeurs ;
-    un modèle sans couleur ignore ce réglage ;
+  - la **couleur d'accent**, choisie dans un sélecteur de couleur : teinte,
+    saturation et luminosité, ou saisie directe d'un code hexadécimal. Cinq
+    couleurs sont proposées en raccourci. Un modèle sans couleur ignore ce
+    réglage ;
   - l'**affichage de la photo**, indisponible tant qu'aucune photo n'est
     chargée dans la session.
+- Changer un réglage ne régénère que l'aperçu du modèle sélectionné : les
+  vignettes des autres modèles restent telles qu'elles étaient à l'ouverture du
+  catalogue.
 - Le modèle, la couleur d'accent et l'affichage de la photo sont enregistrés
   avec le CV, et non globalement, puis retrouvés à la réouverture.
 - Le catalogue propose d'annuler sans rien appliquer, ou d'appliquer les trois
@@ -345,9 +350,11 @@ les CV existants. Un identifiant inconnu à la lecture retombe sur le modèle
 classique par défaut.
 
 Les deux réglages du catalogue sont enregistrés à côté de cet identifiant : la
-couleur d'accent, sous une forme qui reste valable si la palette évolue, et
+couleur d'accent, enregistrée telle quelle puisqu'elle est libre, et
 l'affichage de la photo. Ils surchargent les valeurs correspondantes de la
 description du modèle ; le reste de la mise en forme vient de la description.
+Une couleur enregistrée sans opacité est rendue opaque à la lecture : le PDF ne
+restitue pas la transparence.
 
 Le type d'une section personnalisée est figé à la création : il détermine la
 forme de son contenu, qu'un changement ultérieur rendrait invalide.
@@ -443,8 +450,8 @@ Les fonctions suivantes pourront être étudiées après le MVP :
 - stockage persistant des photos avec les CV ;
 - ajout de modèles par l'utilisateur sans recompilation, via un manifeste
   déposé dans un dossier local ;
-- personnalisation libre des couleurs et des polices, au-delà de la palette
-  fermée de cinq couleurs d'accent du catalogue ;
+- personnalisation des polices, et couleurs personnalisables au-delà de la
+  seule couleur d'accent ;
 - changement du type d'une section personnalisée après sa création ;
 - réorganisation des sections standard entre elles par l'utilisateur ;
 - rendus enrichis des compétences (points, étoiles, barres de niveau) et icônes

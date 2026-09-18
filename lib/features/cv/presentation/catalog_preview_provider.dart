@@ -9,7 +9,10 @@ import 'draft_preview_provider.dart';
 import 'widgets/cv_pdf.dart';
 
 /// Un modèle et ses deux réglages, tels que le catalogue les prévisualise.
-typedef CatalogChoice = ({CvDesign design, CvAccent accent, bool showPhoto});
+///
+/// La couleur est une valeur ARGB et non une entrée de palette : elle est
+/// libre, et sert aussi de clé de cache des aperçus.
+typedef CatalogChoice = ({CvDesign design, int accentArgb, bool showPhoto});
 
 /// La première page du CV en cours, rendue avec le choix demandé.
 ///
@@ -27,7 +30,7 @@ final catalogPreviewProvider = FutureProvider.family<Uint8List, CatalogChoice>((
   final bytes = await buildCvPdf(
     session.document,
     choice.design.spec.withOverrides(
-      accentColor: choice.accent.color,
+      accentColor: choice.accentArgb,
       showPhoto: choice.showPhoto,
     ),
     photo: session.photo,

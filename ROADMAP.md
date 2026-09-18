@@ -442,12 +442,15 @@ dès ce jalon.
 - [x] Rendre les vignettes et le grand aperçu depuis le PDF réel du CV en
   cours, et non depuis une image livrée dans les assets. Les trois vignettes
   PNG livrées dans les assets ont été retirées.
+- [x] Ne régénérer que l'aperçu du modèle sélectionné quand un réglage change :
+  les autres vignettes gardent les réglages d'ouverture du catalogue.
 - [x] Ajouter les cinq modèles en une seule colonne, chacun décrit par une
   constante, le modèle classique servant de repli.
 - [x] Permettre au modèle académique d'imposer son ordre de sections
   (formations avant expériences) sans modifier l'ordre enregistré dans le CV.
-- [x] Ajouter le réglage de couleur d'accent : palette fermée de cinq valeurs,
-  ignorée par un modèle sans couleur.
+- [x] Ajouter le réglage de couleur d'accent : sélecteur de couleur libre —
+  teinte, saturation, luminosité et saisie hexadécimale — avec la palette en
+  raccourci, ignoré par un modèle sans couleur.
 - [x] Ajouter le réglage d'affichage de la photo, indisponible tant qu'aucune
   photo n'est chargée dans la session.
 - [x] Enregistrer le modèle, la couleur d'accent et l'affichage de la photo
@@ -580,7 +583,9 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
 - **Vignettes du catalogue :** les rendre depuis le PDF réel du CV en cours
   demande autant de générations que de modèles à l'ouverture du catalogue. Si
   cela devient perceptible, les produire en tâche de fond, du modèle courant
-  vers les autres, et conserver le résultat le temps de la session.
+  vers les autres, et conserver le résultat le temps de la session. Les
+  réglages, eux, ne régénèrent que la vignette du modèle sélectionné, qui
+  partage sa clé avec le grand aperçu : une seule génération par changement.
 - **Réglages contre description :** la couleur d'accent et l'affichage de la
   photo sont les deux seules propriétés qu'un CV peut surcharger. Elles se
   lisent donc en un seul endroit, `CvDocument.designSpec`, et non dispersées

@@ -8,7 +8,7 @@ void main() {
 
   test('le modèle classique est choisi par défaut', () {
     expect(defaults.design, CvDesign.classic);
-    expect(defaults.accent, CvAccent.blue);
+    expect(defaults.accentColor, CvAccent.defaultColor);
     expect(defaults.showPhoto, isTrue);
   });
 
@@ -19,11 +19,18 @@ void main() {
     );
   });
 
-  test('une couleur d’accent inconnue retombe sur le bleu', () {
+  test('une couleur enregistrée sans opacité reste imprimable', () {
+    // Le PDF ne rend pas la transparence : l'opacité est forcée à la lecture.
     expect(
-      const CvPresentationPreferences(accentId: 'fuchsia').accent,
-      CvAccent.blue,
+      const CvPresentationPreferences(accentArgb: 0x00AB12CD).accentColor,
+      0xFFAB12CD,
     );
+  });
+
+  test('la couleur d’accent est libre, hors de la palette', () {
+    const custom = CvPresentationPreferences(accentArgb: 0xFF123456);
+    expect(custom.accentColor, 0xFF123456);
+    expect(CvAccent.palette, isNot(contains(0xFF123456)));
   });
 
   test('withDesign enregistre l’identifiant, pas le libellé', () {
@@ -32,20 +39,21 @@ void main() {
     expect(banner.design, CvDesign.banner);
   });
 
-  test('withAccent enregistre le nom de la couleur, pas son code', () {
-    final green = defaults.withAccent(CvAccent.green);
-    expect(green.accentId, 'green');
-    expect(green.accent, CvAccent.green);
+  test('withAccent enregistre la couleur choisie', () {
+    final custom = defaults.withAccent(0xFF7A2F4A);
+    expect(custom.accentColor, 0xFF7A2F4A);
+    // Une couleur sans opacité est corrigée à l'écriture.
+    expect(defaults.withAccent(0x00123456).accentColor, 0xFF123456);
   });
 
   test('withTemplate applique les trois choix du catalogue', () {
     final applied = defaults.withTemplate(
       design: CvDesign.compact,
-      accent: CvAccent.brown,
+      accentArgb: CvAccent.brown.color,
       showPhoto: false,
     );
     expect(applied.design, CvDesign.compact);
-    expect(applied.accent, CvAccent.brown);
+    expect(applied.accentColor, CvAccent.brown.color);
     expect(applied.showPhoto, isFalse);
     // L'ordre et la visibilité des sections ne bougent pas.
     expect(applied.sectionOrder, defaults.sectionOrder);

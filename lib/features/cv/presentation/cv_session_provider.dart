@@ -127,12 +127,12 @@ class CvSessionNotifier extends Notifier<CvSession> {
   /// valide ensemble, une annulation les retire ensemble.
   void applyTemplate({
     required CvDesign design,
-    required CvAccent accent,
+    required int accentArgb,
     required bool showPhoto,
   }) {
     final next = document.presentation.withTemplate(
       design: design,
-      accent: accent,
+      accentArgb: accentArgb,
       showPhoto: showPhoto,
     );
     if (next == document.presentation) return;

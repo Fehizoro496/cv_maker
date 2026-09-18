@@ -10,7 +10,7 @@ _CvPresentationPreferences _$CvPresentationPreferencesFromJson(
   Map<String, dynamic> json,
 ) => _CvPresentationPreferences(
   designId: json['designId'] as String? ?? 'classic',
-  accentId: json['accentId'] as String? ?? 'blue',
+  accentArgb: (json['accentArgb'] as num?)?.toInt() ?? CvAccent.defaultColor,
   showPhoto: json['showPhoto'] as bool? ?? true,
   sectionOrder:
       (json['sectionOrder'] as List<dynamic>?)
@@ -28,7 +28,7 @@ Map<String, dynamic> _$CvPresentationPreferencesToJson(
   _CvPresentationPreferences instance,
 ) => <String, dynamic>{
   'designId': instance.designId,
-  'accentId': instance.accentId,
+  'accentArgb': instance.accentArgb,
   'showPhoto': instance.showPhoto,
   'sectionOrder': instance.sectionOrder
       .map((e) => _$CvSectionEnumMap[e]!)

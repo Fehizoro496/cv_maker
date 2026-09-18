@@ -72,7 +72,7 @@ abstract class CvDocument with _$CvDocument {
   /// C'est la seule entrée de mise en forme du générateur PDF : la couleur
   /// d'accent et l'affichage de la photo y sont déjà résolus.
   CvDesignSpec get designSpec => design.spec.withOverrides(
-    accentColor: presentation.accent.color,
+    accentColor: presentation.accentColor,
     showPhoto: presentation.showPhoto,
   );
 

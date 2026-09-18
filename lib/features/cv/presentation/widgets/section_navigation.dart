@@ -58,7 +58,7 @@ class SectionNavigation extends ConsumerWidget {
                   context: context,
                   builder: (_) => DesignCatalog(
                     selected: presentation.design,
-                    accent: presentation.accent,
+                    accentArgb: presentation.accentColor,
                     showPhoto: presentation.showPhoto,
                     hasPhoto: session.hasPhoto,
                   ),
@@ -68,7 +68,7 @@ class SectionNavigation extends ConsumerWidget {
                     .read(cvSessionProvider.notifier)
                     .applyTemplate(
                       design: choice.design,
-                      accent: choice.accent,
+                      accentArgb: choice.accentArgb,
                       showPhoto: choice.showPhoto,
                     );
                 ref

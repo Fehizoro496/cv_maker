@@ -38,7 +38,7 @@ void main() {
     final png = await container.read(
       catalogPreviewProvider((
         design: CvDesign.classic,
-        accent: CvAccent.blue,
+        accentArgb: CvAccent.defaultColor,
         showPhoto: true,
       )).future,
     );
@@ -53,7 +53,7 @@ void main() {
       await container.read(
         catalogPreviewProvider((
           design: design,
-          accent: CvAccent.blue,
+          accentArgb: CvAccent.defaultColor,
           showPhoto: true,
         )).future,
       );
@@ -68,11 +68,11 @@ void main() {
 
   test('la couleur d’accent change le PDF généré', () async {
     final container = makeContainer();
-    for (final accent in [CvAccent.blue, CvAccent.burgundy]) {
+    for (final argb in [CvAccent.defaultColor, 0xFF7A2F4A]) {
       await container.read(
         catalogPreviewProvider((
           design: CvDesign.classic,
-          accent: accent,
+          accentArgb: argb,
           showPhoto: true,
         )).future,
       );
@@ -86,11 +86,11 @@ void main() {
 
   test('un modèle sans couleur ignore l’accent demandé', () async {
     final container = makeContainer();
-    for (final accent in [CvAccent.blue, CvAccent.green]) {
+    for (final argb in [CvAccent.defaultColor, 0xFF1E5233]) {
       await container.read(
         catalogPreviewProvider((
           design: CvDesign.plain,
-          accent: accent,
+          accentArgb: argb,
           showPhoto: true,
         )).future,
       );
@@ -102,7 +102,7 @@ void main() {
     final container = makeContainer();
     const choice = (
       design: CvDesign.classic,
-      accent: CvAccent.blue,
+      accentArgb: CvAccent.defaultColor,
       showPhoto: true,
     );
     await container.read(catalogPreviewProvider(choice).future);

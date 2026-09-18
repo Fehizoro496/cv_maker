@@ -5,6 +5,7 @@ import 'package:cv_maker/app/app_theme.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/presentation/catalog_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/design_catalog.dart';
+import 'package:cv_maker/shared/widgets/color_picker_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,11 +18,18 @@ final _png = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
 );
 
+/// Les combinaisons dont une vignette a été demandée.
+final requested = <CatalogChoice>{};
+
 /// Le catalogue est testé sur son interface : la génération des vignettes est
 /// couverte par le test de `catalogPreviewProvider`.
-final _fakePreviews = catalogPreviewProvider.overrideWith(
-  (ref, choice) async => Uint8List.fromList(_png),
-);
+final _fakePreviews = catalogPreviewProvider.overrideWith((ref, choice) async {
+  requested.add(choice);
+  return Uint8List.fromList(_png);
+});
+
+/// La notation hexadécimale attendue par les clés des suggestions.
+String _hex(int argb) => ColorPickerDialog.hexOf(Color(argb));
 
 void main() {
   CatalogChoice? result;
@@ -30,12 +38,13 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(1440, 900),
     CvDesign selected = CvDesign.classic,
-    CvAccent accent = CvAccent.blue,
+    int accentArgb = CvAccent.defaultColor,
     bool showPhoto = true,
     bool hasPhoto = true,
   }) async {
     useDesktopView(tester, size: size);
     result = null;
+    requested.clear();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [_fakePreviews],
@@ -49,7 +58,7 @@ void main() {
                     context: context,
                     builder: (_) => DesignCatalog(
                       selected: selected,
-                      accent: accent,
+                      accentArgb: accentArgb,
                       showPhoto: showPhoto,
                       hasPhoto: hasPhoto,
                     ),
@@ -139,10 +148,9 @@ void main() {
       find.text('Ce modèle propose aussi une version sans photo.'),
       findsOneWidget,
     );
-    // Une pastille par couleur de la palette fermée.
-    for (final accent in CvAccent.values) {
-      expect(find.byTooltip(accent.label), findsOneWidget);
-    }
+    // La couleur courante est affichée et modifiable.
+    expect(find.text('#2F5D8C'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Choisir'), findsOneWidget);
   });
 
   testWidgets('l’en-tête annonce le nombre de modèles', (tester) async {
@@ -179,14 +187,74 @@ void main() {
     expect(find.byType(DesignCatalog), findsNothing);
   });
 
-  testWidgets('appliquer retourne aussi la couleur choisie', (tester) async {
+  testWidgets('le sélecteur de couleur retourne une couleur libre', (
+    tester,
+  ) async {
     await openCatalog(tester);
-    await tester.tap(find.byTooltip(CvAccent.burgundy.label));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Choisir'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ColorPickerDialog), findsOneWidget);
+
+    // Une couleur qui n'appartient pas aux suggestions.
+    await tester.enterText(
+      find.byKey(const Key('color-picker-hex')),
+      '#AB12CD',
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Choisir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('#AB12CD'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
+    await tester.pumpAndSettle();
+    expect(result?.accentArgb, 0xFFAB12CD);
+    expect(result?.design, CvDesign.classic);
+  });
+
+  testWidgets('annuler le sélecteur laisse la couleur inchangée', (
+    tester,
+  ) async {
+    await openCatalog(tester);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Choisir'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('color-picker-hex')),
+      '#AB12CD',
+    );
+    await tester.pump();
+    // Le catalogue porte lui aussi un bouton « Annuler ».
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ColorPickerDialog),
+        matching: find.widgetWithText(TextButton, 'Annuler'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('#2F5D8C'), findsOneWidget);
+  });
+
+  testWidgets('une suggestion du sélecteur applique sa couleur', (
+    tester,
+  ) async {
+    await openCatalog(tester);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Choisir'));
+    await tester.pumpAndSettle();
+    // La palette reste accessible en raccourci dans le sélecteur.
+    for (final accent in CvAccent.values) {
+      expect(
+        find.byKey(ValueKey('suggestion-${_hex(accent.color)}')),
+        findsOneWidget,
+      );
+    }
+    await tester.tap(
+      find.byKey(ValueKey('suggestion-${_hex(CvAccent.burgundy.color)}')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Choisir'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
     await tester.pumpAndSettle();
-    expect(result?.accent, CvAccent.burgundy);
-    expect(result?.design, CvDesign.classic);
+    expect(result?.accentArgb, CvAccent.burgundy.color);
   });
 
   testWidgets('le réglage de photo se retourne aussi', (tester) async {
@@ -206,15 +274,62 @@ void main() {
     expect(find.textContaining('Ajoutez une photo'), findsOneWidget);
   });
 
-  testWidgets('un modèle sans couleur désactive la palette', (tester) async {
+  testWidgets('un modèle sans couleur désactive le sélecteur', (tester) async {
     await openCatalog(tester, selected: CvDesign.plain);
     expect(find.text('Ce modèle n’utilise aucune couleur.'), findsOneWidget);
-    await tester.tap(find.byTooltip(CvAccent.green.label));
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Choisir'),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('changer la couleur ne régénère que le modèle choisi', (
+    tester,
+  ) async {
+    await openCatalog(tester, selected: CvDesign.classic);
+    final before = {...requested};
+    requested.clear();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Choisir'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
+    await tester.enterText(
+      find.byKey(const Key('color-picker-hex')),
+      '#AB12CD',
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Choisir'));
     await tester.pumpAndSettle();
-    // La pastille reste sans effet : la couleur enregistrée ne change pas.
-    expect(result?.accent, CvAccent.blue);
+
+    // Une seule combinaison nouvelle : le modèle sélectionné dans sa couleur.
+    // La vignette et le grand aperçu la partagent, d'où une seule génération.
+    expect(before, isNotEmpty);
+    expect(requested, {
+      (design: CvDesign.classic, accentArgb: 0xFFAB12CD, showPhoto: true),
+    });
+  });
+
+  testWidgets('changer de modèle ne régénère que le nouveau choix', (
+    tester,
+  ) async {
+    await openCatalog(tester, selected: CvDesign.classic);
+    requested.clear();
+    await tester.tap(find.text(CvDesign.compact.label));
+    await tester.pumpAndSettle();
+    // Le modèle quitté retrouve sa vignette de base, déjà rendue.
+    expect(
+      requested,
+      everyElement(
+        isA<CatalogChoice>().having(
+          (choice) => choice.design,
+          'design',
+          CvDesign.compact,
+        ),
+      ),
+    );
   });
 
   testWidgets('annuler ne retourne aucun choix', (tester) async {

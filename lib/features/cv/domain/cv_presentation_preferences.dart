@@ -11,16 +11,17 @@ part 'cv_presentation_preferences.g.dart';
 ///
 /// Ces préférences ne décrivent pas le modèle, elles s'y réfèrent par son
 /// identifiant : le catalogue reste libre de faire évoluer un modèle sans
-/// migrer les CV enregistrés. Il en va de même pour la couleur d'accent, dont
-/// seul le nom est enregistré, jamais le code couleur.
+/// migrer les CV enregistrés.
 ///
-/// [accentId] et [showPhoto] sont les deux seules propriétés de mise en forme
-/// qu'un CV impose au modèle choisi ; le reste vient de sa description.
+/// [accentArgb] et [showPhoto] sont les deux seules propriétés de mise en forme
+/// qu'un CV impose au modèle choisi ; le reste vient de sa description. La
+/// couleur est libre : elle est donc enregistrée telle quelle, et non sous
+/// forme d'identifiant de palette.
 @freezed
 abstract class CvPresentationPreferences with _$CvPresentationPreferences {
   const factory CvPresentationPreferences({
     @Default('classic') String designId,
-    @Default('blue') String accentId,
+    @Default(CvAccent.defaultColor) int accentArgb,
     @Default(true) bool showPhoto,
     @Default(<CvSection>[]) List<CvSection> sectionOrder,
     @Default(<CvSection>[]) List<CvSection> hiddenSections,
@@ -34,8 +35,8 @@ abstract class CvPresentationPreferences with _$CvPresentationPreferences {
   /// Le modèle référencé, ou le modèle par défaut si l'identifiant est inconnu.
   CvDesign get design => CvDesign.fromId(designId);
 
-  /// La couleur d'accent référencée, ou le bleu par défaut.
-  CvAccent get accent => CvAccent.fromId(accentId);
+  /// La couleur d'accent du CV, opacité forcée pour rester imprimable.
+  int get accentColor => accentArgb | 0xFF000000;
 
   /// Les sections dans leur ordre d'affichage.
   ///
@@ -86,14 +87,17 @@ abstract class CvPresentationPreferences with _$CvPresentationPreferences {
   CvPresentationPreferences withDesign(CvDesign design) =>
       copyWith(designId: design.id);
 
-  CvPresentationPreferences withAccent(CvAccent accent) =>
-      copyWith(accentId: accent.id);
+  CvPresentationPreferences withAccent(int argb) =>
+      copyWith(accentArgb: argb | 0xFF000000);
 
   /// Les trois choix du catalogue s'appliquent d'un seul geste.
   CvPresentationPreferences withTemplate({
     required CvDesign design,
-    required CvAccent accent,
+    required int accentArgb,
     required bool showPhoto,
-  }) =>
-      copyWith(designId: design.id, accentId: accent.id, showPhoto: showPhoto);
+  }) => copyWith(
+    designId: design.id,
+    accentArgb: accentArgb | 0xFF000000,
+    showPhoto: showPhoto,
+  );
 }

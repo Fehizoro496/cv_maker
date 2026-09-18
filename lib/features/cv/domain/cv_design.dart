@@ -34,11 +34,11 @@ enum CvDesign {
       values.firstWhere((design) => design.id == id, orElse: () => fallback);
 }
 
-/// Couleurs d'accent proposées par le catalogue.
+/// Couleurs d'accent proposées en raccourci par le sélecteur de couleur.
 ///
-/// La palette est fermée : l'utilisateur choisit parmi ces cinq valeurs, et non
-/// une couleur libre. L'identifiant enregistré est le nom de la valeur, pas le
-/// code couleur, afin que la palette puisse être retouchée sans migrer les CV.
+/// Ce ne sont que des suggestions : l'utilisateur reste libre de choisir
+/// n'importe quelle couleur. Le CV enregistre donc la couleur elle-même, et
+/// non le nom d'une de ces valeurs.
 enum CvAccent {
   blue('Bleu', 0xFF2F5D8C),
   green('Vert', 0xFF1E5233),
@@ -51,13 +51,12 @@ enum CvAccent {
   /// Nom affiché dans l'infobulle de la pastille.
   final String label;
 
-  /// Couleur ARGB appliquée à la description du modèle.
+  /// Couleur ARGB suggérée.
   final int color;
 
-  String get id => name;
+  /// La couleur d'accent d'un CV qui n'en a pas choisi d'autre.
+  static const defaultColor = 0xFF2F5D8C;
 
-  static const fallback = blue;
-
-  static CvAccent fromId(String id) =>
-      values.firstWhere((accent) => accent.id == id, orElse: () => fallback);
+  /// Les couleurs suggérées, dans l'ordre d'affichage.
+  static List<int> get palette => values.map((accent) => accent.color).toList();
 }

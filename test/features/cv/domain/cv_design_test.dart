@@ -18,17 +18,19 @@ void main() {
     expect(descriptions.every((text) => text.isNotEmpty), isTrue);
   });
 
-  test('la palette d’accents est fermée et retrouvée par identifiant', () {
+  test('la palette propose cinq couleurs nommées et distinctes', () {
     expect(CvAccent.values, hasLength(5));
+    expect(CvAccent.values.map((accent) => accent.color).toSet(), hasLength(5));
     for (final accent in CvAccent.values) {
-      expect(CvAccent.fromId(accent.id), accent);
       expect(accent.label, isNotEmpty);
+      // Une couleur opaque : le PDF ne rend pas la transparence.
+      expect(accent.color & 0xFF000000, 0xFF000000);
     }
   });
 
-  test('une couleur d’accent inconnue retombe sur le bleu', () {
-    expect(CvAccent.fromId('fuchsia'), CvAccent.blue);
-    expect(CvAccent.fromId(''), CvAccent.blue);
+  test('la palette sert de suggestions au sélecteur de couleur', () {
+    expect(CvAccent.palette, CvAccent.values.map((a) => a.color).toList());
+    expect(CvAccent.palette, contains(CvAccent.defaultColor));
   });
 
   test('fromId retrouve le modèle enregistré', () {
