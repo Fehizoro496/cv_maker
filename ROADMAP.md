@@ -36,7 +36,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J7    | Export PDF                                  | J6        | Terminé |
 | JN    | Notifications                               | J7        | Terminé |
 | J8    | Catalogue de modèles et réglages            | JD, JN    | Terminé |
-| JS    | Sections personnalisées                     | JD        | À faire |
+| JS    | Sections personnalisées                     | JD        | Terminé |
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
 | J9    | Finitions et validation du MVP              | J5, JZ, JS | À faire |
@@ -539,25 +539,40 @@ d'un modèle à bandeau s'extrait dans l'ordre de lecture attendu.
 **Objectif :** permettre à l'utilisateur de créer les sections que les sections
 standard ne couvrent pas.
 
-- [ ] Modéliser une section personnalisée : identifiant, nom unique de 40
-  caractères au plus, type figé, visibilité, ordre, contenu.
-- [ ] Modéliser les trois types de contenu : texte libre, liste datée, liste
-  simple.
-- [ ] Sérialiser ces sections avec le CV, sans perte à l'aller-retour.
-- [ ] Étendre l'ordre et la visibilité des sections à ces sections, qui se
-  placent après les sections standard.
-- [ ] Ajouter le dialogue de création : nom, choix du type, mention que le type
-  est définitif, refus des doublons et des noms vides.
-- [ ] Ajouter le bouton « Ajouter une section » sous la liste des sections.
-- [ ] Sélectionner la nouvelle section dans le formulaire après sa création.
-- [ ] Réutiliser les formulaires génériques selon le type, et signaler dans
+- [x] Modéliser une section personnalisée : identifiant, nom unique de 40
+  caractères au plus, type figé, visibilité, ordre, contenu. L'ordre est la
+  position dans `CvDocument.customSections`, la visibilité est portée par la
+  section elle-même.
+- [x] Modéliser les trois types de contenu : texte libre, liste datée, liste
+  simple. Les deux listes partagent `CvCustomItem` ; une liste simple n'en
+  utilise que le titre et la description.
+- [x] Sérialiser ces sections avec le CV, sans perte à l'aller-retour. Un JSON
+  sans la clé `customSections` se relit avec une liste vide.
+- [x] Étendre l'ordre et la visibilité des sections à ces sections, qui se
+  placent après les sections standard. ⚠ Une section est désignée par le type
+  scellé `CvSectionRef`, que `CvSection` implémente : la navigation, la
+  sélection, le formulaire et l'historique traitent les deux sortes de la même
+  façon.
+- [x] Ajouter le dialogue de création : nom, choix du type, mention que le type
+  est définitif, refus des doublons et des noms vides. Les doublons sont
+  cherchés aussi parmi les libellés des sections standard, sans tenir compte
+  de la casse.
+- [x] Ajouter le bouton « Ajouter une section » sous la liste des sections.
+- [x] Sélectionner la nouvelle section dans le formulaire après sa création.
+  Une section sélectionnée qui disparaît (suppression, annulation de la
+  création) rend la main aux informations personnelles.
+- [x] Réutiliser les formulaires génériques selon le type, et signaler dans
   l'en-tête qu'il s'agit d'une section personnalisée, avec son type et son
-  nombre d'éléments.
-- [ ] Permettre le renommage et la suppression, avec une confirmation qui
-  rappelle le nombre d'éléments perdus et propose le masquage.
-- [ ] Rendre ces sections dans le PDF avec les composants des sections standard
-  correspondantes, en respectant la règle du titre solidaire.
-- [ ] Inclure création, renommage, suppression, masquage et saisie dans
+  nombre d'éléments. ⚠ Le bouton d'ajout reste « Ajouter un élément » : le
+  singulier du nom (« Ajouter une publication ») demanderait d'en connaître le
+  genre.
+- [x] Permettre le renommage et la suppression, avec une confirmation qui
+  rappelle le nombre d'éléments perdus et propose le masquage, par un bouton
+  « Masquer » en plus du texte.
+- [x] Rendre ces sections dans le PDF avec les composants des sections standard
+  correspondantes, en respectant la règle du titre solidaire. Chaque type est
+  éprouvé sous un contenu long sur les cinq modèles actuels.
+- [x] Inclure création, renommage, suppression, masquage et saisie dans
   l'historique undo/redo.
 
 **Terminé quand :** l'utilisateur crée une section de chaque type, la remplit,

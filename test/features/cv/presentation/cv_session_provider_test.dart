@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
@@ -197,8 +198,131 @@ void main() {
     expect(editor.canRedo, isFalse);
   });
 
-  test('cvSectionFormOf ne décrit pas la section profil', () {
-    expect(cvSectionFormOf(CvSection.profile), isNull);
-    expect(cvSectionFormOf(CvSection.experiences), isNotNull);
+  group('sections personnalisées', () {
+    int customCount() => editor.document.customSections.length;
+
+    test('créer une section l’ajoute à la fin, visible, en une étape', () {
+      final first = editor.addCustomSection(
+        '  Publications ',
+        CvCustomSectionType.datedList,
+      );
+      final second = editor.addCustomSection(
+        'Motivation',
+        CvCustomSectionType.freeText,
+      );
+      expect(editor.document.customSections.map((s) => s.id), [first, second]);
+      final created = editor.document.customSectionById(first)!;
+      expect(created.name, 'Publications');
+      expect(created.type, CvCustomSectionType.datedList);
+      expect(created.visible, isTrue);
+      editor.undo();
+      expect(customCount(), 1);
+      editor.undo();
+      expect(customCount(), 0);
+      editor.redo();
+      expect(editor.document.customSectionById(first), created);
+    });
+
+    test('renommer, masquer et supprimer passent par l’historique', () {
+      final id = editor.addCustomSection(
+        'Publications',
+        CvCustomSectionType.simpleList,
+      );
+      final ref = CvCustomSectionRef(id);
+      editor.addEntry(ref);
+
+      editor.renameCustomSection(id, 'Articles');
+      expect(editor.document.customSectionById(id)!.name, 'Articles');
+      editor.undo();
+      expect(editor.document.customSectionById(id)!.name, 'Publications');
+      editor.redo();
+
+      editor.setSectionVisible(ref, false);
+      expect(editor.document.isVisible(ref), isFalse);
+      editor.undo();
+      expect(editor.document.isVisible(ref), isTrue);
+
+      editor.removeCustomSection(id);
+      expect(editor.document.customSectionById(id), isNull);
+      editor.undo();
+      final restored = editor.document.customSectionById(id)!;
+      expect(restored.name, 'Articles');
+      expect(restored.items, hasLength(1));
+    });
+
+    test('une opération sans effet ne crée pas d’étape', () {
+      final id = editor.addCustomSection(
+        'Publications',
+        CvCustomSectionType.simpleList,
+      );
+      editor.renameCustomSection(id, ' Publications ');
+      editor.renameCustomSection('inconnue', 'X');
+      editor.removeCustomSection('inconnue');
+      editor.setCustomSectionText('inconnue', 'X');
+      editor.undo();
+      expect(customCount(), 0, reason: 'seule la création était annulable');
+      expect(editor.canUndo, isFalse);
+    });
+
+    test('la saisie d’un texte libre se regroupe en une étape', () {
+      final id = editor.addCustomSection(
+        'Motivation',
+        CvCustomSectionType.freeText,
+      );
+      editor.setCustomSectionText(id, 'J');
+      editor.setCustomSectionText(id, 'Je');
+      editor.setCustomSectionText(id, 'Je veux');
+      expect(editor.document.customSectionById(id)!.text, 'Je veux');
+      editor.undo();
+      expect(editor.document.customSectionById(id)!.text, isEmpty);
+      expect(customCount(), 1);
+    });
+
+    test('les éléments d’une liste s’éditent comme ceux d’une section', () {
+      final id = editor.addCustomSection(
+        'Bénévolat',
+        CvCustomSectionType.datedList,
+      );
+      final ref = CvCustomSectionRef(id);
+      final first = editor.addEntry(ref);
+      final second = editor.addEntry(ref);
+      expect(editor.entriesOf(ref).map((e) => e.id), [first, second]);
+
+      final item = editor.entriesOf(ref).first as CvCustomItem;
+      editor.updateEntry(ref, item.copyWith(title: 'Restos du cœur'));
+      expect(
+        (editor.entriesOf(ref).first as CvCustomItem).title,
+        'Restos du cœur',
+      );
+
+      editor.reorderEntries(ref, 0, 1);
+      expect(editor.entriesOf(ref).map((e) => e.id), [second, first]);
+
+      editor.removeEntry(ref, second);
+      expect(editor.entriesOf(ref).map((e) => e.id), [first]);
+
+      editor.undo();
+      editor.undo();
+      editor.undo();
+      expect(
+        (editor.entriesOf(ref).first as CvCustomItem).title,
+        isEmpty,
+        reason: 'retour avant la saisie du titre',
+      );
+    });
+
+    test('un texte libre n’accepte pas d’éléments', () {
+      final id = editor.addCustomSection(
+        'Motivation',
+        CvCustomSectionType.freeText,
+      );
+      editor.addEntry(CvCustomSectionRef(id));
+      expect(editor.document.customSectionById(id)!.items, isEmpty);
+    });
+
+    test('une section standard obligatoire ne se masque pas', () {
+      editor.setSectionVisible(CvSection.skills, false);
+      expect(editor.canUndo, isFalse);
+    });
   });
 }

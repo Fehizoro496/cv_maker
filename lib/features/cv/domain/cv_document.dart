@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'cv_certification.dart';
+import 'cv_custom_section.dart';
 import 'cv_design.dart';
 import 'cv_design_spec.dart';
 import 'cv_education.dart';
@@ -46,6 +47,9 @@ abstract class CvDocument with _$CvDocument {
     @Default(<CvProject>[]) List<CvProject> projects,
     @Default(<CvNote>[]) List<CvNote> interests,
     @Default(<CvNote>[]) List<CvNote> references,
+
+    /// Sections créées par l'utilisateur, dans leur ordre de création.
+    @Default(<CvCustomSection>[]) List<CvCustomSection> customSections,
     @Default(CvPresentationPreferences())
     CvPresentationPreferences presentation,
   }) = _CvDocument;
@@ -76,20 +80,49 @@ abstract class CvDocument with _$CvDocument {
     showPhoto: presentation.showPhoto,
   );
 
-  bool isVisible(CvSection section) => presentation.isVisible(section);
+  /// Une section facultative ou personnalisée peut être masquée.
+  ///
+  /// Une section personnalisée inconnue n'est pas visible.
+  bool isVisible(CvSectionRef section) => switch (section) {
+    CvSection() => presentation.isVisible(section),
+    CvCustomSectionRef(:final id) => customSectionById(id)?.visible ?? false,
+  };
 
-  CvDocument withSectionVisible(CvSection section, bool visible) =>
-      copyWith(presentation: presentation.withSectionVisible(section, visible));
+  CvDocument withSectionVisible(CvSectionRef section, bool visible) =>
+      switch (section) {
+        CvSection() => copyWith(
+          presentation: presentation.withSectionVisible(section, visible),
+        ),
+        CvCustomSectionRef(:final id) => withCustomSection(
+          id,
+          (custom) => custom.copyWith(visible: visible),
+        ),
+      };
 
   CvDocument withDesign(CvDesign design) =>
       copyWith(presentation: presentation.withDesign(design));
 
+  /// La section personnalisée d'identifiant [id], ou `null`.
+  CvCustomSection? customSectionById(String id) => customSections.byId(id);
+
+  /// Le document où la section personnalisée [id] est remplacée par
+  /// `change(section)`. Sans correspondance, le document est inchangé.
+  CvDocument withCustomSection(
+    String id,
+    CvCustomSection Function(CvCustomSection section) change,
+  ) {
+    final current = customSectionById(id);
+    if (current == null) return this;
+    return copyWith(customSections: customSections.updated(change(current)));
+  }
+
   /// Les éléments répétables de [section], en lecture seule.
   ///
-  /// Les sections sans liste ([CvSection.profile]) renvoient une liste vide.
-  /// Pour écrire, passer par `copyWith` sur la liste concernée : l'affectation
-  /// générique demanderait de renoncer au typage de chaque section.
-  List<CvEntry> entriesOf(CvSection section) => switch (section) {
+  /// Les sections sans liste ([CvSection.profile], texte libre) renvoient une
+  /// liste vide. Pour écrire, passer par `copyWith` sur la liste concernée :
+  /// l'affectation générique demanderait de renoncer au typage de chaque
+  /// section.
+  List<CvEntry> entriesOf(CvSectionRef section) => switch (section) {
     CvSection.personalInfo => personalInfo.links,
     CvSection.profile => const [],
     CvSection.experiences => experiences,
@@ -100,11 +133,13 @@ abstract class CvDocument with _$CvDocument {
     CvSection.projects => projects,
     CvSection.interests => interests,
     CvSection.references => references,
+    CvCustomSectionRef(:final id) => customSectionById(id)?.items ?? const [],
   };
 
   /// Une section visible et effectivement remplie apparaît dans le CV.
-  bool hasContent(CvSection section) => switch (section) {
+  bool hasContent(CvSectionRef section) => switch (section) {
     CvSection.profile => profile.trim().isNotEmpty,
+    CvCustomSectionRef(:final id) => customSectionById(id)?.hasContent ?? false,
     _ => entriesOf(section).isNotEmpty,
   };
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../shared/widgets/soft_panel.dart';
+import '../../domain/cv_custom_section.dart';
 import '../../domain/cv_entry.dart';
 import '../../domain/cv_month_year.dart';
 import '../../domain/cv_section.dart';
@@ -11,6 +12,7 @@ import '../cv_section_forms.dart';
 import '../cv_section_presentation.dart';
 import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
+import 'custom_section_dialogs.dart';
 import 'month_year_picker.dart';
 
 class SectionEditorPanel extends ConsumerWidget {
@@ -20,8 +22,12 @@ class SectionEditorPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final section = ref.watch(selectedSectionProvider);
-    ref.watch(cvSessionProvider);
+    final document = ref.watch(cvSessionProvider).document;
     final editor = ref.read(cvSessionProvider.notifier);
+    final custom = switch (section) {
+      CvCustomSectionRef(:final id) => document.customSectionById(id),
+      CvSection() => null,
+    };
     return SoftPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -33,15 +39,25 @@ class SectionEditorPanel extends ConsumerWidget {
                 final title = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      section.label,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: compact ? 16 : 18,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            section.labelIn(document),
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontSize: compact ? 16 : 18),
+                          ),
+                        ),
+                        if (custom != null) ...[
+                          const SizedBox(width: 10),
+                          const _CustomBadge(),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      section.helpText,
+                      section.helpTextIn(document),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -59,6 +75,7 @@ class SectionEditorPanel extends ConsumerWidget {
                       onPressed: editor.canRedo ? editor.redo : null,
                       icon: const Icon(Icons.redo),
                     ),
+                    if (custom != null) _CustomSectionActions(section: custom),
                     const SizedBox(width: 12),
                     Tooltip(
                       message:
@@ -116,19 +133,109 @@ class SectionEditorPanel extends ConsumerWidget {
           ),
           Expanded(
             child: SingleChildScrollView(
-              key: PageStorageKey('form-${section.name}'),
+              key: PageStorageKey(switch (section) {
+                CvSection(:final name) => 'form-$name',
+                CvCustomSectionRef(:final id) => 'form-custom-$id',
+              }),
               padding: const EdgeInsets.fromLTRB(24, 6, 24, 28),
               child: switch (section) {
                 CvSection.personalInfo => _PersonalForm(compact: compact),
                 CvSection.profile => const _DocumentFieldInput(
                   field: CvDocumentFields.profile,
                 ),
-                _ => _EntryList(key: ValueKey(section), section: section),
+                CvSection() => _EntryList(
+                  key: ValueKey(section),
+                  section: section,
+                ),
+                CvCustomSectionRef() => switch (custom) {
+                  null => const SizedBox.shrink(),
+                  CvCustomSection(type: CvCustomSectionType.freeText) =>
+                    _TextInput(
+                      key: ValueKey(section),
+                      label: 'Texte',
+                      value: custom.text,
+                      lines: 6,
+                      onChanged: (value) =>
+                          editor.setCustomSectionText(custom.id, value),
+                    ),
+                  _ => _EntryList(key: ValueKey(section), section: section),
+                },
               },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Le badge « PERSONNALISÉE » de l'en-tête.
+class _CustomBadge extends StatelessWidget {
+  const _CustomBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 20,
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: AppColors.surfaceContainer,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: const Text(
+      'PERSONNALISÉE',
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+        color: AppColors.onSurfaceVariant,
+      ),
+    ),
+  );
+}
+
+/// Renommer et supprimer une section personnalisée.
+class _CustomSectionActions extends ConsumerWidget {
+  const _CustomSectionActions({required this.section});
+  final CvCustomSection section;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final editor = ref.read(cvSessionProvider.notifier);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Renommer la section',
+          onPressed: () async {
+            final name = await showRenameCustomSectionDialog(
+              context,
+              editor.document,
+              section,
+            );
+            if (name != null) editor.renameCustomSection(section.id, name);
+          },
+          icon: const Icon(Icons.drive_file_rename_outline),
+        ),
+        IconButton(
+          tooltip: 'Supprimer la section',
+          onPressed: () async {
+            final choice = await showRemoveCustomSectionDialog(
+              context,
+              section,
+            );
+            switch (choice) {
+              case CustomSectionRemoval.delete:
+                editor.removeCustomSection(section.id);
+              case CustomSectionRemoval.hide:
+                editor.setSectionVisible(CvCustomSectionRef(section.id), false);
+              case null:
+                break;
+            }
+          },
+          icon: const Icon(Icons.delete_outline),
+        ),
+      ],
     );
   }
 }
@@ -321,7 +428,7 @@ class _PhotoCard extends ConsumerWidget {
 
 class _EntryList extends ConsumerStatefulWidget {
   const _EntryList({super.key, required this.section});
-  final CvSection section;
+  final CvSectionRef section;
   @override
   ConsumerState<_EntryList> createState() => _EntryListState();
 }
@@ -353,9 +460,9 @@ class _EntryListState extends ConsumerState<_EntryList> {
   @override
   Widget build(BuildContext context) {
     final section = widget.section;
-    final form = cvSectionFormOf(section);
-    if (form == null) return const SizedBox.shrink();
     final document = ref.watch(cvSessionProvider).document;
+    final form = cvSectionFormOf(section, document);
+    if (form == null) return const SizedBox.shrink();
     final entries = form.read(document);
     final editor = ref.read(cvSessionProvider.notifier);
     if (!_initialized) {
@@ -590,7 +697,7 @@ class _EntryRow extends ConsumerWidget {
     required this.fields,
   });
 
-  final CvSection section;
+  final CvSectionRef section;
   final CvEntry entry;
   final List<CvEntryField> fields;
 

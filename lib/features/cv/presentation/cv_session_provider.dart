@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/cv_custom_section.dart';
 import '../domain/cv_design.dart';
 import '../domain/cv_document.dart';
 import '../domain/cv_entry.dart';
@@ -21,9 +22,6 @@ import 'cv_section_forms.dart';
 final cvSessionProvider = NotifierProvider<CvSessionNotifier, CvSession>(
   CvSessionNotifier.new,
 );
-
-/// La section sélectionnée n'a pas toujours d'éléments répétables.
-CvSectionForm? cvSectionFormOf(CvSection section) => cvSectionForms[section];
 
 class CvSessionNotifier extends Notifier<CvSession> {
   final _past = <CvSession>[];
@@ -78,8 +76,8 @@ class CvSessionNotifier extends Notifier<CvSession> {
   /// Remplace un élément répétable par sa version modifiée.
   ///
   /// [coalesceKey] regroupe les frappes d'un même champ d'un même élément.
-  void updateEntry(CvSection section, CvEntry entry, {String? coalesceKey}) {
-    final form = cvSectionForms[section];
+  void updateEntry(CvSectionRef section, CvEntry entry, {String? coalesceKey}) {
+    final form = cvSectionFormOf(section, document);
     if (form == null) return;
     final current = form.read(document).byId(entry.id);
     if (current == null || current == entry) return;
@@ -87,33 +85,79 @@ class CvSessionNotifier extends Notifier<CvSession> {
   }
 
   /// Ajoute un élément vide et retourne son identifiant.
-  String addEntry(CvSection section) {
-    final form = cvSectionForms[section];
+  String addEntry(CvSectionRef section) {
+    final form = cvSectionFormOf(section, document);
     final id = _ids.v4();
     if (form == null) return id;
     _commitDocument(form.added(document, id));
     return id;
   }
 
-  void removeEntry(CvSection section, String id) {
-    final form = cvSectionForms[section];
+  void removeEntry(CvSectionRef section, String id) {
+    final form = cvSectionFormOf(section, document);
     if (form == null || form.read(document).byId(id) == null) return;
     _commitDocument(form.removed(document, id));
   }
 
-  void reorderEntries(CvSection section, int oldIndex, int newIndex) {
-    final form = cvSectionForms[section];
+  void reorderEntries(CvSectionRef section, int oldIndex, int newIndex) {
+    final form = cvSectionFormOf(section, document);
     if (form == null) return;
     _commitDocument(form.reordered(document, oldIndex, newIndex));
   }
 
   /// Les éléments d'une section, dans leur ordre d'affichage.
-  List<CvEntry> entriesOf(CvSection section) =>
-      cvSectionForms[section]?.read(document) ?? const [];
+  List<CvEntry> entriesOf(CvSectionRef section) =>
+      cvSectionFormOf(section, document)?.read(document) ?? const [];
 
-  void setSectionVisible(CvSection section, bool visible) {
-    if (!section.isOptional || document.isVisible(section) == visible) return;
+  /// Affiche ou masque une section facultative ou personnalisée.
+  void setSectionVisible(CvSectionRef section, bool visible) {
+    if (section is CvSection && !section.isOptional) return;
+    if (document.isVisible(section) == visible) return;
     _commitDocument(document.withSectionVisible(section, visible));
+  }
+
+  /// Ajoute une section personnalisée visible à la fin du CV et retourne son
+  /// identifiant.
+  ///
+  /// Le nom est validé par l'interface, qui connaît les libellés des sections
+  /// standard ; il est seulement débarrassé de ses espaces superflus ici.
+  String addCustomSection(String name, CvCustomSectionType type) {
+    final id = _ids.v4();
+    _commitDocument(
+      document.copyWith(
+        customSections: document.customSections.added(
+          CvCustomSection(id: id, name: name.trim(), type: type),
+        ),
+      ),
+    );
+    return id;
+  }
+
+  void renameCustomSection(String id, String name) {
+    final current = document.customSectionById(id);
+    final trimmed = name.trim();
+    if (current == null || current.name == trimmed) return;
+    _commitDocument(
+      document.withCustomSection(id, (s) => s.copyWith(name: trimmed)),
+    );
+  }
+
+  /// Supprime une section personnalisée et tout son contenu.
+  void removeCustomSection(String id) {
+    if (document.customSectionById(id) == null) return;
+    _commitDocument(
+      document.copyWith(customSections: document.customSections.removed(id)),
+    );
+  }
+
+  /// Écrit le paragraphe d'une section personnalisée de texte libre.
+  void setCustomSectionText(String id, String text) {
+    final current = document.customSectionById(id);
+    if (current == null || current.text == text) return;
+    _commitDocument(
+      document.withCustomSection(id, (s) => s.copyWith(text: text)),
+      coalesceKey: 'custom/$id/text',
+    );
   }
 
   void setDesign(CvDesign design) {

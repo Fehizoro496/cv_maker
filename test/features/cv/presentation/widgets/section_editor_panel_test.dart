@@ -1,4 +1,5 @@
 import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
+import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_editor_panel.dart';
@@ -121,5 +122,149 @@ void main() {
     final entry = container.read(cvSessionProvider).document.experiences.first;
     expect(entry.period.start, const CvMonthYear(2023, 1));
     expect(find.text('janv. 2023'), findsOneWidget);
+  });
+
+  group('sections personnalisées', () {
+    Future<CvCustomSectionRef> selectCustom(
+      WidgetTester tester,
+      CvCustomSectionType type,
+    ) async {
+      final editor = container.read(cvSessionProvider.notifier);
+      final ref = CvCustomSectionRef(
+        editor.addCustomSection('Publications', type),
+      );
+      container.read(selectedSectionProvider.notifier).select(ref);
+      await tester.pumpAndSettle();
+      return ref;
+    }
+
+    CvCustomSection sectionOf(CvCustomSectionRef ref) =>
+        container.read(cvSessionProvider).document.customSectionById(ref.id)!;
+
+    testWidgets('l’en-tête signale la section, son type et ses éléments', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      final ref = await selectCustom(tester, CvCustomSectionType.datedList);
+      expect(find.text('Publications'), findsOneWidget);
+      expect(find.text('PERSONNALISÉE'), findsOneWidget);
+      expect(find.text('Liste datée · 0 élément'), findsOneWidget);
+      expect(find.byTooltip('Renommer la section'), findsOneWidget);
+      expect(find.byTooltip('Supprimer la section'), findsOneWidget);
+
+      await tester.tap(find.text('Ajouter un élément'));
+      await tester.pumpAndSettle();
+      expect(sectionOf(ref).items, hasLength(1));
+      expect(find.text('Liste datée · 1 élément'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Titre'),
+        'Accessibilité et Flutter',
+      );
+      await tester.pump();
+      expect(sectionOf(ref).items.single.title, 'Accessibilité et Flutter');
+      expect(find.widgetWithText(TextField, 'Sous-titre'), findsOneWidget);
+      expect(find.text('En cours'), findsOneWidget);
+    });
+
+    testWidgets('une section standard n’a ni badge ni actions de section', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      expect(find.text('PERSONNALISÉE'), findsNothing);
+      expect(find.byTooltip('Renommer la section'), findsNothing);
+    });
+
+    testWidgets('un texte libre s’édite dans un seul champ', (tester) async {
+      await pumpPanel(tester);
+      final ref = await selectCustom(tester, CvCustomSectionType.freeText);
+      expect(find.text('Texte libre'), findsOneWidget);
+      expect(find.text('Ajouter un élément'), findsNothing);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Texte'),
+        'Un paragraphe.',
+      );
+      await tester.pump();
+      expect(sectionOf(ref).text, 'Un paragraphe.');
+
+      container.read(cvSessionProvider.notifier).undo();
+      await tester.pump();
+      expect(sectionOf(ref).text, isEmpty);
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, 'Texte'))
+            .controller!
+            .text,
+        isEmpty,
+        reason: 'le champ suit l’état restauré',
+      );
+    });
+
+    testWidgets('une liste simple n’a que titre et description courte', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      await selectCustom(tester, CvCustomSectionType.simpleList);
+      await tester.tap(find.text('Ajouter un élément'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Titre'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextField, 'Description courte'),
+        findsOneWidget,
+      );
+      expect(find.text('Début'), findsNothing);
+    });
+
+    testWidgets('renommer la section depuis l’en-tête', (tester) async {
+      await pumpPanel(tester);
+      final ref = await selectCustom(tester, CvCustomSectionType.simpleList);
+      await tester.tap(find.byTooltip('Renommer la section'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Distinctions',
+      );
+      await tester.tap(find.text('Renommer'));
+      await tester.pumpAndSettle();
+      expect(sectionOf(ref).name, 'Distinctions');
+      expect(find.text('Distinctions'), findsOneWidget);
+    });
+
+    testWidgets('supprimer la section revient à l’en-tête, Ctrl+Z la rend', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      final ref = await selectCustom(tester, CvCustomSectionType.simpleList);
+      await tester.tap(find.byTooltip('Supprimer la section'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Supprimer'));
+      await tester.pumpAndSettle();
+      final document = container.read(cvSessionProvider).document;
+      expect(document.customSectionById(ref.id), isNull);
+      expect(container.read(selectedSectionProvider), CvSection.personalInfo);
+      expect(find.text('Informations personnelles'), findsOneWidget);
+
+      container.read(cvSessionProvider.notifier).undo();
+      await tester.pump();
+      expect(
+        container.read(cvSessionProvider).document.customSectionById(ref.id),
+        isNotNull,
+      );
+    });
+
+    testWidgets('masquer plutôt que supprimer conserve la section', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      final ref = await selectCustom(tester, CvCustomSectionType.simpleList);
+      await tester.tap(find.byTooltip('Supprimer la section'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Masquer'));
+      await tester.pumpAndSettle();
+      expect(sectionOf(ref).visible, isFalse);
+      expect(container.read(selectedSectionProvider), ref);
+    });
   });
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cv_maker/app/app_theme.dart';
+import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/catalog_preview_provider.dart';
@@ -181,5 +182,99 @@ void main() {
       AppColors.disabled,
     );
     expect(container.read(selectedSectionProvider), CvSection.personalInfo);
+  });
+
+  group('sections personnalisées', () {
+    testWidgets('« Ajouter une section » crée la section et la sélectionne', (
+      tester,
+    ) async {
+      await pumpNavigation(tester);
+      await tester.tap(find.text('Ajouter une section'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Publications');
+      await tester.tap(find.text('Liste simple'));
+      await tester.tap(find.text('Créer la section'));
+      await tester.pumpAndSettle();
+
+      final sections = container
+          .read(cvSessionProvider)
+          .document
+          .customSections;
+      expect(sections, hasLength(1));
+      expect(sections.single.name, 'Publications');
+      expect(sections.single.type, CvCustomSectionType.simpleList);
+      final ref = CvCustomSectionRef(sections.single.id);
+      expect(container.read(selectedSectionProvider), ref);
+      expect(find.byKey(ValueKey(ref)), findsOneWidget);
+      expect(find.text('Publications'), findsOneWidget);
+    });
+
+    testWidgets('annuler le dialogue ne crée rien', (tester) async {
+      await pumpNavigation(tester);
+      await tester.tap(find.text('Ajouter une section'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Annuler'));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(cvSessionProvider).document.customSections,
+        isEmpty,
+      );
+      expect(container.read(cvSessionProvider.notifier).canUndo, isFalse);
+    });
+
+    testWidgets('la ligne d’une section personnalisée la masque et la '
+        'sélectionne', (tester) async {
+      await pumpNavigation(tester);
+      final id = container
+          .read(cvSessionProvider.notifier)
+          .addCustomSection('Bénévolat', CvCustomSectionType.datedList);
+      await tester.pump();
+      final ref = CvCustomSectionRef(id);
+      final row = find.byKey(ValueKey(ref));
+
+      expect(
+        find.descendant(of: row, matching: find.byIcon(Icons.label_outline)),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(
+          of: row,
+          matching: find.byIcon(Icons.visibility_outlined),
+        ),
+      );
+      await tester.pump();
+      expect(
+        container.read(cvSessionProvider).document.isVisible(ref),
+        isFalse,
+      );
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byIcon(Icons.visibility_off_outlined),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Bénévolat'));
+      await tester.pump();
+      expect(container.read(selectedSectionProvider), ref);
+    });
+
+    testWidgets('les sections personnalisées suivent leur ordre de création', (
+      tester,
+    ) async {
+      await pumpNavigation(tester);
+      final editor = container.read(cvSessionProvider.notifier);
+      editor.addCustomSection('Zèbre', CvCustomSectionType.freeText);
+      editor.addCustomSection('Abeille', CvCustomSectionType.freeText);
+      await tester.pump();
+      final references = tester.getTopLeft(find.text('Références')).dy;
+      final first = tester.getTopLeft(find.text('Zèbre')).dy;
+      final second = tester.getTopLeft(find.text('Abeille')).dy;
+      final add = tester.getTopLeft(find.text('Ajouter une section')).dy;
+      expect(references, lessThan(first));
+      expect(first, lessThan(second));
+      expect(second, lessThan(add));
+    });
   });
 }

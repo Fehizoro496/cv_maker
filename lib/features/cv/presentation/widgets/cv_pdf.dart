@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../core/pdf/pdf_fonts.dart';
 import '../../domain/cv_certification.dart';
+import '../../domain/cv_custom_section.dart';
 import '../../domain/cv_date_range.dart';
 import '../../domain/cv_design_spec.dart';
 import '../../domain/cv_document.dart';
@@ -299,6 +300,27 @@ Future<Uint8List> buildCvPdf(
         label,
         document.references,
         title: (e) => e.label,
+        description: (e) => e.description,
+      ),
+    });
+  }
+  // Les sections personnalisées suivent les sections standard, dans leur ordre
+  // de création, avec les composants des sections dont elles prennent la forme.
+  for (final custom in document.customSections) {
+    if (!custom.visible || !custom.hasContent) continue;
+    blocks.addAll(switch (custom.type) {
+      CvCustomSectionType.freeText => titledText(custom.name, custom.text),
+      CvCustomSectionType.datedList => entrySection<CvCustomItem>(
+        custom.name,
+        custom.items,
+        title: (e) => joined([e.title, e.subtitle]),
+        meta: (e) => periodLabel(e.period),
+        description: (e) => e.description,
+      ),
+      CvCustomSectionType.simpleList => entrySection<CvCustomItem>(
+        custom.name,
+        custom.items,
+        title: (e) => e.title,
         description: (e) => e.description,
       ),
     });

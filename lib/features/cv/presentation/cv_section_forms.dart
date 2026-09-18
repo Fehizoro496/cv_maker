@@ -1,4 +1,5 @@
 import '../domain/cv_certification.dart';
+import '../domain/cv_custom_section.dart';
 import '../domain/cv_date_range.dart';
 import '../domain/cv_document.dart';
 import '../domain/cv_education.dart';
@@ -494,6 +495,114 @@ final cvSectionForms = <CvSection, CvSectionForm>{
     rows: _noteRows,
   ),
 };
+
+/// Le formulaire de [section], standard ou personnalisée, dans [document].
+///
+/// `null` pour les sections sans éléments répétables : le profil, une section
+/// personnalisée de texte libre ou une section personnalisée inconnue.
+CvSectionForm? cvSectionFormOf(CvSectionRef section, CvDocument document) =>
+    switch (section) {
+      CvSection() => cvSectionForms[section],
+      CvCustomSectionRef(:final id) => switch (document.customSectionById(id)) {
+        final custom? => customSectionForm(custom),
+        null => null,
+      },
+    };
+
+/// Le formulaire d'une section personnalisée, selon son type.
+///
+/// Les éléments s'éditent avec les mêmes composants que les sections standard
+/// dont ils reprennent la forme : une liste datée comme les expériences, une
+/// liste simple comme les certifications. Un texte libre n'a pas de formulaire
+/// de liste.
+CvSectionForm? customSectionForm(CvCustomSection section) {
+  final id = section.id;
+  final rows = switch (section.type) {
+    CvCustomSectionType.freeText => null,
+    CvCustomSectionType.datedList => _datedItemRows,
+    CvCustomSectionType.simpleList => _simpleItemRows,
+  };
+  if (rows == null) return null;
+  return CvSectionForm(
+    addLabel: 'Ajouter un élément',
+    create: (itemId) => CvCustomItem(id: itemId),
+    read: (d) => d.customSectionById(id)?.items ?? const [],
+    write: (d, entries) => d.withCustomSection(
+      id,
+      (custom) => custom.copyWith(items: entries.cast<CvCustomItem>()),
+    ),
+    rows: rows,
+  );
+}
+
+List<List<CvEntryField>> get _datedItemRows => [
+  [
+    CvEntryTextField(
+      'Titre',
+      read: (e) => (e as CvCustomItem).title,
+      write: (e, v) => (e as CvCustomItem).copyWith(title: v),
+    ),
+    CvEntryTextField(
+      'Sous-titre',
+      read: (e) => (e as CvCustomItem).subtitle,
+      write: (e, v) => (e as CvCustomItem).copyWith(subtitle: v),
+    ),
+  ],
+  [
+    CvEntryMonthYearField(
+      'Début',
+      read: (e) => (e as CvCustomItem).period.start,
+      write: (e, v) => _customItem(e, (p) => p.copyWith(start: v)),
+    ),
+    CvEntryMonthYearField(
+      'Fin',
+      read: (e) => (e as CvCustomItem).period.end,
+      write: (e, v) => _customItem(e, (p) => p.copyWith(end: v)),
+      isEnabled: (e) => !(e as CvCustomItem).period.isCurrent,
+    ),
+  ],
+  [
+    CvEntryFlagField(
+      'En cours',
+      read: (e) => (e as CvCustomItem).period.isCurrent,
+      write: (e, v) => _customItem(e, (p) => p.copyWith(isCurrent: v)),
+    ),
+  ],
+  [
+    CvEntryTextField(
+      'Description',
+      read: (e) => (e as CvCustomItem).description,
+      write: (e, v) => (e as CvCustomItem).copyWith(description: v),
+      lines: 4,
+    ),
+  ],
+];
+
+List<List<CvEntryField>> get _simpleItemRows => [
+  [
+    CvEntryTextField(
+      'Titre',
+      read: (e) => (e as CvCustomItem).title,
+      write: (e, v) => (e as CvCustomItem).copyWith(title: v),
+    ),
+  ],
+  [
+    CvEntryTextField(
+      'Description courte',
+      read: (e) => (e as CvCustomItem).description,
+      write: (e, v) => (e as CvCustomItem).copyWith(description: v),
+      lines: 2,
+    ),
+  ],
+];
+
+CvCustomItem _customItem(
+  CvEntry entry,
+  CvDateRange Function(CvDateRange period) change,
+) {
+  final item = entry as CvCustomItem;
+  return item.copyWith(period: change(item.period));
+}
 
 /// Réécrit la période d'un élément sans répéter le transtypage.
 CvExperience _experience(

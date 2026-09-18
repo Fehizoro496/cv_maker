@@ -1,3 +1,4 @@
+import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/cv_entry.dart';
@@ -137,5 +138,84 @@ void main() {
 
   test('le JSON ne contient pas de photo', () {
     expect(exampleCvDocument().toJson().keys, isNot(contains('photo')));
+  });
+
+  group('sections personnalisées', () {
+    const publications = CvCustomSection(
+      id: 'pubs',
+      name: 'Publications',
+      type: CvCustomSectionType.datedList,
+      items: [CvCustomItem(id: 'p1', title: 'Article')],
+    );
+    const motivation = CvCustomSection(
+      id: 'motiv',
+      name: 'Motivation',
+      type: CvCustomSectionType.freeText,
+    );
+    final document = exampleCvDocument().copyWith(
+      customSections: const [publications, motivation],
+    );
+    const pubs = CvCustomSectionRef('pubs');
+
+    test('un CV n’en a aucune par défaut', () {
+      expect(CvDocument.empty(id: 'cv', now: now).customSections, isEmpty);
+    });
+
+    test('customSectionById retrouve une section ou renvoie null', () {
+      expect(document.customSectionById('pubs'), publications);
+      expect(document.customSectionById('inconnue'), isNull);
+    });
+
+    test('withCustomSection ne modifie que la section visée', () {
+      final renamed = document.withCustomSection(
+        'pubs',
+        (s) => s.copyWith(name: 'Articles'),
+      );
+      expect(renamed.customSections.first.name, 'Articles');
+      expect(renamed.customSections.last, motivation);
+      expect(document.withCustomSection('inconnue', (s) => s), document);
+    });
+
+    test('masquer une section personnalisée conserve son contenu', () {
+      expect(document.isVisible(pubs), isTrue);
+      final hidden = document.withSectionVisible(pubs, false);
+      expect(hidden.isVisible(pubs), isFalse);
+      expect(hidden.customSectionById('pubs')!.items, publications.items);
+      expect(hidden.withSectionVisible(pubs, true).isVisible(pubs), isTrue);
+    });
+
+    test('une section personnalisée inconnue n’est pas visible', () {
+      expect(document.isVisible(const CvCustomSectionRef('x')), isFalse);
+      expect(
+        document.withSectionVisible(const CvCustomSectionRef('x'), true),
+        document,
+      );
+    });
+
+    test('entriesOf et hasContent couvrent les sections personnalisées', () {
+      expect(document.entriesOf(pubs), publications.items);
+      expect(document.hasContent(pubs), isTrue);
+      const motiv = CvCustomSectionRef('motiv');
+      expect(document.entriesOf(motiv), isEmpty);
+      expect(document.hasContent(motiv), isFalse);
+      expect(document.hasContent(const CvCustomSectionRef('x')), isFalse);
+    });
+
+    test('aller-retour JSON sans perte, ordre et visibilité compris', () {
+      final saved = document
+          .withSectionVisible(pubs, false)
+          .withCustomSection(
+            'motiv',
+            (s) => s.copyWith(text: 'Un paragraphe.'),
+          );
+      final read = CvDocument.fromJson(saved.toJson());
+      expect(read, saved);
+      expect(read.customSections.map((s) => s.id), ['pubs', 'motiv']);
+    });
+
+    test('un CV enregistré sans sections personnalisées se relit', () {
+      final json = exampleCvDocument().toJson()..remove('customSections');
+      expect(CvDocument.fromJson(json).customSections, isEmpty);
+    });
   });
 }

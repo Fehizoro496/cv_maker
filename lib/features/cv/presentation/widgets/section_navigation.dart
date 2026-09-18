@@ -8,6 +8,7 @@ import '../catalog_preview_provider.dart';
 import '../cv_section_presentation.dart';
 import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
+import 'custom_section_dialogs.dart';
 import 'design_catalog.dart';
 
 class SectionNavigation extends ConsumerWidget {
@@ -20,9 +21,15 @@ class SectionNavigation extends ConsumerWidget {
     final mainSections = CvSection.values.where((s) => !s.isOptional);
     final optionalSections = CvSection.values.where((s) => s.isOptional);
 
-    Widget row(CvSection section) => _SectionRow(
-      key: ValueKey(section),
+    Widget row(CvSectionRef section) => _SectionRow(
+      // `ValueKey` compare aussi son type : la clé garde le type concret de
+      // la section pour rester retrouvable par `ValueKey(CvSection.x)`.
+      key: switch (section) {
+        final CvSection standard => ValueKey(standard),
+        final CvCustomSectionRef custom => ValueKey(custom),
+      },
       section: section,
+      label: section.labelIn(document),
       isSelected: section == selected,
       isVisible: document.isVisible(section),
     );
@@ -45,6 +52,10 @@ class SectionNavigation extends ConsumerWidget {
                 const SizedBox(height: 14),
                 const _GroupLabel('Sections facultatives'),
                 ...optionalSections.map(row),
+                for (final custom in document.customSections)
+                  row(CvCustomSectionRef(custom.id)),
+                const SizedBox(height: 10),
+                const _AddSectionButton(),
               ],
             ),
           ),
@@ -191,11 +202,13 @@ class _SectionRow extends ConsumerStatefulWidget {
   const _SectionRow({
     super.key,
     required this.section,
+    required this.label,
     required this.isSelected,
     required this.isVisible,
   });
 
-  final CvSection section;
+  final CvSectionRef section;
+  final String label;
   final bool isSelected;
   final bool isVisible;
 
@@ -223,8 +236,13 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
       textColor = AppColors.onSurfaceVariant;
       iconColor = AppColors.outline;
     }
+    // Une section qu'on peut masquer porte l'œil à la place du compteur.
+    final canHide = switch (section) {
+      CvSection(:final isOptional) => isOptional,
+      CvCustomSectionRef() => true,
+    };
     final count =
-        section.isOptional ||
+        canHide ||
             section == CvSection.personalInfo ||
             section == CvSection.profile
         ? null
@@ -257,17 +275,14 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
             child: SizedBox(
               height: 36,
               child: Padding(
-                padding: EdgeInsets.only(
-                  left: 10,
-                  right: section.isOptional ? 4 : 10,
-                ),
+                padding: EdgeInsets.only(left: 10, right: canHide ? 4 : 10),
                 child: Row(
                   children: [
                     Icon(section.icon, size: 18, color: iconColor),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        section.label,
+                        widget.label,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
@@ -278,7 +293,7 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
                         ),
                       ),
                     ),
-                    if (section.isOptional)
+                    if (canHide)
                       IconButton(
                         tooltip: isVisible
                             ? 'Affichée dans le CV'
@@ -334,6 +349,79 @@ class _SectionRowState extends ConsumerState<_SectionRow> {
       ),
     );
   }
+}
+
+/// Ouvre le dialogue « Nouvelle section », crée la section et la sélectionne.
+class _AddSectionButton extends ConsumerWidget {
+  const _AddSectionButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => CustomPaint(
+    foregroundPainter: const _DashedBorderPainter(
+      color: AppColors.disabledBorder,
+      radius: 18,
+    ),
+    child: SizedBox(
+      height: 36,
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        onPressed: () async {
+          final choice = await showNewCustomSectionDialog(
+            context,
+            ref.read(cvSessionProvider).document,
+          );
+          if (choice == null || !context.mounted) return;
+          final id = ref
+              .read(cvSessionProvider.notifier)
+              .addCustomSection(choice.name, choice.type);
+          ref
+              .read(selectedSectionProvider.notifier)
+              .select(CvCustomSectionRef(id));
+        },
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Ajouter une section'),
+      ),
+    ),
+  );
+}
+
+/// Bordure pointillée arrondie : Flutter n'en fournit pas.
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final outline = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(radius),
+        ).deflate(0.5),
+      );
+    const dash = 4.0;
+    const gap = 3.0;
+    for (final metric in outline.computeMetrics()) {
+      for (var at = 0.0; at < metric.length; at += dash + gap) {
+        canvas.drawPath(metric.extractPath(at, at + dash), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 class _OfflineFooter extends StatelessWidget {

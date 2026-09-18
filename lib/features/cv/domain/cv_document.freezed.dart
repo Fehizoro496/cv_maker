@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CvDocument {
 
- String get id; DateTime get createdAt; DateTime get updatedAt; String get name; CvPersonalInfo get personalInfo; String get profile; List<CvExperience> get experiences; List<CvEducation> get education; List<CvSkill> get skills; List<CvLanguage> get languages; List<CvCertification> get certifications; List<CvProject> get projects; List<CvNote> get interests; List<CvNote> get references; CvPresentationPreferences get presentation;
+ String get id; DateTime get createdAt; DateTime get updatedAt; String get name; CvPersonalInfo get personalInfo; String get profile; List<CvExperience> get experiences; List<CvEducation> get education; List<CvSkill> get skills; List<CvLanguage> get languages; List<CvCertification> get certifications; List<CvProject> get projects; List<CvNote> get interests; List<CvNote> get references;/// Sections créées par l'utilisateur, dans leur ordre de création.
+ List<CvCustomSection> get customSections; CvPresentationPreferences get presentation;
 /// Create a copy of CvDocument
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +30,16 @@ $CvDocumentCopyWith<CvDocument> get copyWith => _$CvDocumentCopyWithImpl<CvDocum
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CvDocument&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.personalInfo, personalInfo) || other.personalInfo == personalInfo)&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other.experiences, experiences)&&const DeepCollectionEquality().equals(other.education, education)&&const DeepCollectionEquality().equals(other.skills, skills)&&const DeepCollectionEquality().equals(other.languages, languages)&&const DeepCollectionEquality().equals(other.certifications, certifications)&&const DeepCollectionEquality().equals(other.projects, projects)&&const DeepCollectionEquality().equals(other.interests, interests)&&const DeepCollectionEquality().equals(other.references, references)&&(identical(other.presentation, presentation) || other.presentation == presentation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CvDocument&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.personalInfo, personalInfo) || other.personalInfo == personalInfo)&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other.experiences, experiences)&&const DeepCollectionEquality().equals(other.education, education)&&const DeepCollectionEquality().equals(other.skills, skills)&&const DeepCollectionEquality().equals(other.languages, languages)&&const DeepCollectionEquality().equals(other.certifications, certifications)&&const DeepCollectionEquality().equals(other.projects, projects)&&const DeepCollectionEquality().equals(other.interests, interests)&&const DeepCollectionEquality().equals(other.references, references)&&const DeepCollectionEquality().equals(other.customSections, customSections)&&(identical(other.presentation, presentation) || other.presentation == presentation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,name,personalInfo,profile,const DeepCollectionEquality().hash(experiences),const DeepCollectionEquality().hash(education),const DeepCollectionEquality().hash(skills),const DeepCollectionEquality().hash(languages),const DeepCollectionEquality().hash(certifications),const DeepCollectionEquality().hash(projects),const DeepCollectionEquality().hash(interests),const DeepCollectionEquality().hash(references),presentation);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,name,personalInfo,profile,const DeepCollectionEquality().hash(experiences),const DeepCollectionEquality().hash(education),const DeepCollectionEquality().hash(skills),const DeepCollectionEquality().hash(languages),const DeepCollectionEquality().hash(certifications),const DeepCollectionEquality().hash(projects),const DeepCollectionEquality().hash(interests),const DeepCollectionEquality().hash(references),const DeepCollectionEquality().hash(customSections),presentation);
 
 @override
 String toString() {
-  return 'CvDocument(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, personalInfo: $personalInfo, profile: $profile, experiences: $experiences, education: $education, skills: $skills, languages: $languages, certifications: $certifications, projects: $projects, interests: $interests, references: $references, presentation: $presentation)';
+  return 'CvDocument(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, personalInfo: $personalInfo, profile: $profile, experiences: $experiences, education: $education, skills: $skills, languages: $languages, certifications: $certifications, projects: $projects, interests: $interests, references: $references, customSections: $customSections, presentation: $presentation)';
 }
 
 
@@ -49,7 +50,7 @@ abstract mixin class $CvDocumentCopyWith<$Res>  {
   factory $CvDocumentCopyWith(CvDocument value, $Res Function(CvDocument) _then) = _$CvDocumentCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, String name, CvPersonalInfo personalInfo, String profile, List<CvExperience> experiences, List<CvEducation> education, List<CvSkill> skills, List<CvLanguage> languages, List<CvCertification> certifications, List<CvProject> projects, List<CvNote> interests, List<CvNote> references, CvPresentationPreferences presentation
+ String id, DateTime createdAt, DateTime updatedAt, String name, CvPersonalInfo personalInfo, String profile, List<CvExperience> experiences, List<CvEducation> education, List<CvSkill> skills, List<CvLanguage> languages, List<CvCertification> certifications, List<CvProject> projects, List<CvNote> interests, List<CvNote> references, List<CvCustomSection> customSections, CvPresentationPreferences presentation
 });
 
 
@@ -66,7 +67,7 @@ class _$CvDocumentCopyWithImpl<$Res>
 
 /// Create a copy of CvDocument
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? personalInfo = null,Object? profile = null,Object? experiences = null,Object? education = null,Object? skills = null,Object? languages = null,Object? certifications = null,Object? projects = null,Object? interests = null,Object? references = null,Object? presentation = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? personalInfo = null,Object? profile = null,Object? experiences = null,Object? education = null,Object? skills = null,Object? languages = null,Object? certifications = null,Object? projects = null,Object? interests = null,Object? references = null,Object? customSections = null,Object? presentation = null,}) {
   return _then(CvDocument(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -82,7 +83,8 @@ as List<CvLanguage>,certifications: null == certifications ? _self.certification
 as List<CvCertification>,projects: null == projects ? _self.projects : projects // ignore: cast_nullable_to_non_nullable
 as List<CvProject>,interests: null == interests ? _self.interests : interests // ignore: cast_nullable_to_non_nullable
 as List<CvNote>,references: null == references ? _self.references : references // ignore: cast_nullable_to_non_nullable
-as List<CvNote>,presentation: null == presentation ? _self.presentation : presentation // ignore: cast_nullable_to_non_nullable
+as List<CvNote>,customSections: null == customSections ? _self.customSections : customSections // ignore: cast_nullable_to_non_nullable
+as List<CvCustomSection>,presentation: null == presentation ? _self.presentation : presentation // ignore: cast_nullable_to_non_nullable
 as CvPresentationPreferences,
   ));
 }
@@ -186,10 +188,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  CvPresentationPreferences presentation)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  List<CvCustomSection> customSections,  CvPresentationPreferences presentation)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CvDocument() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.presentation);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.customSections,_that.presentation);case _:
   return orElse();
 
 }
@@ -207,10 +209,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.person
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  CvPresentationPreferences presentation)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  List<CvCustomSection> customSections,  CvPresentationPreferences presentation)  $default,) {final _that = this;
 switch (_that) {
 case _CvDocument():
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.presentation);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.customSections,_that.presentation);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +229,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.person
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  CvPresentationPreferences presentation)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  CvPersonalInfo personalInfo,  String profile,  List<CvExperience> experiences,  List<CvEducation> education,  List<CvSkill> skills,  List<CvLanguage> languages,  List<CvCertification> certifications,  List<CvProject> projects,  List<CvNote> interests,  List<CvNote> references,  List<CvCustomSection> customSections,  CvPresentationPreferences presentation)?  $default,) {final _that = this;
 switch (_that) {
 case _CvDocument() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.presentation);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.personalInfo,_that.profile,_that.experiences,_that.education,_that.skills,_that.languages,_that.certifications,_that.projects,_that.interests,_that.references,_that.customSections,_that.presentation);case _:
   return null;
 
 }
@@ -242,7 +244,7 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.person
 @JsonSerializable()
 
 class _CvDocument extends CvDocument {
-  const _CvDocument({required this.id, required this.createdAt, required this.updatedAt, this.name = '', this.personalInfo = const CvPersonalInfo(), this.profile = '',  List<CvExperience> experiences = const <CvExperience>[],  List<CvEducation> education = const <CvEducation>[],  List<CvSkill> skills = const <CvSkill>[],  List<CvLanguage> languages = const <CvLanguage>[],  List<CvCertification> certifications = const <CvCertification>[],  List<CvProject> projects = const <CvProject>[],  List<CvNote> interests = const <CvNote>[],  List<CvNote> references = const <CvNote>[], this.presentation = const CvPresentationPreferences()}): _experiences = experiences,_education = education,_skills = skills,_languages = languages,_certifications = certifications,_projects = projects,_interests = interests,_references = references,super._();
+  const _CvDocument({required this.id, required this.createdAt, required this.updatedAt, this.name = '', this.personalInfo = const CvPersonalInfo(), this.profile = '',  List<CvExperience> experiences = const <CvExperience>[],  List<CvEducation> education = const <CvEducation>[],  List<CvSkill> skills = const <CvSkill>[],  List<CvLanguage> languages = const <CvLanguage>[],  List<CvCertification> certifications = const <CvCertification>[],  List<CvProject> projects = const <CvProject>[],  List<CvNote> interests = const <CvNote>[],  List<CvNote> references = const <CvNote>[],  List<CvCustomSection> customSections = const <CvCustomSection>[], this.presentation = const CvPresentationPreferences()}): _experiences = experiences,_education = education,_skills = skills,_languages = languages,_certifications = certifications,_projects = projects,_interests = interests,_references = references,_customSections = customSections,super._();
   factory _CvDocument.fromJson(Map<String, dynamic> json) => _$CvDocumentFromJson(json);
 
 @override final  String id;
@@ -307,6 +309,15 @@ class _CvDocument extends CvDocument {
   return EqualUnmodifiableListView(_references);
 }
 
+/// Sections créées par l'utilisateur, dans leur ordre de création.
+ final  List<CvCustomSection> _customSections;
+/// Sections créées par l'utilisateur, dans leur ordre de création.
+@override@JsonKey() List<CvCustomSection> get customSections {
+  if (_customSections is EqualUnmodifiableListView) return _customSections;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_customSections);
+}
+
 @override@JsonKey() final  CvPresentationPreferences presentation;
 
 /// Create a copy of CvDocument
@@ -322,16 +333,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CvDocument&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.personalInfo, personalInfo) || other.personalInfo == personalInfo)&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other._experiences, _experiences)&&const DeepCollectionEquality().equals(other._education, _education)&&const DeepCollectionEquality().equals(other._skills, _skills)&&const DeepCollectionEquality().equals(other._languages, _languages)&&const DeepCollectionEquality().equals(other._certifications, _certifications)&&const DeepCollectionEquality().equals(other._projects, _projects)&&const DeepCollectionEquality().equals(other._interests, _interests)&&const DeepCollectionEquality().equals(other._references, _references)&&(identical(other.presentation, presentation) || other.presentation == presentation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CvDocument&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.personalInfo, personalInfo) || other.personalInfo == personalInfo)&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other._experiences, _experiences)&&const DeepCollectionEquality().equals(other._education, _education)&&const DeepCollectionEquality().equals(other._skills, _skills)&&const DeepCollectionEquality().equals(other._languages, _languages)&&const DeepCollectionEquality().equals(other._certifications, _certifications)&&const DeepCollectionEquality().equals(other._projects, _projects)&&const DeepCollectionEquality().equals(other._interests, _interests)&&const DeepCollectionEquality().equals(other._references, _references)&&const DeepCollectionEquality().equals(other._customSections, _customSections)&&(identical(other.presentation, presentation) || other.presentation == presentation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,name,personalInfo,profile,const DeepCollectionEquality().hash(_experiences),const DeepCollectionEquality().hash(_education),const DeepCollectionEquality().hash(_skills),const DeepCollectionEquality().hash(_languages),const DeepCollectionEquality().hash(_certifications),const DeepCollectionEquality().hash(_projects),const DeepCollectionEquality().hash(_interests),const DeepCollectionEquality().hash(_references),presentation);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,name,personalInfo,profile,const DeepCollectionEquality().hash(_experiences),const DeepCollectionEquality().hash(_education),const DeepCollectionEquality().hash(_skills),const DeepCollectionEquality().hash(_languages),const DeepCollectionEquality().hash(_certifications),const DeepCollectionEquality().hash(_projects),const DeepCollectionEquality().hash(_interests),const DeepCollectionEquality().hash(_references),const DeepCollectionEquality().hash(_customSections),presentation);
 
 @override
 String toString() {
-  return 'CvDocument(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, personalInfo: $personalInfo, profile: $profile, experiences: $experiences, education: $education, skills: $skills, languages: $languages, certifications: $certifications, projects: $projects, interests: $interests, references: $references, presentation: $presentation)';
+  return 'CvDocument(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, personalInfo: $personalInfo, profile: $profile, experiences: $experiences, education: $education, skills: $skills, languages: $languages, certifications: $certifications, projects: $projects, interests: $interests, references: $references, customSections: $customSections, presentation: $presentation)';
 }
 
 
@@ -342,7 +353,7 @@ abstract mixin class _$CvDocumentCopyWith<$Res> implements $CvDocumentCopyWith<$
   factory _$CvDocumentCopyWith(_CvDocument value, $Res Function(_CvDocument) _then) = __$CvDocumentCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, String name, CvPersonalInfo personalInfo, String profile, List<CvExperience> experiences, List<CvEducation> education, List<CvSkill> skills, List<CvLanguage> languages, List<CvCertification> certifications, List<CvProject> projects, List<CvNote> interests, List<CvNote> references, CvPresentationPreferences presentation
+ String id, DateTime createdAt, DateTime updatedAt, String name, CvPersonalInfo personalInfo, String profile, List<CvExperience> experiences, List<CvEducation> education, List<CvSkill> skills, List<CvLanguage> languages, List<CvCertification> certifications, List<CvProject> projects, List<CvNote> interests, List<CvNote> references, List<CvCustomSection> customSections, CvPresentationPreferences presentation
 });
 
 
@@ -359,7 +370,7 @@ class __$CvDocumentCopyWithImpl<$Res>
 
 /// Create a copy of CvDocument
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? personalInfo = null,Object? profile = null,Object? experiences = null,Object? education = null,Object? skills = null,Object? languages = null,Object? certifications = null,Object? projects = null,Object? interests = null,Object? references = null,Object? presentation = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? personalInfo = null,Object? profile = null,Object? experiences = null,Object? education = null,Object? skills = null,Object? languages = null,Object? certifications = null,Object? projects = null,Object? interests = null,Object? references = null,Object? customSections = null,Object? presentation = null,}) {
   return _then(_CvDocument(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -375,7 +386,8 @@ as List<CvLanguage>,certifications: null == certifications ? _self._certificatio
 as List<CvCertification>,projects: null == projects ? _self._projects : projects // ignore: cast_nullable_to_non_nullable
 as List<CvProject>,interests: null == interests ? _self._interests : interests // ignore: cast_nullable_to_non_nullable
 as List<CvNote>,references: null == references ? _self._references : references // ignore: cast_nullable_to_non_nullable
-as List<CvNote>,presentation: null == presentation ? _self.presentation : presentation // ignore: cast_nullable_to_non_nullable
+as List<CvNote>,customSections: null == customSections ? _self._customSections : customSections // ignore: cast_nullable_to_non_nullable
+as List<CvCustomSection>,presentation: null == presentation ? _self.presentation : presentation // ignore: cast_nullable_to_non_nullable
 as CvPresentationPreferences,
   ));
 }

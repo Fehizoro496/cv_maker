@@ -55,6 +55,11 @@ _CvDocument _$CvDocumentFromJson(Map<String, dynamic> json) => _CvDocument(
           ?.map((e) => CvNote.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <CvNote>[],
+  customSections:
+      (json['customSections'] as List<dynamic>?)
+          ?.map((e) => CvCustomSection.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <CvCustomSection>[],
   presentation: json['presentation'] == null
       ? const CvPresentationPreferences()
       : CvPresentationPreferences.fromJson(
@@ -78,5 +83,6 @@ Map<String, dynamic> _$CvDocumentToJson(_CvDocument instance) =>
       'projects': instance.projects.map((e) => e.toJson()).toList(),
       'interests': instance.interests.map((e) => e.toJson()).toList(),
       'references': instance.references.map((e) => e.toJson()).toList(),
+      'customSections': instance.customSections.map((e) => e.toJson()).toList(),
       'presentation': instance.presentation.toJson(),
     };

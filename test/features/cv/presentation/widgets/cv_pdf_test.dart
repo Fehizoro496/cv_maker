@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
+import 'package:cv_maker/features/cv/domain/cv_date_range.dart';
+import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_example.dart';
+import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/cv_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -300,4 +304,127 @@ void main() {
       expect(document.toJson().toString(), isNot(contains('photo')));
     },
   );
+
+  group('sections personnalisées', () {
+    String description(int i) => [
+      'Élément nº $i : une description sur plusieurs lignes, accentuée, '
+          'pour éprouver la pagination et les polices embarquées.',
+      '• Deuxième ligne de l’élément.',
+      '• Troisième ligne de l’élément.',
+    ].join('\n');
+
+    /// Une section personnalisée de [type] avec [count] éléments longs.
+    CvCustomSection sectionOf(CvCustomSectionType type, int count) =>
+        CvCustomSection(
+          id: 'custom-${type.name}',
+          name: 'Section ${type.name}',
+          type: type,
+          text: type.hasItems
+              ? ''
+              : List.generate(count, description).join('\n'),
+          items: type.hasItems
+              ? [
+                  for (var i = 0; i < count; i++)
+                    CvCustomItem(
+                      id: 'item-$i',
+                      title: 'Titre $i',
+                      subtitle: 'Sous-titre $i',
+                      period: const CvDateRange(
+                        start: CvMonthYear(2021, 4),
+                        isCurrent: true,
+                      ),
+                      description: description(i),
+                    ),
+                ]
+              : const [],
+        );
+
+    CvDocument withCustom(List<CvCustomSection> sections) =>
+        exampleCvDocument().copyWith(customSections: sections);
+
+    for (final type in CvCustomSectionType.values) {
+      group(type.name, () {
+        test('une section remplie et visible entre dans le PDF', () async {
+          final without = await buildCvPdf(
+            exampleCvDocument(),
+            classicDesignSpec,
+          );
+          final with_ = await buildCvPdf(
+            withCustom([sectionOf(type, 2)]),
+            classicDesignSpec,
+          );
+          expect(pdfFingerprint(with_), isNot(pdfFingerprint(without)));
+          expect(with_.length, greaterThan(without.length));
+        });
+
+        test('masquée ou vide, elle n’apparaît pas', () async {
+          final reference = pdfFingerprint(
+            await buildCvPdf(exampleCvDocument(), classicDesignSpec),
+          );
+          final hidden = sectionOf(type, 2).copyWith(visible: false);
+          expect(
+            pdfFingerprint(
+              await buildCvPdf(withCustom([hidden]), classicDesignSpec),
+            ),
+            reference,
+          );
+          final empty = sectionOf(type, 0);
+          expect(
+            pdfFingerprint(
+              await buildCvPdf(withCustom([empty]), classicDesignSpec),
+            ),
+            reference,
+          );
+        });
+
+        test('pagine sous un contenu long, sur tous les modèles', () async {
+          for (final design in CvDesign.values) {
+            final short = await buildCvPdf(
+              withCustom([sectionOf(type, 4)]),
+              design.spec,
+            );
+            final long = await buildCvPdf(
+              withCustom([sectionOf(type, 40)]),
+              design.spec,
+            );
+            expect(isA4Portrait(long), isTrue, reason: design.name);
+            expect(
+              pageCount(long),
+              greaterThan(pageCount(short)),
+              reason: design.name,
+            );
+          }
+        });
+      });
+    }
+
+    test('un texte libre d’un seul paragraphe fleuve se répartit', () async {
+      final flood = List.generate(2000, (i) => 'mot$i').join(' ');
+      final bytes = await buildCvPdf(
+        withCustom([
+          const CvCustomSection(
+            id: 'free',
+            name: 'Motivation',
+            type: CvCustomSectionType.freeText,
+          ).copyWith(text: flood),
+        ]),
+        classicDesignSpec,
+      );
+      expect(pageCount(bytes), greaterThan(1));
+      expect(isA4Portrait(bytes), isTrue);
+    });
+
+    test('l’ordre de création détermine l’ordre dans le PDF', () async {
+      final a = sectionOf(CvCustomSectionType.simpleList, 2);
+      final b = sectionOf(CvCustomSectionType.datedList, 2);
+      expect(
+        pdfFingerprint(await buildCvPdf(withCustom([a, b]), classicDesignSpec)),
+        isNot(
+          pdfFingerprint(
+            await buildCvPdf(withCustom([b, a]), classicDesignSpec),
+          ),
+        ),
+      );
+    });
+  });
 }
