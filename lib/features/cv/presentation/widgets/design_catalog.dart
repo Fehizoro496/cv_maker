@@ -8,9 +8,13 @@ import '../catalog_preview_provider.dart';
 
 /// Catalogue des modèles intégrés, avec ses deux réglages.
 ///
+/// Reprend la maquette « Choisir un modèle » du dossier de design : grille de
+/// vignettes à gauche, aperçu et réglages à droite, pied rappelant la
+/// compatibilité ATS.
+///
 /// Le dialogue ne modifie rien de lui-même : il retourne le choix retenu, que
-/// l'appelant applique. « Annuler » retourne `null`, ce qui laisse le CV
-/// intact.
+/// l'appelant applique. « Annuler » et la croix retournent `null`, ce qui
+/// laisse le CV intact.
 ///
 /// Les vignettes sont rendues à partir du PDF réel du CV en cours, hors ligne.
 class DesignCatalog extends ConsumerStatefulWidget {
@@ -35,6 +39,9 @@ class DesignCatalog extends ConsumerStatefulWidget {
   static const settingsWidth = 420.0;
   static const radius = 28.0;
 
+  /// Nombre de colonnes de la grille de vignettes.
+  static const columns = 4;
+
   /// Au-delà, la grille et le panneau tiennent côte à côte.
   static const wideBreakpoint = 900.0;
 
@@ -51,73 +58,74 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
       (design: _design, accent: _accent, showPhoto: _showPhoto);
 
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(DesignCatalog.radius),
+  Widget build(BuildContext context) => Dialog(
+    insetPadding: const EdgeInsets.all(24),
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(DesignCatalog.radius),
+    ),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: DesignCatalog.maxWidth,
+        maxHeight: DesignCatalog.maxHeight,
       ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: DesignCatalog.maxWidth,
-          maxHeight: DesignCatalog.maxHeight,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _Header(textTheme: textTheme),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final grid = _TemplateGrid(
-                    selected: _design,
-                    accent: _accent,
-                    showPhoto: _showPhoto,
-                    onSelected: (design) => setState(() => _design = design),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _Header(),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // En fenêtre étroite, le dialogue défile d'un seul bloc : la
+                // grille s'y insère alors sans défilement propre.
+                final narrow =
+                    constraints.maxWidth < DesignCatalog.wideBreakpoint;
+                final grid = _TemplateGrid(
+                  selected: _design,
+                  accent: _accent,
+                  showPhoto: _showPhoto,
+                  insideScrollView: narrow,
+                  onSelected: (design) => setState(() => _design = design),
+                );
+                final settings = _SettingsPanel(
+                  choice: _choice,
+                  hasPhoto: widget.hasPhoto,
+                  onAccent: (accent) => setState(() => _accent = accent),
+                  onShowPhoto: (value) => setState(() => _showPhoto = value),
+                );
+                // En fenêtre étroite, le panneau passe sous la grille.
+                if (narrow) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        grid,
+                        SizedBox(height: 420, child: settings),
+                      ],
+                    ),
                   );
-                  final settings = _SettingsPanel(
-                    choice: _choice,
-                    hasPhoto: widget.hasPhoto,
-                    onAccent: (accent) => setState(() => _accent = accent),
-                    onShowPhoto: (value) => setState(() => _showPhoto = value),
-                  );
-                  // En fenêtre étroite, le panneau passe sous la grille.
-                  if (constraints.maxWidth < DesignCatalog.wideBreakpoint) {
-                    return SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          grid,
-                          SizedBox(height: 360, child: settings),
-                        ],
-                      ),
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: grid),
-                      SizedBox(
-                        width: DesignCatalog.settingsWidth,
-                        child: settings,
-                      ),
-                    ],
-                  );
-                },
-              ),
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: grid),
+                    SizedBox(
+                      width: DesignCatalog.settingsWidth,
+                      child: settings,
+                    ),
+                  ],
+                );
+              },
             ),
-            _Footer(onApply: () => Navigator.pop(context, _choice)),
-          ],
-        ),
+          ),
+          _Footer(onApply: () => Navigator.pop(context, _choice)),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.textTheme});
-
-  final TextTheme textTheme;
+  const _Header();
 
   @override
   Widget build(BuildContext context) => Container(
@@ -132,13 +140,19 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Choisir un modèle', style: textTheme.headlineSmall),
-              const SizedBox(height: 4),
+              const Text(
+                'Choisir un modèle',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 3),
               Text(
                 '${CvDesign.values.length} modèles, tous lisibles par les '
                 'logiciels de tri des candidatures. Vos informations sont '
                 'conservées quand vous changez de modèle.',
-                style: textTheme.bodySmall,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -146,6 +160,11 @@ class _Header extends StatelessWidget {
         const SizedBox(width: 12),
         IconButton(
           tooltip: 'Fermer le catalogue',
+          iconSize: 20,
+          style: IconButton.styleFrom(
+            fixedSize: const Size.square(36),
+            foregroundColor: AppColors.onSurfaceVariant,
+          ),
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.close),
         ),
@@ -160,6 +179,7 @@ class _TemplateGrid extends StatelessWidget {
     required this.accent,
     required this.showPhoto,
     required this.onSelected,
+    this.insideScrollView = false,
   });
 
   final CvDesign selected;
@@ -167,26 +187,53 @@ class _TemplateGrid extends StatelessWidget {
   final bool showPhoto;
   final ValueChanged<CvDesign> onSelected;
 
+  /// Vrai lorsque la grille est posée dans un parent qui défile déjà.
+  final bool insideScrollView;
+
+  /// Hauteur réservée au nom et à la description, sous la vignette.
+  static const captionHeight = 52.0;
+
+  /// Espace entre la vignette et son nom.
+  static const captionGap = 7.0;
+
+  static const horizontalPadding = 20.0;
+  static const columnGap = 16.0;
+
   @override
-  Widget build(BuildContext context) => GridView.builder(
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-    shrinkWrap: true,
-    physics: const ClampingScrollPhysics(),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 4,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 16,
-      // Une miniature A4 surmontée de son nom et de sa description.
-      childAspectRatio: .56,
-    ),
-    itemCount: CvDesign.values.length,
-    itemBuilder: (context, index) {
-      final design = CvDesign.values[index];
-      return _TemplateCard(
-        design: design,
-        isSelected: design == selected,
-        choice: (design: design, accent: accent, showPhoto: showPhoto),
-        onSelected: () => onSelected(design),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      // La vignette garde le rapport A4 exact : la hauteur d'une carte se
+      // déduit de la largeur de colonne plutôt que d'un ratio approché.
+      final available =
+          constraints.maxWidth -
+          horizontalPadding * 2 -
+          columnGap * (DesignCatalog.columns - 1);
+      final columnWidth = available / DesignCatalog.columns;
+      // Le cadre ajoute 5 px de marge intérieure et jusqu'à 2 px de bordure.
+      final thumbnailHeight = (columnWidth - 14) * 297 / 210;
+      return GridView.builder(
+        shrinkWrap: insideScrollView,
+        physics: insideScrollView ? const NeverScrollableScrollPhysics() : null,
+        padding: const EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 16,
+        ),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: DesignCatalog.columns,
+          crossAxisSpacing: columnGap,
+          mainAxisSpacing: 14,
+          mainAxisExtent: thumbnailHeight + 14 + captionGap + captionHeight,
+        ),
+        itemCount: CvDesign.values.length,
+        itemBuilder: (context, index) {
+          final design = CvDesign.values[index];
+          return _TemplateCard(
+            design: design,
+            isSelected: design == selected,
+            choice: (design: design, accent: accent, showPhoto: showPhoto),
+            onSelected: () => onSelected(design),
+          );
+        },
       );
     },
   );
@@ -213,38 +260,81 @@ class _TemplateCard extends StatelessWidget {
     child: InkWell(
       onTap: onSelected,
       borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primaryTint
-                  : AppColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.cardBorder,
-                width: isSelected ? 2 : 1,
-              ),
+          // Le cadre n'entoure que la vignette : le nom et la description
+          // restent en dehors, comme dans la maquette.
+          Expanded(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primaryTint
+                        : AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.cardBorder,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 210 / 297,
+                    child: _PagePreview(choice: choice),
+                  ),
+                ),
+                if (isSelected)
+                  Positioned(
+                    right: -8,
+                    top: -8,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.pageShadow,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 16,
+                        color: AppColors.onPrimary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
+          const SizedBox(height: _TemplateGrid.captionGap),
+          SizedBox(
+            height: _TemplateGrid.captionHeight,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 210 / 297,
-                  child: _PagePreview(choice: choice),
-                ),
-                const SizedBox(height: 6),
                 Text(
                   design.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? AppColors.onSecondaryContainer
+                        : AppColors.onSurface,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Expanded(
                   child: Text(
                     design.description,
@@ -252,6 +342,7 @@ class _TemplateCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 11,
+                      height: 1.4,
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
@@ -259,31 +350,6 @@ class _TemplateCard extends StatelessWidget {
               ],
             ),
           ),
-          if (isSelected)
-            Positioned(
-              right: -6,
-              top: -6,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.pageShadow,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.check,
-                  size: 15,
-                  color: AppColors.onPrimary,
-                ),
-              ),
-            ),
         ],
       ),
     ),
@@ -292,21 +358,24 @@ class _TemplateCard extends StatelessWidget {
 
 /// La première page du CV, rendue avec le choix demandé.
 class _PagePreview extends ConsumerWidget {
-  const _PagePreview({required this.choice});
+  const _PagePreview({required this.choice, this.elevated = false});
 
   final CatalogChoice choice;
+
+  /// Le grand aperçu porte une ombre plus marquée que les vignettes.
+  final bool elevated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preview = ref.watch(catalogPreviewProvider(choice));
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.softShadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            color: elevated ? AppColors.pageShadow : AppColors.softShadow,
+            blurRadius: elevated ? 14 : 4,
+            offset: Offset(0, elevated ? 3 : 1),
           ),
         ],
       ),
@@ -351,24 +420,27 @@ class _SettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ignoresAccent = choice.design.spec.tokens.ignoresAccent;
-    return ColoredBox(
-      color: AppColors.canvas,
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.canvas,
+        border: Border(left: BorderSide(color: AppColors.outlineVariant)),
+      ),
       child: Column(
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               child: Center(
                 child: AspectRatio(
                   aspectRatio: 210 / 297,
-                  child: _PagePreview(choice: choice),
+                  child: _PagePreview(choice: choice, elevated: true),
                 ),
               ),
             ),
           ),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -376,11 +448,15 @@ class _SettingsPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Couleur d’accent',
-                  style: Theme.of(context).textTheme.titleSmall,
+                const Text(
+                  'COULEUR D’ACCENT',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: .66,
+                    color: AppColors.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     for (final accent in CvAccent.values) ...[
@@ -399,14 +475,16 @@ class _SettingsPanel extends StatelessWidget {
                 ),
                 if (ignoresAccent) ...[
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Ce modèle n’utilise aucune couleur.',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 14),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
@@ -419,10 +497,11 @@ class _SettingsPanel extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             hasPhoto
-                                ? 'Ce modèle propose aussi une version sans photo.'
+                                ? 'Ce modèle propose aussi une version sans '
+                                      'photo.'
                                 : 'Ajoutez une photo dans « Informations '
                                       'personnelles » pour activer ce réglage.',
                             style: const TextStyle(
@@ -433,7 +512,7 @@ class _SettingsPanel extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Switch(
                       value: choice.showPhoto,
                       onChanged: hasPhoto ? onShowPhoto : null,
@@ -478,6 +557,7 @@ class _AccentDot extends StatelessWidget {
             decoration: BoxDecoration(
               color: onSelected == null ? color.withValues(alpha: .35) : color,
               shape: BoxShape.circle,
+              // Deux anneaux : un blanc contre la pastille, puis sa couleur.
               border: isSelected
                   ? Border.all(color: AppColors.surface, width: 2)
                   : null,
@@ -486,7 +566,7 @@ class _AccentDot extends StatelessWidget {
                   : null,
             ),
             child: isSelected
-                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                ? const Icon(Icons.check, size: 17, color: Colors.white)
                 : null,
           ),
         ),
@@ -502,31 +582,55 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(24, 14, 24, 14),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
     decoration: const BoxDecoration(
       border: Border(top: BorderSide(color: AppColors.outlineVariant)),
     ),
     child: Row(
       children: [
-        const Icon(
-          Icons.check_circle,
-          size: 16,
-          color: AppColors.onSuccessContainer,
-        ),
-        const SizedBox(width: 6),
         const Expanded(
-          child: Text(
-            'Compatible avec les logiciels de tri des candidatures',
-            style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, size: 16, color: AppColors.outline),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Compatible avec les logiciels de tri des candidatures',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+        const SizedBox(width: 12),
         TextButton(
           onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            minimumSize: const Size(0, 36),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: const StadiumBorder(),
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           child: const Text('Annuler'),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         FilledButton.icon(
           onPressed: onApply,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(0, 36),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            shape: const StadiumBorder(),
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           icon: const Icon(Icons.check, size: 18),
           label: const Text('Appliquer le modèle'),
         ),

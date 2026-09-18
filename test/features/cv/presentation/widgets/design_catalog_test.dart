@@ -94,6 +94,65 @@ void main() {
     expect(find.byType(Image), findsNWidgets(CvDesign.values.length + 1));
   });
 
+  testWidgets('le dialogue reprend les dimensions de la maquette', (
+    tester,
+  ) async {
+    await openCatalog(tester);
+    // Le Dialog pose ses propres ConstrainedBox : on cherche le nôtre.
+    expect(
+      tester
+          .widgetList<ConstrainedBox>(find.byType(ConstrainedBox))
+          .any(
+            (box) =>
+                box.constraints.maxWidth == DesignCatalog.maxWidth &&
+                box.constraints.maxHeight == DesignCatalog.maxHeight,
+          ),
+      isTrue,
+    );
+    // Le panneau de droite occupe une largeur fixe.
+    expect(
+      tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .any((box) => box.width == DesignCatalog.settingsWidth),
+      isTrue,
+    );
+  });
+
+  testWidgets('chaque vignette garde le rapport A4', (tester) async {
+    await openCatalog(tester);
+    final ratios = tester
+        .widgetList<AspectRatio>(find.byType(AspectRatio))
+        .map((widget) => widget.aspectRatio)
+        .toList();
+    // Une vignette par modèle, plus le grand aperçu.
+    expect(ratios, hasLength(CvDesign.values.length + 1));
+    expect(ratios.every((ratio) => ratio == 210 / 297), isTrue);
+  });
+
+  testWidgets('le panneau de réglages reprend les libellés de la maquette', (
+    tester,
+  ) async {
+    await openCatalog(tester);
+    expect(find.text('COULEUR D’ACCENT'), findsOneWidget);
+    expect(find.text('Afficher la photo'), findsOneWidget);
+    expect(
+      find.text('Ce modèle propose aussi une version sans photo.'),
+      findsOneWidget,
+    );
+    // Une pastille par couleur de la palette fermée.
+    for (final accent in CvAccent.values) {
+      expect(find.byTooltip(accent.label), findsOneWidget);
+    }
+  });
+
+  testWidgets('l’en-tête annonce le nombre de modèles', (tester) async {
+    await openCatalog(tester);
+    expect(
+      find.textContaining('${CvDesign.values.length} modèles'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('le modèle enregistré est identifié par une pastille', (
     tester,
   ) async {
