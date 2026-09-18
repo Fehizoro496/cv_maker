@@ -12,60 +12,146 @@ import '../domain/cv_section.dart';
 import '../domain/cv_session.dart';
 import 'cv_section_forms.dart';
 
-/// Le CV en cours d'édition, avec son historique d'annulation.
+/// Le document ouvert au démarrage.
+///
+/// Le lancement le remplace par le dernier CV modifié. Sans CV enregistré —
+/// premier lancement ou tests —, la session part du CV d'exemple, que l'écran
+/// d'accueil masque tant qu'aucun CV n'est créé.
+final initialCvDocumentProvider = Provider<CvDocument>(
+  (ref) => exampleCvDocument(),
+);
+
+/// Le CV ouvert, avec son historique d'annulation.
 ///
 /// L'état est un [CvSession] : le document persistable et la photo de session,
 /// empilés ensemble pour que l'annulation les restaure sans les désynchroniser.
 ///
-/// La sauvegarde locale arrive au J5 ; jusque-là, la session part du CV
-/// d'exemple et ne survit pas à la fermeture.
+/// Chaque CV ouvert pendant la session garde son propre historique et sa
+/// propre photo : revenir sur un CV retrouve l'un et l'autre. Rien de tout
+/// cela ne survit à la fermeture, seul le document est enregistré.
 final cvSessionProvider = NotifierProvider<CvSessionNotifier, CvSession>(
   CvSessionNotifier.new,
 );
 
+/// L'état et l'historique d'un CV chargé pendant la session.
+class _CvHistory {
+  _CvHistory(this.session);
+
+  CvSession session;
+  final past = <CvSession>[];
+  final future = <CvSession>[];
+}
+
 class CvSessionNotifier extends Notifier<CvSession> {
-  final _past = <CvSession>[];
-  final _future = <CvSession>[];
+  final _histories = <String, _CvHistory>{};
+  late _CvHistory _current;
   static const _maxHistory = 50;
   static const _coalesceWindow = Duration(milliseconds: 900);
   final _ids = const Uuid();
   String? _lastKey;
   DateTime? _lastEdit;
 
-  bool get canUndo => _past.isNotEmpty;
-  bool get canRedo => _future.isNotEmpty;
+  bool get canUndo => _current.past.isNotEmpty;
+  bool get canRedo => _current.future.isNotEmpty;
 
   @override
-  CvSession build() => CvSession(document: exampleCvDocument());
+  CvSession build() {
+    final document = ref.read(initialCvDocumentProvider);
+    _current = _CvHistory(CvSession(document: document));
+    _histories
+      ..clear()
+      ..[document.id] = _current;
+    _lastKey = null;
+    return _current.session;
+  }
 
   CvDocument get document => state.document;
 
-  /// Empile l'état courant puis applique [next].
+  /// Le dernier état connu du CV [id] s'il a été chargé pendant la session,
+  /// modifications non encore enregistrées comprises.
+  CvDocument? loadedDocument(String id) => _histories[id]?.session.document;
+
+  /// Ouvre [document] à la place du CV courant.
   ///
-  /// Deux modifications successives portant la même [coalesceKey] et proches
-  /// dans le temps ne forment qu'une seule étape d'historique : les frappes
-  /// dans un même champ s'annulent d'un seul coup.
-  void _commit(CvSession next, {String? coalesceKey}) {
+  /// Un CV déjà chargé pendant la session reprend son dernier état, son
+  /// historique et sa photo : [document] ne sert qu'à un CV encore inconnu.
+  void open(CvDocument document) {
+    load(document);
+    final next = _histories[document.id]!;
+    if (identical(next, _current)) return;
+    _current = next;
+    _lastKey = null;
+    state = next.session;
+  }
+
+  /// Charge [document] sans l'ouvrir, avec un historique vide ; sans effet
+  /// s'il est déjà chargé.
+  void load(CvDocument document) => _histories.putIfAbsent(
+    document.id,
+    () => _CvHistory(CvSession(document: document)),
+  );
+
+  /// Oublie l'état et l'historique du CV [id], supprimé.
+  ///
+  /// Le CV courant reste affiché jusqu'à l'ouverture d'un autre : il n'y a
+  /// pas de session sans CV.
+  void forget(String id) {
+    if (_histories[id] case final history? when !identical(history, _current)) {
+      _histories.remove(id);
+    }
+  }
+
+  /// Empile l'état de [history] puis lui applique [next].
+  ///
+  /// Deux modifications successives du CV courant portant la même
+  /// [coalesceKey] et proches dans le temps ne forment qu'une seule étape
+  /// d'historique : les frappes dans un même champ s'annulent d'un seul coup.
+  void _commitTo(_CvHistory history, CvSession next, {String? coalesceKey}) {
+    final isCurrent = identical(history, _current);
     final now = DateTime.now();
     final coalesces =
+        isCurrent &&
         coalesceKey != null &&
         coalesceKey == _lastKey &&
         _lastEdit != null &&
         now.difference(_lastEdit!) <= _coalesceWindow;
     if (!coalesces) {
-      _past.add(state);
-      if (_past.length > _maxHistory) _past.removeAt(0);
+      history.past.add(history.session);
+      if (history.past.length > _maxHistory) history.past.removeAt(0);
     }
-    _future.clear();
+    history.future.clear();
+    history.session = next;
+    if (!isCurrent) return;
     _lastKey = coalesceKey;
     _lastEdit = now;
     state = next;
   }
 
+  void _commit(CvSession next, {String? coalesceKey}) =>
+      _commitTo(_current, next, coalesceKey: coalesceKey);
+
   void _commitDocument(CvDocument next, {String? coalesceKey}) => _commit(
     state.copyWith(document: next.touched(DateTime.now())),
     coalesceKey: coalesceKey,
   );
+
+  /// Renomme le CV [id], ouvert ou seulement chargé.
+  ///
+  /// Le renommage entre dans l'historique de ce CV : il s'annule comme toute
+  /// autre modification, une fois le CV ouvert.
+  void rename(String id, String name) {
+    final history = _histories[id];
+    final trimmed = name.trim();
+    if (history == null || trimmed.isEmpty) return;
+    final current = history.session.document;
+    if (current.name == trimmed) return;
+    _commitTo(
+      history,
+      history.session.copyWith(
+        document: current.copyWith(name: trimmed).touched(DateTime.now()),
+      ),
+    );
+  }
 
   /// Écrit un champ du document : nom, coordonnées, profil.
   void setDocumentField(CvDocumentField field, String value) {
@@ -191,15 +277,15 @@ class CvSessionNotifier extends Notifier<CvSession> {
 
   void undo() {
     if (!canUndo) return;
-    _future.add(state);
+    _current.future.add(state);
     _lastKey = null;
-    state = _past.removeLast();
+    state = _current.session = _current.past.removeLast();
   }
 
   void redo() {
     if (!canRedo) return;
-    _past.add(state);
+    _current.past.add(state);
     _lastKey = null;
-    state = _future.removeLast();
+    state = _current.session = _current.future.removeLast();
   }
 }

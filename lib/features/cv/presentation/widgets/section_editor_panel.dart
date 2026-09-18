@@ -14,6 +14,7 @@ import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
 import 'custom_section_dialogs.dart';
 import 'month_year_picker.dart';
+import 'save_status_chip.dart';
 
 class SectionEditorPanel extends ConsumerWidget {
   const SectionEditorPanel({super.key, this.compact = false});
@@ -77,38 +78,7 @@ class SectionEditorPanel extends ConsumerWidget {
                     ),
                     if (custom != null) _CustomSectionActions(section: custom),
                     const SizedBox(width: 12),
-                    Tooltip(
-                      message:
-                          "Exemple modifiable en mémoire. La sauvegarde locale n'est pas encore disponible.",
-                      child: Container(
-                        height: compact ? 26 : 28,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLow,
-                          border: Border.all(color: AppColors.outlineVariant),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.edit_note,
-                              size: 16,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Non enregistré',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    Flexible(child: SaveStatusChip(compact: compact)),
                   ],
                 );
                 if (constraints.maxWidth < 490) {
@@ -143,8 +113,10 @@ class SectionEditorPanel extends ConsumerWidget {
                 CvSection.profile => const _DocumentFieldInput(
                   field: CvDocumentFields.profile,
                 ),
+                // Une liste par CV : l'élément déplié ne passe pas d'un CV à
+                // l'autre.
                 CvSection() => _EntryList(
-                  key: ValueKey(section),
+                  key: ValueKey((document.id, section)),
                   section: section,
                 ),
                 CvCustomSectionRef() => switch (custom) {
@@ -158,7 +130,10 @@ class SectionEditorPanel extends ConsumerWidget {
                       onChanged: (value) =>
                           editor.setCustomSectionText(custom.id, value),
                     ),
-                  _ => _EntryList(key: ValueKey(section), section: section),
+                  _ => _EntryList(
+                    key: ValueKey((document.id, section)),
+                    section: section,
+                  ),
                 },
               },
             ),

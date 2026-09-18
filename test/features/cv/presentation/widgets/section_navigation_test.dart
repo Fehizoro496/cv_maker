@@ -9,6 +9,7 @@ import 'package:cv_maker/features/cv/presentation/catalog_preview_provider.dart'
 import 'package:cv_maker/features/cv/presentation/cv_section_presentation.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
+import 'package:cv_maker/features/cv/presentation/widgets/cv_library_dialog.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_navigation.dart';
 import 'package:cv_maker/shared/notifications/app_toast.dart';
 import 'package:cv_maker/shared/notifications/toast_layer.dart';
@@ -276,5 +277,29 @@ void main() {
       expect(first, lessThan(second));
       expect(second, lessThan(add));
     });
+  });
+
+  testWidgets('l’en-tête montre le CV ouvert et sa date de modification', (
+    tester,
+  ) async {
+    await pumpNavigation(tester);
+
+    expect(find.text('CV de Camille Moreau'), findsOneWidget);
+    expect(find.text('Modifié le 12 janvier 2026'), findsOneWidget);
+
+    container.read(cvSessionProvider.notifier).rename('example', 'Candidature');
+    await tester.pump();
+    expect(find.text('Candidature'), findsOneWidget);
+    expect(find.textContaining('Modifié aujourd’hui à'), findsOneWidget);
+  });
+
+  testWidgets('le bouton « Mes CV » ouvre la liste des CV', (tester) async {
+    await pumpNavigation(tester);
+
+    await tester.tap(find.byTooltip('Mes CV'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CvLibraryDialog), findsOneWidget);
+    expect(find.text('1 CV enregistré sur cet ordinateur'), findsOneWidget);
   });
 }

@@ -1,7 +1,11 @@
 import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
+import 'package:cv_maker/features/cv/domain/cv_document.dart';
+import 'package:cv_maker/features/cv/domain/cv_example.dart';
+import 'package:cv_maker/features/cv/domain/cv_personal_info.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
+import 'package:cv_maker/features/cv/presentation/widgets/save_status_chip.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_editor_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
@@ -78,7 +82,7 @@ void main() {
       final firstName = find.widgetWithText(TextField, 'Prénom');
       expect(tester.getSize(firstName).height, 44);
       expect(find.text('Photo (facultative)'), findsOneWidget);
-      expect(find.text('Non enregistré'), findsOneWidget);
+      expect(find.byType(SaveStatusChip), findsOneWidget);
       await tester.enterText(firstName, 'Alice');
       container
           .read(selectedSectionProvider.notifier)
@@ -99,6 +103,33 @@ void main() {
       );
     },
   );
+
+  testWidgets('les champs suivent le CV ouvert', (tester) async {
+    await pumpPanel(tester);
+    final editor = container.read(cvSessionProvider.notifier);
+    TextField field(String label) =>
+        tester.widget<TextField>(find.widgetWithText(TextField, label));
+
+    editor.open(
+      CvDocument.empty(
+        id: 'other',
+        now: DateTime.utc(2026),
+      ).copyWith(personalInfo: const CvPersonalInfo(firstName: 'Bruno')),
+    );
+    await tester.pumpAndSettle();
+    expect(field('Prénom').controller!.text, 'Bruno');
+    expect(field('Nom').controller!.text, isEmpty);
+
+    container
+        .read(selectedSectionProvider.notifier)
+        .select(CvSection.experiences);
+    await tester.pumpAndSettle();
+    expect(find.text('Nexora'), findsNothing);
+
+    editor.open(exampleCvDocument());
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'Nexora'), findsOneWidget);
+  });
 
   testWidgets('les dates se choisissent avec le sélecteur de mois', (
     tester,

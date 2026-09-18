@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/app_theme.dart';
 import '../../../../shared/notifications/app_toast.dart';
 import '../../domain/cv_section.dart';
+import '../../../../shared/formatting/modified_label.dart';
 import '../catalog_preview_provider.dart';
+import '../cv_library_provider.dart';
 import '../cv_section_presentation.dart';
 import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
 import 'custom_section_dialogs.dart';
+import 'cv_library_dialog.dart';
 import 'design_catalog.dart';
 
 class SectionNavigation extends ConsumerWidget {
@@ -122,6 +125,7 @@ class _OpenCvHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final document = ref.watch(cvSessionProvider).document;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -154,12 +158,15 @@ class _OpenCvHeader extends ConsumerWidget {
                 Text('CV OUVERT', style: textTheme.labelSmall),
                 const SizedBox(height: 1),
                 Text(
-                  ref.watch(cvSessionProvider).document.name,
+                  document.name.isEmpty ? 'Sans titre' : document.name,
                   style: textTheme.titleMedium,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  'Exemple · non enregistré',
+                  modifiedLabel(
+                    document.updatedAt,
+                    now: ref.read(clockProvider)(),
+                  ),
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodySmall?.copyWith(
                     fontSize: 11,
@@ -169,11 +176,16 @@ class _OpenCvHeader extends ConsumerWidget {
               ],
             ),
           ),
-          // Le dialogue « Mes CV » sera branché au jalon J5.
-          const IconButton(
+          IconButton(
             tooltip: 'Mes CV',
-            onPressed: null,
-            icon: Icon(Icons.unfold_more, size: 18),
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.secondaryContainer,
+              foregroundColor: AppColors.primary,
+              fixedSize: const Size.square(32),
+              minimumSize: const Size.square(32),
+            ),
+            onPressed: () => showCvLibraryDialog(context),
+            icon: const Icon(Icons.folder_open_outlined, size: 18),
           ),
         ],
       ),

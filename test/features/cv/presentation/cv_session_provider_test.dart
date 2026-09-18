@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/cv_document.dart';
+import 'package:cv_maker/features/cv/domain/cv_example.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
@@ -322,6 +324,160 @@ void main() {
 
     test('une section standard obligatoire ne se masque pas', () {
       editor.setSectionVisible(CvSection.skills, false);
+      expect(editor.canUndo, isFalse);
+    });
+  });
+
+  group('plusieurs CV', () {
+    final other = CvDocument.empty(
+      id: 'other',
+      now: DateTime.utc(2026, 2),
+      name: 'Autre CV',
+    );
+
+    test('le document d’ouverture se remplace au lancement', () {
+      final launched = ProviderContainer(
+        overrides: [initialCvDocumentProvider.overrideWithValue(other)],
+      );
+      addTearDown(launched.dispose);
+
+      expect(launched.read(cvSessionProvider).document, other);
+      expect(launched.read(cvSessionProvider.notifier).canUndo, isFalse);
+    });
+
+    test('ouvrir un autre CV part d’un historique vide', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+
+      editor.open(other);
+
+      expect(editor.document, other);
+      expect(editor.canUndo, isFalse);
+      expect(editor.canRedo, isFalse);
+    });
+
+    test('chaque CV garde son historique pendant la session', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+      editor.open(other);
+      editor.setDocumentField(CvDocumentFields.lastName, 'Durand');
+      editor.undo();
+      expect(editor.canRedo, isTrue);
+
+      editor.open(exampleCvDocument());
+      expect(editor.document.personalInfo.firstName, 'Alice');
+      expect(editor.canRedo, isFalse);
+      editor.undo();
+      expect(editor.document.personalInfo.firstName, 'Camille');
+
+      editor.open(other);
+      expect(editor.canRedo, isTrue, reason: 'le rétablissement est conservé');
+      editor.redo();
+      expect(editor.document.personalInfo.lastName, 'Durand');
+    });
+
+    test('revenir sur un CV reprend son dernier état, pas celui reçu', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+      editor.open(other);
+
+      editor.open(exampleCvDocument());
+
+      expect(editor.document.personalInfo.firstName, 'Alice');
+    });
+
+    test('la photo reste propre à chaque CV', () {
+      final photo = Uint8List.fromList([1, 2, 3]);
+      editor.setPhoto(photo);
+
+      editor.open(other);
+      expect(container.read(cvSessionProvider).photo, isNull);
+
+      editor.open(exampleCvDocument());
+      expect(container.read(cvSessionProvider).photo, same(photo));
+    });
+
+    test('les frappes ne se regroupent pas d’un CV à l’autre', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'A');
+      editor.open(other);
+      editor.open(exampleCvDocument());
+      editor.setDocumentField(CvDocumentFields.firstName, 'Al');
+
+      editor.undo();
+
+      expect(editor.document.personalInfo.firstName, 'A');
+    });
+
+    test('rouvrir le CV courant ne change rien', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+      final before = container.read(cvSessionProvider);
+
+      editor.open(exampleCvDocument());
+
+      expect(container.read(cvSessionProvider), same(before));
+      expect(editor.canUndo, isTrue);
+    });
+
+    test('renommer le CV ouvert entre dans son historique', () {
+      editor.rename('example', '  CV candidature  ');
+      expect(editor.document.name, 'CV candidature');
+      expect(
+        editor.document.updatedAt.isAfter(DateTime.utc(2026, 1, 12)),
+        isTrue,
+      );
+
+      editor.undo();
+      expect(editor.document.name, 'CV de Camille Moreau');
+    });
+
+    test('un nom vide ou inchangé est ignoré', () {
+      editor.rename('example', '   ');
+      editor.rename('example', 'CV de Camille Moreau');
+
+      expect(editor.canUndo, isFalse);
+    });
+
+    test('renommer un CV chargé mais fermé l’inscrit dans son historique', () {
+      editor.load(other);
+
+      editor.rename('other', 'Autre nom');
+
+      expect(
+        editor.document.id,
+        'example',
+        reason: 'le CV ouvert ne change pas',
+      );
+      expect(editor.canUndo, isFalse);
+      expect(editor.loadedDocument('other')!.name, 'Autre nom');
+      editor.open(other);
+      expect(editor.document.name, 'Autre nom');
+      editor.undo();
+      expect(editor.document.name, 'Autre CV');
+    });
+
+    test('renommer un CV inconnu est sans effet', () {
+      editor.rename('absent', 'Nom');
+
+      expect(editor.loadedDocument('absent'), isNull);
+    });
+
+    test('load ne remplace pas un CV déjà chargé', () {
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+
+      editor.load(exampleCvDocument());
+
+      expect(editor.loadedDocument('example')!.personalInfo.firstName, 'Alice');
+    });
+
+    test('forget oublie un CV fermé, jamais le CV ouvert', () {
+      editor.open(other);
+      editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+      editor.open(exampleCvDocument());
+
+      editor.forget('other');
+      editor.forget('example');
+
+      expect(editor.loadedDocument('other'), isNull);
+      expect(editor.loadedDocument('example'), isNotNull);
+      editor.open(other);
+      expect(editor.document.personalInfo.firstName, isEmpty);
       expect(editor.canUndo, isFalse);
     });
   });

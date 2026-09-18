@@ -37,7 +37,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | JN    | Notifications                               | J7        | Terminé |
 | J8    | Catalogue de modèles et réglages            | JD, JN    | Terminé |
 | JS    | Sections personnalisées                     | JD        | Terminé |
-| J5    | Persistance SQLite et gestion multi-CV      | JD        | À faire |
+| J5    | Persistance SQLite et gestion multi-CV      | JD        | Terminé |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
 | J9    | Finitions et validation du MVP              | J5, JZ, JS | À faire |
 
@@ -71,9 +71,29 @@ MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ## État du projet
 
-### Au 18 septembre 2026
+### J5 livré, au 18 septembre 2026
 
-`fvm flutter analyze` ne signale aucun problème et les 253 tests passent.
+`fvm flutter analyze` ne signale aucun problème et les 460 tests passent. Les
+CV sont enregistrés dans une base SQLite locale et retrouvés au redémarrage ;
+l'application en gère plusieurs, chacun avec son historique de session. Points
+à connaître :
+
+- la base est créée dans `%APPDATA%\com.example\cv_maker\cv_maker.sqlite` :
+  le nom d'éditeur `com.example` vient du gabarit du projet Windows et reste à
+  remplacer au J9, avant toute diffusion : le changer ensuite déplacerait le
+  dossier, et les CV déjà enregistrés ne seraient plus retrouvés ;
+- la date d'un CV en base est celle de son **écriture**, et non celle de la
+  modification restaurée : un état remis par une annulation remplace donc bien
+  la version enregistrée, malgré la garde contre les écritures périmées ;
+- un premier lancement sans CV affiche l'écran d'accueil ; le CV d'exemple ne
+  sert plus qu'aux tests ;
+- la sauvegarde avant fermeture repose sur `AppLifecycleListener`. Elle est
+  couverte par les tests, mais la fermeture réelle de la fenêtre avec une
+  saisie en attente reste à vérifier à la main au J9.
+
+### Avant le J5
+
+`fvm flutter analyze` ne signalait aucun problème et les 253 tests passaient.
 
 Le jalon JD a résorbé les deux dettes structurelles qui bloquaient la fin du
 J2 : `CvDocument` est désormais la seule représentation d'un CV dans
@@ -358,32 +378,55 @@ l'application, l'aperçu et l'export sont inchangés à contenu égal, et
 
 **Objectif :** retrouver ses CV après un redémarrage et en gérer plusieurs.
 
-- [ ] Initialiser la base drift (`drift_flutter`) dans le dossier de données de
-  l'application.
-- [ ] Créer la table drift des CV : identifiant, nom, dates, document JSON
+- [x] Initialiser la base drift (`drift_flutter`) dans le dossier de données de
+  l'application. ⚠ Les dates sont stockées en texte ISO-8601
+  (`store_date_time_values_as_text`) : en secondes Unix, le réglage par
+  défaut, deux écritures rapprochées deviendraient indiscernables.
+- [x] Créer la table drift des CV : identifiant, nom, dates, document JSON
   produit par `CvDocument.toJson` (voir JD.2), avec un schéma versionné et une
-  stratégie de migration.
-- [ ] Implémenter le repository : lister, lire, créer, mettre à jour,
-  supprimer.
-- [ ] Sauvegarde automatique après modification (debounce).
-- [ ] Sauvegarder également les états restaurés par undo/redo.
-- [ ] Garantir qu'une sauvegarde ancienne ne remplace pas une version récente.
-- [ ] Finaliser les sauvegardes en attente lors d'un changement de CV et avant
-  la fermeture normale de l'application ; signaler tout échec.
-- [ ] Tester un changement de CV et une fermeture avec sauvegarde en attente,
-  puis vérifier les données à la réouverture.
-- [ ] Indicateur de l'état de sauvegarde (enregistré, en cours, erreur).
-- [ ] Écran ou panneau de liste des CV : créer, renommer, dupliquer, supprimer
-  avec confirmation.
-- [ ] Rouvrir le dernier CV modifié au démarrage.
-- [ ] Conserver un historique undo/redo distinct par CV pendant la session, et
-  inclure le renommage dans l'historique.
-- [ ] Démarrer chaque nouvelle session avec un historique vide.
-- [ ] Vérifier après réouverture les sections personnalisées du JS (si JS
+  stratégie de migration. ⚠ Deux versions distinctes : celle du schéma SQL
+  (`schemaVersion`) et celle du format JSON, enregistrée sur chaque ligne
+  (`formatVersion`). Un document écrit par une version plus récente est
+  refusé plutôt que relu de travers.
+- [x] Implémenter le repository : lister, lire, créer, mettre à jour,
+  supprimer. ⚠ `CvRepository` est une interface : les tests d'interface
+  utilisent un stockage en mémoire capable de simuler des échecs.
+- [x] Sauvegarde automatique après modification (debounce de 600 ms, comme le
+  prévoit le handoff).
+- [x] Sauvegarder également les états restaurés par undo/redo.
+- [x] Garantir qu'une sauvegarde ancienne ne remplace pas une version récente.
+  ⚠ Deux protections : les écritures passent par une file unique, et la base
+  ignore une version plus ancienne que celle enregistrée.
+- [x] Finaliser les sauvegardes en attente lors d'un changement de CV et avant
+  la fermeture normale de l'application ; signaler tout échec. ⚠ Un échec
+  retient la fermeture une fois, avec une notification ; fermer de nouveau
+  quitte sans enregistrer. Un échec au changement de CV n'empêche pas de
+  changer : les modifications restent en attente et l'indicateur passe en
+  erreur.
+- [x] Tester un changement de CV et une fermeture avec sauvegarde en attente,
+  puis vérifier les données à la réouverture. Les tests relancent
+  l'application sur le même fichier SQLite.
+- [x] Indicateur de l'état de sauvegarde (enregistré, en cours, erreur), avec
+  « Réessayer ». ⚠ L'icône d'attente ne tourne pas, pour la même raison que
+  celle des notifications.
+- [x] Écran ou panneau de liste des CV : créer, renommer, dupliquer, supprimer
+  avec confirmation. Dialogue « Mes CV » du handoff, ouvert depuis l'en-tête
+  de la navigation, et écran de premier lancement. Supprimer le CV ouvert
+  ouvre le plus récent des autres.
+- [x] Rouvrir le dernier CV modifié au démarrage. Un document illisible est
+  passé sans bloquer le démarrage ; il reste listé et son ouverture est
+  signalée comme un échec.
+- [x] Conserver un historique undo/redo distinct par CV pendant la session, et
+  inclure le renommage dans l'historique. ⚠ Renommer un CV fermé l'inscrit
+  dans l'historique de ce CV : l'annulation est disponible une fois le CV
+  ouvert.
+- [x] Démarrer chaque nouvelle session avec un historique vide.
+- [x] Vérifier après réouverture les sections personnalisées du JS (si JS
   est livré, comme prévu dans l'ordre conseillé), leur contenu, leur ordre
   et leur visibilité, ainsi que le modèle et les réglages du J8.
-- [ ] Vérifier que les photos du J6 restent propres à chaque CV pendant la
+- [x] Vérifier que les photos du J6 restent propres à chaque CV pendant la
   session, ne sont jamais écrites en base et disparaissent au redémarrage.
+  ⚠ Dupliquer un CV ne copie pas sa photo.
 
 **Terminé quand :** les CV et leurs modifications sont retrouvés après un
 redémarrage, et changer de CV conserve l'historique de chacun pendant la
@@ -398,8 +441,8 @@ session.
 - [x] Sélectionner une image depuis le disque.
 - [x] Conserver la photo en mémoire, associée au CV, pendant la session
   uniquement.
-- [x] Exclure la photo du JSON sauvegardé. ⚠ Vérifié sur `CvDocument.toJson` ;
-  à reconfirmer sur la base au J5.
+- [x] Exclure la photo du JSON sauvegardé. Vérifié sur `CvDocument.toJson`,
+  puis sur la base au J5.
 - [x] Afficher la photo dans le PDF.
 - [x] Retirer ou remplacer la photo.
 - [x] Inclure les changements de photo dans l'historique undo/redo.
@@ -489,7 +532,7 @@ dès ce jalon.
   photo n'est chargée dans la session.
 - [x] Enregistrer le modèle, la couleur d'accent et l'affichage de la photo
   avec le CV, et retomber sur le modèle classique si l'identifiant est inconnu.
-  ⚠ La persistance sur disque attend le J5.
+  Enregistrés sur disque depuis le J5.
 - [x] Déclencher la régénération du PDF au changement de modèle et inclure ce
   changement dans l'historique undo/redo.
 - [x] Afficher la notification « Modèle appliqué » à la validation.
@@ -587,7 +630,12 @@ réouverture après redémarrage est validée au J5.
 **Objectif :** vérifier tous les critères d'acceptation et stabiliser.
 
 - [ ] Gestion des erreurs de sauvegarde, de lecture de base et de génération
-  PDF.
+  PDF. Le J5 couvre déjà l'échec d'écriture (indicateur et « Réessayer »),
+  l'échec à la fermeture et le document illisible au démarrage.
+- [ ] Remplacer le nom d'éditeur `com.example` du projet Windows, qui fixe le
+  dossier de la base de données.
+- [ ] Vérifier à la main qu'une fermeture de la fenêtre pendant la saisie
+  enregistre la dernière modification.
 - [ ] Présentation en onglets du formulaire et de l'aperçu sur une fenêtre
   étroite, notifications comprises.
 - [ ] Exécuter les scénarios de validation de bout en bout et vérifier

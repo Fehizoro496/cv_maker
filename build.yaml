@@ -11,3 +11,9 @@ targets:
           # Une clé absente du JSON prend la valeur par défaut du modèle, ce
           # qui permet de relire un CV enregistré avant l'ajout d'un champ.
           include_if_null: false
+      drift_dev:
+        options:
+          # Par défaut, drift stocke une date en secondes Unix et perd les
+          # millisecondes : deux sauvegardes rapprochées deviendraient
+          # indiscernables. Le texte ISO-8601 conserve la précision.
+          store_date_time_values_as_text: true
