@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../core/pdf/pdf_fonts.dart';
+import '../../../../core/pdf/pdf_links.dart';
 import '../../../../core/pdf/pdf_zones.dart';
 import '../../domain/cv_certification.dart';
 import '../../domain/cv_custom_section.dart';
@@ -46,6 +48,25 @@ Future<Uint8List> buildCvPdf(
   final structure = spec.structure;
   final sidebar = structure.sidebar;
   final accent = PdfColor.fromInt(tokens.accentColor);
+  final font = fonts.regular.getFont(pw.Context(document: pdf.document));
+
+  // Les coordonnées, sous leur forme affichée. Une adresse de site perd son
+  // protocole et son « www. » : le lien cliquable garde l'adresse complète.
+  final info = document.personalInfo;
+  final contact = [
+    if (info.location.isNotEmpty) _Contact(info.location, flows: true),
+    if (info.phone.isNotEmpty)
+      _Contact(info.phone, target: phoneTarget(info.phone)),
+    if (info.email.isNotEmpty)
+      _Contact(info.email.trim(), target: emailTarget(info.email)),
+    if (info.website.isNotEmpty) _Contact.url(info.website),
+  ];
+  final links = [
+    for (final link in info.links)
+      if (link.url.isNotEmpty) _Contact.url(link.url),
+  ];
+  double widthAt(_Contact value, double fontSize) =>
+      font.stringMetrics(value.text).advanceWidth * fontSize;
 
   // Les zones de la page, en points depuis le bord gauche du contenu. La
   // colonne latérale utilise son propre retrait [CvDesignSidebar.gutter]
@@ -57,9 +78,23 @@ Future<Uint8List> buildCvPdf(
   var mainWidth = contentWidth;
   var asideLeft = 0.0;
   var asideWidth = 0.0;
+  var band = 0.0;
   if (sidebar != null) {
-    final band = sidebar.width * format.width;
     final gutter = sidebar.gutter;
+    band = sidebar.width * format.width;
+    // Une coordonnée trop large élargit d'abord la colonne, dans la limite
+    // du modèle, avant d'être réduite puis, en dernier recours, renvoyée
+    // dans l'en-tête.
+    if (sidebar.holdsContact) {
+      final widest = [
+        for (final value in [...contact, ...links])
+          if (!value.flows) widthAt(value, tokens.scale.body),
+      ].fold(0.0, math.max);
+      band += (widest - (band - 2 * gutter)).clamp(
+        0.0,
+        band * sidebar.maxGrowth,
+      );
+    }
     asideWidth = band - 2 * gutter;
     switch (sidebar.position) {
       case CvSidebarPosition.left:
@@ -124,30 +159,15 @@ Future<Uint8List> buildCvPdf(
     mainBlocks.addAll(main.customSection(custom));
   }
 
-  final info = document.personalInfo;
-  final contact = [
-    info.location,
-    info.phone,
-    info.email,
-    info.website,
-  ].where((line) => line.isNotEmpty).toList();
-  final links = [
-    for (final link in info.links)
-      if (link.url.isNotEmpty) link.url,
-  ];
   final showPhoto = spec.header.showPhoto ? photo : null;
   final contactInHeader = !(sidebar?.holdsContact ?? false);
-  final wideContacts = <String>{};
-  if (!contactInHeader) {
-    final font = fonts.regular.getFont(pw.Context(document: pdf.document));
-    for (final value in [...contact, ...links]) {
-      if (value != info.location &&
-          font.stringMetrics(value).width * tokens.minContactFontSize >
-              asideWidth) {
-        wideContacts.add(value);
-      }
-    }
-  }
+  final wideContacts = {
+    if (!contactInHeader)
+      for (final value in [...contact, ...links])
+        if (!value.flows &&
+            widthAt(value, tokens.minContactFontSize) > asideWidth)
+          value,
+  };
   final photoSide = spec.header.photoDiameterMm * PdfPageFormat.mm;
 
   pw.Widget photoWidget(Uint8List bytes) {
@@ -174,7 +194,7 @@ Future<Uint8List> buildCvPdf(
       if (sidebar.holdsPhoto && showPhoto != null)
         pw.Center(child: photoWidget(showPhoto)),
       if (sidebar.holdsContact && sidebarContact.isNotEmpty)
-        ...aside.contactSection(sidebarContact, location: info.location),
+        ...aside._contactSection(sidebarContact),
     ]);
   }
 
@@ -216,9 +236,7 @@ Future<Uint8List> buildCvPdf(
                   child: pw.Padding(
                     padding: pw.EdgeInsets.all(sidebar.surfaceInset),
                     child: pw.Container(
-                      width:
-                          sidebar.width * format.width -
-                          2 * sidebar.surfaceInset,
+                      width: band - 2 * sidebar.surfaceInset,
                       height: format.height - 2 * sidebar.surfaceInset,
                       decoration: pw.BoxDecoration(
                         color: PdfColor.fromInt(
@@ -268,6 +286,23 @@ Future<Uint8List> buildCvPdf(
   return pdf.save();
 }
 
+/// Une coordonnée telle qu'elle est posée sur la page.
+class _Contact {
+  const _Contact(this.text, {this.target, this.flows = false});
+
+  /// Une adresse de site, affichée sans protocole ni « www. ».
+  _Contact.url(String url) : this(displayUrl(url), target: urlTarget(url));
+
+  final String text;
+
+  /// La cible du lien cliquable, `null` pour un texte simple.
+  final String? target;
+
+  /// Un texte ordinaire, comme une ville, qui peut passer à la ligne. Les
+  /// autres coordonnées restent sur une seule ligne.
+  final bool flows;
+}
+
 /// Une coordonnée technique reste entière et sélectionnable, sans troncature.
 /// Le texte est mesuré sans contrainte puis réduit seulement s'il déborde.
 pw.Widget _singleLine(String text, pw.TextStyle style) => pw.FittedBox(
@@ -276,14 +311,28 @@ pw.Widget _singleLine(String text, pw.TextStyle style) => pw.FittedBox(
   child: pw.Text(text, style: style, softWrap: false),
 );
 
+/// Une coordonnée, cliquable si elle a une cible, suivie de [suffix].
+pw.Widget _contactLine(
+  _Contact contact,
+  pw.TextStyle style, {
+  String suffix = '',
+}) {
+  final text = '${contact.text}$suffix';
+  if (contact.flows) return pw.Text(text, style: style);
+  final line = _singleLine(text, style);
+  return contact.target == null
+      ? line
+      : pw.UrlLink(destination: contact.target!, child: line);
+}
+
 /// L'en-tête du CV : nom, titre professionnel et, s'ils ne sont pas déplacés
 /// dans la colonne latérale, la photo, les coordonnées et les liens.
 List<pw.Widget> _header(
   CvDesignSpec spec,
   CvPersonalInfo info, {
   required Uint8List? photo,
-  required List<String> contact,
-  required List<String> links,
+  required List<_Contact> contact,
+  required List<_Contact> links,
   required pw.Widget Function(Uint8List bytes) photoWidget,
 }) {
   final tokens = spec.tokens;
@@ -347,26 +396,20 @@ List<pw.Widget> _header(
                         : pw.WrapAlignment.start,
                     children: [
                       for (var i = 0; i < contact.length; i++)
-                        if (contact[i] == info.location)
-                          pw.Text(
-                            '${contact[i]}${i + 1 < contact.length ? rule.inlineSeparator : ''}',
-                            style: pw.TextStyle(
-                              fontSize: scale.meta,
-                              color: contactColor,
-                            ),
-                          )
-                        else
-                          _singleLine(
-                            '${contact[i]}${i + 1 < contact.length ? rule.inlineSeparator : ''}',
-                            pw.TextStyle(
-                              fontSize: scale.meta,
-                              color: contactColor,
-                            ),
+                        _contactLine(
+                          contact[i],
+                          pw.TextStyle(
+                            fontSize: scale.meta,
+                            color: contactColor,
                           ),
+                          suffix: i + 1 < contact.length
+                              ? rule.inlineSeparator
+                              : '',
+                        ),
                     ],
                   ),
                   for (final link in links)
-                    _singleLine(
+                    _contactLine(
                       link,
                       pw.TextStyle(fontSize: scale.meta, color: contactColor),
                     ),
@@ -592,19 +635,17 @@ class _SectionRenderer {
     ];
   }
 
-  Iterable<pw.Widget> contactSection(
-    List<String> values, {
-    required String location,
-  }) {
-    pw.Widget line(String value) => value == location
-        ? _flowingText(value)
-        : _singleLine(
+  /// Les coordonnées reprises par la colonne latérale, une par ligne.
+  Iterable<pw.Widget> _contactSection(List<_Contact> values) {
+    pw.Widget line(_Contact value) => value.flows
+        ? _flowingText(value.text)
+        : _contactLine(
             value,
             pw.TextStyle(fontSize: scale.body, color: palette.body),
           );
     return [
-      if (values.first == location)
-        ...titledText('Contact', values.first)
+      if (values.first.flows)
+        ...titledText('Contact', values.first.text)
       else
         _opening('Contact', line(values.first)),
       ...values.skip(1).map(line),
@@ -623,7 +664,7 @@ class _SectionRenderer {
     required String title,
     String meta = '',
     String subtitle = '',
-    bool subtitleNoWrap = false,
+    bool subtitleIsUrl = false,
   }) => KeepTogether(
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -656,16 +697,16 @@ class _SectionRenderer {
             meta,
             style: pw.TextStyle(fontSize: scale.meta, color: palette.muted),
           ),
-        if (subtitle.isNotEmpty && subtitleNoWrap)
-          _singleLine(
-            subtitle,
+        if (subtitle.isNotEmpty && subtitleIsUrl)
+          _contactLine(
+            _Contact.url(subtitle),
             pw.TextStyle(
               fontSize: scale.meta,
               color: palette.muted,
               fontStyle: pw.FontStyle.italic,
             ),
           ),
-        if (subtitle.isNotEmpty && !subtitleNoWrap)
+        if (subtitle.isNotEmpty && !subtitleIsUrl)
           pw.Text(
             subtitle,
             style: pw.TextStyle(
@@ -697,7 +738,7 @@ class _SectionRenderer {
     String Function(T entry)? meta,
     String Function(T entry)? subtitle,
     String Function(T entry)? description,
-    bool subtitleNoWrap = false,
+    bool subtitleIsUrl = false,
   }) {
     final widgets = <pw.Widget>[];
     var first = true;
@@ -732,7 +773,7 @@ class _SectionRenderer {
         title: entryTitle,
         meta: entryMeta,
         subtitle: entrySubtitle,
-        subtitleNoWrap: subtitleNoWrap,
+        subtitleIsUrl: subtitleIsUrl,
       );
       widgets.add(first ? _opening(sectionLabel, header) : _following(header));
       if (entryDescription.isNotEmpty) {
@@ -793,7 +834,7 @@ class _SectionRenderer {
         title: (e) => _joined([e.name, e.role]),
         meta: (e) => _periodLabel(e.period),
         subtitle: (e) => e.url,
-        subtitleNoWrap: true,
+        subtitleIsUrl: true,
         description: (e) => e.description,
       ),
       CvSection.interests => _entrySection<CvNote>(

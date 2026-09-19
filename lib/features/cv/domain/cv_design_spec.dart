@@ -123,6 +123,7 @@ class CvDesignSidebar {
     this.gutter = 14,
     this.surfaceInset = 0,
     this.cornerRadius = 0,
+    this.maxGrowth = .1,
   });
 
   final CvSidebarPosition position;
@@ -147,6 +148,12 @@ class CvDesignSidebar {
   /// Retrait et arrondi du panneau de fond, sans déplacer son texte.
   final double surfaceInset;
   final double cornerRadius;
+
+  /// Élargissement maximal de la colonne, en fraction de [width], pour
+  /// loger une coordonnée entière à la taille du texte.
+  ///
+  /// Au-delà, la coordonnée est réduite, puis rejoint l'en-tête.
+  final double maxGrowth;
 }
 
 /// Côté où se place la colonne latérale d'un modèle à deux zones.
@@ -318,7 +325,9 @@ class CvDesignTokens {
   /// couleur reviendrait à en faire un autre modèle.
   final bool ignoresAccent;
 
-  /// En dessous de ce seuil, une coordonnée quitte la colonne pour l'en-tête.
+  /// En dessous de ce seuil, une coordonnée quitte la colonne pour l'en-tête,
+  /// une fois la colonne élargie au maximum de
+  /// [CvDesignSidebar.maxGrowth].
   final double minContactFontSize;
 
   /// La couleur effective des titres de section.

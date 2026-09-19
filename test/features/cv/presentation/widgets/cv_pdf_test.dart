@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:cv_maker/core/pdf/pdf_fonts.dart';
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_date_range.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
@@ -14,6 +15,8 @@ import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/cv_section_presentation.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/cv_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../helpers/long_cv.dart';
 import '../../../../helpers/pdf_bytes.dart';
@@ -22,6 +25,18 @@ import '../../../../helpers/pdf_text.dart';
 /// Le nombre de pages réellement présentes dans le PDF.
 int pageCount(List<int> bytes) =>
     RegExp(r'/Type\s*/Page\b').allMatches(latin1.decode(bytes)).length;
+
+/// Les liens cliquables du PDF : cible et rectangle `[gauche, bas, droite,
+/// haut]` sur la page.
+Map<String, List<double>> linkRects(List<int> bytes) => {
+  for (final match in RegExp(
+    r'/Subtype/Link/Rect\[([^\]]*)\].*?/URI\(([^)]*)\)',
+  ).allMatches(latin1.decode(bytes)))
+    match.group(2)!: [
+      for (final value in match.group(1)!.trim().split(RegExp(r'\s+')))
+        double.parse(value),
+    ],
+};
 
 /// Vrai si toutes les pages sont au format A4 portrait (595 × 842 points).
 bool isA4Portrait(List<int> bytes) {
@@ -470,9 +485,22 @@ void main() {
             design.spec.withOverrides(accentColor: 0xFF7A2F4A),
           );
           final text = pdfText(bytes);
-          for (final value in [email, website, profile, project]) {
+          // Les adresses de site perdent leur protocole à l'affichage…
+          for (final value in [
+            email,
+            'portfolio.camille-moreau.example/realisations-flutter',
+            'reseau.example/camille-moreau-developpement-mobile',
+            'github.example/camille-moreau/bibliotheque-composants',
+          ]) {
             expect(value.allMatches(text), hasLength(1), reason: design.name);
           }
+          expect(text, isNot(contains('https://')), reason: design.name);
+          // …mais le lien cliquable garde l'adresse complète.
+          expect(
+            linkRects(bytes).keys,
+            containsAll(['mailto:$email', website, profile, project]),
+            reason: design.name,
+          );
           expect(isA4Portrait(bytes), isTrue);
           if (design.spec.structure.sidebar != null) {
             expect(
@@ -484,6 +512,43 @@ void main() {
         },
       );
     }
+
+    test('une coordonnée un peu trop large élargit la colonne plutôt que '
+        'de rapetisser', () async {
+      const spec = sidebarDesignSpec;
+      final sidebar = spec.structure.sidebar!;
+      final asideWidth =
+          sidebar.width * PdfPageFormat.a4.width - 2 * sidebar.gutter;
+      final font = (await PdfFonts.load()).regular.getFont(
+        pw.Context(document: pw.Document().document),
+      );
+      // La première adresse qui dépasse tout juste la colonne d'origine à la
+      // taille du texte.
+      var email = '';
+      for (var n = 1; ; n++) {
+        email = '${'c' * n}@exemple.fr';
+        final width =
+            font.stringMetrics(email).advanceWidth * spec.tokens.scale.body;
+        if (width > asideWidth + 1) break;
+      }
+      final base = exampleCvDocument();
+      final bytes = await buildCvPdf(
+        base.copyWith(personalInfo: base.personalInfo.copyWith(email: email)),
+        spec,
+      );
+      final links = linkRects(bytes);
+      final mail = links['mailto:$email']!;
+      final phone = links.entries
+          .firstWhere((link) => link.key.startsWith('tel:'))
+          .value;
+      // L'adresse reste dans la colonne, plus large que la colonne
+      // d'origine, et à la même hauteur de ligne que le téléphone : elle
+      // n'a pas été réduite.
+      expect(mail[2] - mail[0], greaterThan(asideWidth));
+      expect(mail[3] - mail[1], closeTo(phone[3] - phone[1], .01));
+      final text = pdfText(bytes);
+      expect(text.indexOf(email), greaterThan(text.indexOf('CONTACT')));
+    });
 
     test(
       'les décorations et les dates empilées sont pilotées par la description',
