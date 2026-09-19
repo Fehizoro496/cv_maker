@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_date_range.dart';
@@ -8,12 +9,15 @@ import 'package:cv_maker/features/cv/domain/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_example.dart';
 import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
+import 'package:cv_maker/features/cv/domain/cv_personal_info.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
+import 'package:cv_maker/features/cv/presentation/cv_section_presentation.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/cv_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/long_cv.dart';
 import '../../../../helpers/pdf_bytes.dart';
+import '../../../../helpers/pdf_text.dart';
 
 /// Le nombre de pages réellement présentes dans le PDF.
 int pageCount(List<int> bytes) =>
@@ -393,6 +397,17 @@ void main() {
               greaterThan(pageCount(short)),
               reason: design.name,
             );
+            // Aucun élément n'est perdu, et leur ordre est conservé.
+            final text = pdfText(long);
+            var from = 0;
+            for (var i = 0; i < 40; i++) {
+              final at = text.indexOf(
+                type.hasItems ? 'Titre $i ' : 'Élément nº $i ',
+                from,
+              );
+              expect(at, greaterThanOrEqualTo(0), reason: '${design.name} $i');
+              from = at + 1;
+            }
           }
         });
       });
@@ -426,5 +441,435 @@ void main() {
         ),
       );
     });
+  });
+
+  group('moteur de zones', () {
+    for (final design in CvDesign.values) {
+      test(
+        '${design.name} : les coordonnées longues restent entières',
+        () async {
+          const email =
+              'camille.moreau.developpement@entreprise-internationale.example';
+          const website =
+              'https://portfolio.camille-moreau.example/realisations-flutter';
+          const profile =
+              'https://reseau.example/camille-moreau-developpement-mobile';
+          const project =
+              'https://github.example/camille-moreau/bibliotheque-composants';
+          final base = exampleCvDocument();
+          final document = base.copyWith(
+            personalInfo: base.personalInfo.copyWith(
+              email: email,
+              website: website,
+              links: [const CvLink(id: 'long', url: profile)],
+            ),
+            projects: [base.projects.first.copyWith(url: project)],
+          );
+          final bytes = await buildCvPdf(
+            document,
+            design.spec.withOverrides(accentColor: 0xFF7A2F4A),
+          );
+          final text = pdfText(bytes);
+          for (final value in [email, website, profile, project]) {
+            expect(value.allMatches(text), hasLength(1), reason: design.name);
+          }
+          expect(isA4Portrait(bytes), isTrue);
+          if (design.spec.structure.sidebar != null) {
+            expect(
+              text.indexOf(email),
+              lessThan(text.indexOf('PROFIL PROFESSIONNEL')),
+              reason: 'une adresse trop longue doit rejoindre l’en-tête',
+            );
+          }
+        },
+      );
+    }
+
+    test(
+      'les décorations et les dates empilées sont pilotées par la description',
+      () async {
+        final document = exampleCvDocument();
+        const baseline = CvDesignSpec();
+        final original = await buildCvPdf(document, baseline);
+        for (final spec in [
+          const CvDesignSpec(header: CvDesignHeader(headlineGap: 8)),
+          const CvDesignSpec(
+            sections: CvDesignSectionStyle(stackEntryMeta: true),
+          ),
+          const CvDesignSpec(
+            tokens: CvDesignTokens(headingSurfaceColor: 0xFFF0F4F8),
+            sections: CvDesignSectionStyle(
+              titleRadius: 6,
+              titlePaddingHorizontal: 7,
+              titlePaddingVertical: 5,
+            ),
+          ),
+        ]) {
+          final bytes = await buildCvPdf(document, spec);
+          expect(pdfFingerprint(bytes), isNot(pdfFingerprint(original)));
+          final text = pdfText(bytes);
+          expect(text, contains('Camille Moreau'));
+          expect(text, contains('Nexora'));
+          expect(text, contains('sept. 2023'));
+          expect(text, contains('Références disponibles sur demande'));
+        }
+      },
+    );
+
+    for (final design in CvDesign.values) {
+      test(
+        '${design.name} : titre lié à une description sans intitulé',
+        () async {
+          final base = exampleCvDocument();
+          final document = base.copyWith(
+            experiences: [
+              base.experiences.first.copyWith(
+                position: '',
+                company: '',
+                location: '',
+                period: const CvDateRange(),
+                description: '\n  CONTENU_UNIQUE',
+              ),
+            ],
+            education: [],
+            skills: [],
+            languages: [],
+            certifications: [],
+            projects: [],
+            interests: [],
+            references: [],
+          );
+          // Balaye la coupure de page, notamment 43 lignes pour Classique et
+          // 46 pour Bandeau latéral et Contraste avant la correction.
+          for (var lines = 30; lines < 60; lines++) {
+            final pages = pdfPageTexts(
+              await buildCvPdf(
+                document.copyWith(
+                  profile: List.filled(lines, 'ligne').join('\n'),
+                ),
+                design.spec,
+              ),
+            ).map((page) => page.join(' ')).toList();
+            final titlePage = pages.indexWhere(
+              (page) => page.contains(
+                design.spec.sections.titleCase == CvSectionTitleCase.upper
+                    ? 'EXPÉRIENCES'
+                    : CvSection.experiences.label,
+              ),
+            );
+            expect(titlePage, greaterThanOrEqualTo(0));
+            expect(
+              pages[titlePage],
+              contains('CONTENU_UNIQUE'),
+              reason: '${design.name}, $lines lignes',
+            );
+            expect('CONTENU_UNIQUE'.allMatches(pages.join(' ')), hasLength(1));
+          }
+        },
+      );
+
+      for (final type in [
+        CvCustomSectionType.simpleList,
+        CvCustomSectionType.datedList,
+      ]) {
+        test(
+          '${design.name} : description seule longue ${type.name}',
+          () async {
+            final base = exampleCvDocument();
+            final document = base.copyWith(
+              customSections: [
+                CvCustomSection(
+                  id: 'description-only',
+                  name: 'DESCRIPTIONSEULE',
+                  type: type,
+                  items: [
+                    CvCustomItem(
+                      id: 'first',
+                      description: List.generate(
+                        2000,
+                        (i) => 'mot$i',
+                      ).join(' '),
+                    ),
+                  ],
+                ),
+              ],
+            );
+            final pages = pdfPageTexts(await buildCvPdf(document, design.spec));
+            final opening = pages.singleWhere(
+              (page) => page.contains('DESCRIPTIONSEULE'),
+            );
+            expect(opening, contains('mot0'));
+            expect(pages.length, greaterThan(1));
+            expect(
+              pages
+                  .expand((page) => page)
+                  .where((word) => word.startsWith('mot')),
+              [for (var i = 0; i < 2000; i++) 'mot$i'],
+            );
+          },
+        );
+      }
+    }
+
+    /// Le titre d'une section tel que le modèle l'écrit.
+    String heading(CvDesignSpec spec, String label) =>
+        spec.sections.titleCase == CvSectionTitleCase.upper
+        ? label.toUpperCase()
+        : label;
+
+    /// Les titres du corps, dans l'ordre où le modèle les place.
+    List<String> mainHeadings(CvDesignSpec spec, CvDocument document) => [
+      for (final section in spec.structure.orderedSections(
+        document.presentation.orderedSections,
+      ))
+        if (section != CvSection.personalInfo &&
+            !spec.structure.inSidebar(section) &&
+            document.hasContent(section))
+          heading(spec, section.label),
+    ];
+
+    /// Les titres de la colonne latérale, dans l'ordre du CV.
+    List<String> asideHeadings(CvDesignSpec spec, CvDocument document) => [
+      if (spec.structure.sidebar != null) heading(spec, 'Contact'),
+      for (final section in document.presentation.orderedSections)
+        if (spec.structure.inSidebar(section) && document.hasContent(section))
+          heading(spec, section.label),
+    ];
+
+    /// Vérifie que [expected] apparaît dans [text] dans cet ordre.
+    void expectInOrder(String text, List<String> expected, String reason) {
+      var from = 0;
+      for (final part in expected) {
+        final at = text.indexOf(part, from);
+        expect(at, greaterThanOrEqualTo(0), reason: '$reason : $part');
+        from = at + part.length;
+      }
+    }
+
+    /// Le CV d'exemple, avec assez d'expériences pour tenir sur trois pages.
+    CvDocument longBody() {
+      final document = exampleCvDocument();
+      return document.copyWith(
+        experiences: [
+          for (var i = 0; i < 12; i++)
+            document.experiences.first.copyWith(id: 'exp-$i'),
+        ],
+      );
+    }
+
+    for (final design in CvDesign.values) {
+      test(
+        '${design.name} : le texte s’extrait dans l’ordre de lecture',
+        () async {
+          final spec = design.spec;
+          for (final document in [exampleCvDocument(), longBody()]) {
+            final pages = [
+              for (final page in pdfPageTexts(await buildCvPdf(document, spec)))
+                page.join(' '),
+            ];
+            final all = pages.join(' ');
+            final main = mainHeadings(spec, document);
+            final aside = asideHeadings(spec, document);
+
+            // Le nom ouvre le document, avant toute section.
+            final name = document.personalInfo.fullName;
+            final shown = spec.header.nameUppercase ? name.toUpperCase() : name;
+            expect(all.indexOf(shown), lessThan(all.indexOf(main.first)));
+
+            // Le corps se lit dans l'ordre voulu par le modèle, la colonne
+            // dans celui du CV.
+            expectInOrder(all, main, design.name);
+            expectInOrder(all, aside, design.name);
+
+            // Sur chaque page, la colonne forme un bloc distinct placé après
+            // tout le corps de cette page.
+            for (final page in pages) {
+              final asideStarts = [
+                for (final title in aside)
+                  if (page.contains(title)) page.indexOf(title),
+              ];
+              if (asideStarts.isEmpty) continue;
+              final start = asideStarts.reduce(math.min);
+              for (final title in main) {
+                if (!page.contains(title)) continue;
+                expect(
+                  page.indexOf(title),
+                  lessThan(start),
+                  reason: '${design.name} : $title',
+                );
+              }
+            }
+          }
+        },
+      );
+    }
+
+    test(
+      'la colonne ferme la première page, puis ne réapparaît plus',
+      () async {
+        final document = longBody();
+        for (final spec in [sidebarDesignSpec, lightSidebarDesignSpec]) {
+          final pages = [
+            for (final page in pdfPageTexts(await buildCvPdf(document, spec)))
+              page.join(' '),
+          ];
+          expect(pages.length, greaterThan(1));
+          // La colonne entière vient à la fin de la première page, d'un seul
+          // tenant.
+          final last = spec.structure.inSidebar(CvSection.interests)
+              ? 'Collection de spécimens imprimés.'
+              : 'Espagnol (B1)';
+          expect(pages.first, endsWith(last));
+          final contact = pages.first.indexOf(heading(spec, 'Contact'));
+          expect(
+            pages.first.substring(contact),
+            startsWith(
+              'CONTACT Lyon, France +33 6 12 34 56 78 camille.moreau@email.fr '
+              'camille-moreau.fr linkedin.com/in/camillemoreau',
+            ),
+          );
+          // Les pages suivantes ne portent que le corps.
+          for (final page in pages.skip(1)) {
+            expect(page, isNot(contains('camille.moreau@email.fr')));
+          }
+        }
+      },
+    );
+
+    test('la colonne reprend les coordonnées de l’en-tête', () async {
+      final text = pdfText(
+        await buildCvPdf(exampleCvDocument(), sidebarDesignSpec),
+      );
+      // Les coordonnées ne sont plus sur une ligne dans l'en-tête…
+      expect(text, isNot(contains('Lyon, France · +33')));
+      // …mais une par ligne dans la colonne.
+      expect(text, contains('CONTACT Lyon, France +33 6 12 34 56 78'));
+      // Les compétences y vont à la ligne plutôt que d'être séparées.
+      expect(text, contains('COMPÉTENCES Flutter Dart TypeScript'));
+    });
+
+    test(
+      'une colonne plus longue qu’une page se poursuit sans perte',
+      () async {
+        final cases = {
+          sidebarDesignSpec: longCvFor(CvSection.skills, count: 120),
+          lightSidebarDesignSpec: longCvFor(CvSection.interests, count: 40),
+        };
+        for (final MapEntry(key: spec, value: document) in cases.entries) {
+          final bytes = await buildCvPdf(document, spec);
+          expect(pageCount(bytes), greaterThan(1));
+          expect(isA4Portrait(bytes), isTrue);
+          // Chaque page reprend là où la précédente s'est arrêtée.
+          final numbers = {
+            for (final match in RegExp(r'nº (\d+)').allMatches(pdfText(bytes)))
+              int.parse(match.group(1)!),
+          };
+          final count = spec == sidebarDesignSpec ? 120 : 40;
+          expect(numbers, {for (var i = 0; i < count; i++) i});
+        }
+      },
+    );
+
+    test('un paragraphe fleuve se répartit dans chaque zone', () async {
+      final flood = List.generate(2000, (i) => 'mot$i').join(' ');
+      final document = exampleCvDocument();
+      final cases = {
+        // Dans le corps d'un modèle latéral.
+        sidebarDesignSpec: document.copyWith(profile: flood),
+        // Dans la colonne latérale.
+        lightSidebarDesignSpec: document.copyWith(
+          interests: [document.interests.last.copyWith(description: flood)],
+        ),
+        // Dans le contenu décalé par les titres en marge.
+        contrastDesignSpec: document.copyWith(
+          experiences: [
+            document.experiences.first.copyWith(description: flood),
+          ],
+        ),
+      };
+      for (final MapEntry(key: spec, value: document) in cases.entries) {
+        final bytes = await buildCvPdf(document, spec);
+        expect(pageCount(bytes), greaterThan(1));
+        final words = pdfText(
+          bytes,
+        ).split(' ').where((word) => word.startsWith('mot'));
+        expect(words, [for (var i = 0; i < 2000; i++) 'mot$i']);
+      }
+    });
+
+    for (final design in CvDesign.values) {
+      test(
+        '${design.name} : aucun titre ne reste seul en bas de page',
+        () async {
+          // Régression : un titre de section pouvait finir une page, séparé de
+          // son premier élément. Allonger le profil fait glisser chaque section
+          // vers le bas de la page, puis sur la suivante.
+          final spec = design.spec;
+          final document = exampleCvDocument();
+          final titles = [
+            ...mainHeadings(spec, document),
+            ...asideHeadings(spec, document),
+          ];
+          final asideOpening = asideHeadings(spec, document).firstOrNull;
+          for (var words = 0; words <= 400; words += 10) {
+            final bytes = await buildCvPdf(
+              document.copyWith(profile: List.filled(words, 'mot').join(' ')),
+              spec,
+            );
+            final pages = pdfPageTexts(bytes);
+            for (final page in pages.take(pages.length - 1)) {
+              final text = page.join(' ');
+              for (final title in titles) {
+                // Un titre du corps suivi de la colonne a lui aussi perdu son
+                // contenu.
+                final orphan =
+                    text.endsWith(title) ||
+                    (asideOpening != null &&
+                        title != asideOpening &&
+                        text.contains('$title $asideOpening'));
+                expect(
+                  orphan,
+                  isFalse,
+                  reason: '${design.name}, $words mots : $title',
+                );
+              }
+            }
+          }
+        },
+      );
+    }
+
+    for (final design in CvDesign.values) {
+      test(
+        '${design.name} : aucun texte en image ni en en-tête de page',
+        () async {
+          final bytes = await buildCvPdf(longBody(), design.spec);
+          // Sans photo, le document ne contient aucune image : tout le texte
+          // est du texte.
+          expect(
+            latin1.decode(bytes),
+            isNot(matches(RegExp(r'/Subtype\s*/Image'))),
+          );
+          expect(pageCount(bytes), greaterThan(1));
+          final text = pdfText(bytes);
+          // Le contenu s'extrait en entier…
+          for (final expected in [
+            'camille.moreau@email.fr',
+            'Développeuse front-end avec 5 ans',
+            'Références disponibles sur demande',
+          ]) {
+            expect(text, contains(expected), reason: design.name);
+          }
+          // …et rien n'est répété en tête des pages suivantes.
+          final name = design.spec.header.nameUppercase ? 'MOREAU' : 'Moreau';
+          expect(name.allMatches(text), hasLength(1), reason: design.name);
+          expect(
+            'camille.moreau@email.fr'.allMatches(text),
+            hasLength(1),
+            reason: design.name,
+          );
+        },
+      );
+    }
   });
 }

@@ -3,15 +3,16 @@
 /// Le libellé et la description sont affichés dans le catalogue ; la mise en
 /// forme, elle, est décrite par `CvDesignSpec`.
 ///
-/// Les trois modèles à deux zones du catalogue — bandeau latéral, latéral clair
-/// et contraste — demandent le moteur de zones du jalon JZ et n'apparaissent
-/// donc pas encore ici.
+/// L'ordre des valeurs est celui du catalogue.
 enum CvDesign {
   classic('Classique', 'Une colonne, filet d’accent.'),
   plain('Sobre', 'Noir et blanc, sans accent.'),
+  sidebar('Bandeau latéral', 'Colonne colorée à gauche.'),
+  lightSidebar('Latéral clair', 'Colonne grise à droite.'),
   banner('En-tête coloré', 'Bandeau pleine largeur.'),
   compact('Compact', 'Interlignes serrés, plus de contenu.'),
-  academic('Académique', 'En-tête centré, formations en premier.');
+  academic('Académique', 'En-tête centré, formations en premier.'),
+  contrast('Contraste', 'Capitales, titres en marge.');
 
   const CvDesign(this.label, this.description);
 

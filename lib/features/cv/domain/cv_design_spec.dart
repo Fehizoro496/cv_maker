@@ -61,26 +61,25 @@ class CvDesignSpec {
       );
 }
 
-/// Groupe 1 — structure : nombre de colonnes et colonne latérale.
+/// Groupe 1 — structure : zones de la page et place des titres de section.
 ///
-/// Tous les modèles du MVP tiennent en une seule colonne : les systèmes ATS
-/// lisent le PDF de façon linéaire et entrelacent le contenu de deux colonnes.
+/// Les systèmes ATS lisent le PDF de façon linéaire. Un modèle peut placer du
+/// contenu dans une colonne latérale ou ses titres en marge, mais le générateur
+/// émet toujours le texte dans l'ordre de lecture : sur chaque page, le corps
+/// d'abord, puis la colonne latérale comme un bloc distinct.
 class CvDesignStructure {
   const CvDesignStructure({
-    this.columns = 1,
-    this.sidebarPosition,
-    this.sidebarSections = const <CvSection>[],
+    this.sidebar,
+    this.titleMargin = 0,
     this.sectionOrder = const <CvSection>[],
   });
 
-  /// Nombre de colonnes du corps du document.
-  final int columns;
+  /// La colonne latérale, ou `null` pour un corps sur toute la largeur.
+  final CvDesignSidebar? sidebar;
 
-  /// Côté de la colonne latérale, ou `null` en une seule colonne.
-  final CvSidebarPosition? sidebarPosition;
-
-  /// Sections déplacées dans la colonne latérale.
-  final List<CvSection> sidebarSections;
+  /// Part de la largeur du corps réservée aux titres de section, placés en
+  /// marge à gauche de leur contenu ; `0` pour des titres au-dessus.
+  final double titleMargin;
 
   /// Ordre imposé par le modèle, ou vide pour suivre celui du CV.
   ///
@@ -90,7 +89,12 @@ class CvDesignStructure {
   /// celles qui y figurent.
   final List<CvSection> sectionOrder;
 
-  bool get isSingleColumn => columns == 1;
+  /// Vrai si tout le contenu tient dans une seule zone.
+  bool get isSingleColumn => sidebar == null;
+
+  /// Vrai si [section] est déplacée dans la colonne latérale.
+  bool inSidebar(CvSection section) =>
+      sidebar?.sections.contains(section) ?? false;
 
   /// L'ordre effectif des sections, [documentOrder] servant de référence.
   List<CvSection> orderedSections(List<CvSection> documentOrder) {
@@ -104,7 +108,48 @@ class CvDesignStructure {
   }
 }
 
-/// Côté où se place la colonne latérale d'un modèle à deux colonnes.
+/// La colonne latérale d'un modèle à deux zones.
+///
+/// Son fond occupe la hauteur de chaque page, avec un retrait optionnel ; son
+/// contenu commence en haut de la première page et se poursuit, s'il déborde,
+/// dans la même colonne des pages suivantes.
+class CvDesignSidebar {
+  const CvDesignSidebar({
+    required this.position,
+    required this.width,
+    this.sections = const <CvSection>[],
+    this.holdsContact = true,
+    this.holdsPhoto = false,
+    this.gutter = 14,
+    this.surfaceInset = 0,
+    this.cornerRadius = 0,
+  });
+
+  final CvSidebarPosition position;
+
+  /// Largeur de la colonne, en fraction de la largeur de la page.
+  final double width;
+
+  /// Sections standard déplacées dans la colonne, dans l'ordre du CV.
+  ///
+  /// Les sections personnalisées restent toujours dans le corps.
+  final List<CvSection> sections;
+
+  /// Les coordonnées quittent l'en-tête pour ouvrir la colonne.
+  final bool holdsContact;
+
+  /// La photo quitte l'en-tête pour le haut de la colonne.
+  final bool holdsPhoto;
+
+  /// Espace entre le bord de la colonne et le texte, de part et d'autre.
+  final double gutter;
+
+  /// Retrait et arrondi du panneau de fond, sans déplacer son texte.
+  final double surfaceInset;
+  final double cornerRadius;
+}
+
+/// Côté où se place la colonne latérale d'un modèle à deux zones.
 enum CvSidebarPosition { left, right }
 
 /// Groupe 2 — en-tête : bandeau, alignement, présence et forme de la photo.
@@ -117,6 +162,10 @@ class CvDesignHeader {
     this.photoShape = CvPhotoShape.circle,
     this.photoDiameterMm = 25,
     this.photoGap = 18,
+    this.nameUppercase = false,
+    this.headlineUppercase = false,
+    this.headlineLetterSpacing = 0,
+    this.headlineGap = 0,
   });
 
   /// Un bandeau pleine largeur peint le fond de l'en-tête avec la couleur
@@ -140,6 +189,16 @@ class CvDesignHeader {
   /// Espace entre la photo et le texte de l'en-tête.
   final double photoGap;
 
+  /// Le nom est écrit en capitales.
+  final bool nameUppercase;
+
+  /// Le titre professionnel est écrit en capitales.
+  final bool headlineUppercase;
+
+  /// Interlettrage du titre professionnel.
+  final double headlineLetterSpacing;
+  final double headlineGap;
+
   CvDesignHeader copyWith({bool? showPhoto}) => CvDesignHeader(
     fullWidthBanner: fullWidthBanner,
     bannerPadding: bannerPadding,
@@ -148,6 +207,10 @@ class CvDesignHeader {
     photoShape: photoShape,
     photoDiameterMm: photoDiameterMm,
     photoGap: photoGap,
+    nameUppercase: nameUppercase,
+    headlineUppercase: headlineUppercase,
+    headlineLetterSpacing: headlineLetterSpacing,
+    headlineGap: headlineGap,
   );
 }
 
@@ -171,6 +234,10 @@ class CvDesignTokens {
     this.footerColor = 0xFF9AA0A6,
     this.headingColor,
     this.headingSurfaceColor,
+    this.tintHeadingSurface = false,
+    this.sidebarSurfaceColor,
+    this.sidebarHeadingColor,
+    this.sidebarTextColor,
     this.scale = const CvDesignTypeScale(),
     this.pageMarginMm = 18,
     this.bodyLineSpacing = 3,
@@ -179,6 +246,7 @@ class CvDesignTokens {
     this.sectionTitleGapAbove = 14,
     this.sectionTitleGapBelow = 7,
     this.ignoresAccent = false,
+    this.minContactFontSize = 7,
   });
 
   /// Couleur d'accent du modèle : titres de section, filets et bandeau.
@@ -204,6 +272,25 @@ class CvDesignTokens {
 
   /// Fond des titres de section, ou `null` pour un titre sans fond.
   final int? headingSurfaceColor;
+
+  /// Les surfaces des titres suivent la teinte d'accent, mélangée au blanc.
+  final bool tintHeadingSurface;
+
+  int? get effectiveHeadingSurfaceColor {
+    if (!tintHeadingSurface) return headingSurfaceColor;
+    int channel(int shift) =>
+        (255 * .92 + ((accentColor >> shift) & 255) * .08).round();
+    return 0xFF000000 | (channel(16) << 16) | (channel(8) << 8) | channel(0);
+  }
+
+  /// Fond de la colonne latérale ; à défaut, [accentColor].
+  final int? sidebarSurfaceColor;
+
+  /// Couleur des titres de la colonne latérale ; à défaut, [onAccentColor].
+  final int? sidebarHeadingColor;
+
+  /// Couleur du texte de la colonne latérale ; à défaut, [onAccentColor].
+  final int? sidebarTextColor;
 
   final CvDesignTypeScale scale;
 
@@ -231,8 +318,22 @@ class CvDesignTokens {
   /// couleur reviendrait à en faire un autre modèle.
   final bool ignoresAccent;
 
+  /// En dessous de ce seuil, une coordonnée quitte la colonne pour l'en-tête.
+  final double minContactFontSize;
+
   /// La couleur effective des titres de section.
   int get effectiveHeadingColor => headingColor ?? accentColor;
+
+  /// Le fond effectif de la colonne latérale.
+  int get effectiveSidebarSurfaceColor => sidebarSurfaceColor ?? accentColor;
+
+  /// La couleur effective des titres de la colonne latérale.
+  int get effectiveSidebarHeadingColor =>
+      sidebarHeadingColor ??
+      (sidebarSurfaceColor == null ? onAccentColor : accentColor);
+
+  /// La couleur effective du texte de la colonne latérale.
+  int get effectiveSidebarTextColor => sidebarTextColor ?? onAccentColor;
 
   CvDesignTokens copyWith({int? accentColor}) => CvDesignTokens(
     accentColor: accentColor ?? this.accentColor,
@@ -243,6 +344,10 @@ class CvDesignTokens {
     footerColor: footerColor,
     headingColor: headingColor,
     headingSurfaceColor: headingSurfaceColor,
+    tintHeadingSurface: tintHeadingSurface,
+    sidebarSurfaceColor: sidebarSurfaceColor,
+    sidebarHeadingColor: sidebarHeadingColor,
+    sidebarTextColor: sidebarTextColor,
     scale: scale,
     pageMarginMm: pageMarginMm,
     bodyLineSpacing: bodyLineSpacing,
@@ -251,6 +356,7 @@ class CvDesignTokens {
     sectionTitleGapAbove: sectionTitleGapAbove,
     sectionTitleGapBelow: sectionTitleGapBelow,
     ignoresAccent: ignoresAccent,
+    minContactFontSize: minContactFontSize,
   );
 }
 
@@ -297,8 +403,11 @@ class CvDesignSectionStyle {
     this.titlePaddingVertical = 0,
     this.titleRuleWidth = 0,
     this.headerRuleThickness = 1,
+    this.headerRuleLength,
     this.bulletPrefix = '',
     this.inlineSeparator = ' · ',
+    this.titleRadius = 0,
+    this.stackEntryMeta = false,
   });
 
   /// Casse appliquée aux titres de section.
@@ -319,12 +428,20 @@ class CvDesignSectionStyle {
   /// Épaisseur du filet sous l'en-tête ; `null` pour aucun filet.
   final double? headerRuleThickness;
 
+  /// Longueur du filet sous l'en-tête ; `null` pour toute la largeur.
+  final double? headerRuleLength;
+
   /// Préfixe ajouté devant chaque ligne de description ; vide pour aucun.
   final String bulletPrefix;
 
   /// Séparateur des valeurs rendues sur une seule ligne : compétences,
   /// langues et coordonnées.
   final String inlineSeparator;
+
+  final double titleRadius;
+
+  /// Place la période sous l'intitulé pour libérer la largeur du corps.
+  final bool stackEntryMeta;
 }
 
 /// Casse appliquée aux titres de section.
@@ -351,7 +468,7 @@ const plainDesignSpec = CvDesignSpec(
 /// Un bandeau d'accent pleine largeur et des titres de section encadrés.
 const bannerDesignSpec = CvDesignSpec(
   header: CvDesignHeader(fullWidthBanner: true, bannerPadding: 16),
-  tokens: CvDesignTokens(headingSurfaceColor: 0xFFEBF4F2),
+  tokens: CvDesignTokens(tintHeadingSurface: true),
   sections: CvDesignSectionStyle(
     titlePaddingHorizontal: 8,
     titlePaddingVertical: 5,
@@ -397,14 +514,121 @@ const academicDesignSpec = CvDesignSpec(
   ),
 );
 
+/// Une colonne en aplat d'accent à gauche : photo, coordonnées, compétences
+/// et langues ; le corps à droite.
+const sidebarDesignSpec = CvDesignSpec(
+  structure: CvDesignStructure(
+    sidebar: CvDesignSidebar(
+      position: CvSidebarPosition.left,
+      width: .34,
+      sections: [CvSection.skills, CvSection.languages],
+      holdsPhoto: true,
+      gutter: 26,
+      surfaceInset: 12,
+      cornerRadius: 16,
+    ),
+  ),
+  header: CvDesignHeader(headlineGap: 6, photoDiameterMm: 28),
+  tokens: CvDesignTokens(
+    titleColor: 0xFF202B38,
+    bodyColor: 0xFF344251,
+    mutedColor: 0xFF667383,
+    tintHeadingSurface: true,
+    scale: CvDesignTypeScale(name: 27, body: 9.2, entryTitle: 10.5, footer: 8),
+    pageMarginMm: 15,
+    bodyLineSpacing: 2.5,
+    headerGap: 14,
+    entryGap: 12,
+    sectionTitleGapAbove: 18,
+    sectionTitleGapBelow: 9,
+  ),
+  sections: CvDesignSectionStyle(
+    headerRuleThickness: null,
+    titleLetterSpacing: .7,
+    titlePaddingHorizontal: 7,
+    titlePaddingVertical: 5,
+    titleRadius: 6,
+    stackEntryMeta: true,
+  ),
+);
+
+/// Une colonne grise à droite : coordonnées, langues et centres d'intérêt.
+const lightSidebarDesignSpec = CvDesignSpec(
+  structure: CvDesignStructure(
+    sidebar: CvDesignSidebar(
+      position: CvSidebarPosition.right,
+      width: .32,
+      sections: [CvSection.languages, CvSection.interests],
+      gutter: 26,
+      surfaceInset: 12,
+      cornerRadius: 16,
+    ),
+  ),
+  tokens: CvDesignTokens(
+    sidebarSurfaceColor: 0xFFEDF0F5,
+    sidebarTextColor: 0xFF1B1F23,
+    titleColor: 0xFF202B38,
+    bodyColor: 0xFF344251,
+    mutedColor: 0xFF667383,
+    tintHeadingSurface: true,
+    scale: CvDesignTypeScale(name: 27, body: 9.2, entryTitle: 10.5, footer: 8),
+    pageMarginMm: 15,
+    bodyLineSpacing: 2.5,
+    headerGap: 14,
+    entryGap: 12,
+    sectionTitleGapAbove: 18,
+    sectionTitleGapBelow: 9,
+  ),
+  header: CvDesignHeader(headlineGap: 6, photoDiameterMm: 20, photoGap: 12),
+  sections: CvDesignSectionStyle(
+    headerRuleThickness: null,
+    titleLetterSpacing: .7,
+    titlePaddingHorizontal: 7,
+    titlePaddingVertical: 5,
+    titleRadius: 6,
+    stackEntryMeta: true,
+  ),
+);
+
+/// Nom en capitales, titres de section dans une marge à gauche et court filet
+/// d'accent sous l'en-tête.
+const contrastDesignSpec = CvDesignSpec(
+  structure: CvDesignStructure(titleMargin: .26),
+  header: CvDesignHeader(
+    nameUppercase: true,
+    headlineUppercase: true,
+    headlineLetterSpacing: 1.3,
+    headlineGap: 7,
+  ),
+  tokens: CvDesignTokens(
+    titleColor: 0xFF202B38,
+    bodyColor: 0xFF344251,
+    mutedColor: 0xFF667383,
+    scale: CvDesignTypeScale(name: 30, entryTitle: 11, footer: 8),
+    headerGap: 18,
+    entryGap: 12,
+    sectionTitleGapAbove: 22,
+    bodyLineSpacing: 2.5,
+  ),
+  sections: CvDesignSectionStyle(
+    headerRuleThickness: 3,
+    headerRuleLength: 48,
+    titleLetterSpacing: .6,
+    stackEntryMeta: true,
+  ),
+);
+
 /// Seul point de correspondance entre l'identifiant d'un modèle et sa
 /// description : le générateur PDF n'utilise que [CvDesignSpec].
 extension CvDesignSpecLookup on CvDesign {
   CvDesignSpec get spec => switch (this) {
     CvDesign.classic => classicDesignSpec,
     CvDesign.plain => plainDesignSpec,
+    CvDesign.sidebar => sidebarDesignSpec,
+    CvDesign.lightSidebar => lightSidebarDesignSpec,
     CvDesign.banner => bannerDesignSpec,
     CvDesign.compact => compactDesignSpec,
     CvDesign.academic => academicDesignSpec,
+    CvDesign.contrast => contrastDesignSpec,
   };
 }

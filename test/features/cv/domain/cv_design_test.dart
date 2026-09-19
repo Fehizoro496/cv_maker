@@ -6,10 +6,26 @@ void main() {
     expect(CvDesign.values.map((design) => design.label).toSet(), {
       'Classique',
       'Sobre',
+      'Bandeau latéral',
+      'Latéral clair',
       'En-tête coloré',
       'Compact',
       'Académique',
+      'Contraste',
     });
+  });
+
+  test('le catalogue suit l’ordre du handoff', () {
+    expect(CvDesign.values, [
+      CvDesign.classic,
+      CvDesign.plain,
+      CvDesign.sidebar,
+      CvDesign.lightSidebar,
+      CvDesign.banner,
+      CvDesign.compact,
+      CvDesign.academic,
+      CvDesign.contrast,
+    ]);
   });
 
   test('chaque modèle a une description distincte', () {

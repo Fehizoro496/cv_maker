@@ -38,7 +38,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J8    | Catalogue de modèles et réglages            | JD, JN    | Terminé |
 | JS    | Sections personnalisées                     | JD        | Terminé |
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | Terminé |
-| JZ    | Moteur de zones et modèles à deux zones     | J8        | À faire |
+| JZ    | Moteur de zones et modèles à deux zones     | J8        | Terminé |
 | J9    | Finitions et validation du MVP              | J5, JZ, JS | À faire |
 
 ### Ordre conseillé pour les jalons restants
@@ -70,6 +70,32 @@ développement de JS ou JZ. Il reste indispensable avant la validation du
 MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ## État du projet
+
+### JZ livré, au 19 septembre 2026
+
+`fvm flutter analyze` ne signale aucun problème et les 530 tests passent. Le
+catalogue propose les huit modèles du handoff : bandeau latéral, latéral clair
+et contraste rejoignent les cinq modèles en une colonne. Points à connaître :
+
+- **la colonne latérale est émise après le corps page par page**, et non après
+  tout le document : un fichier PDF porte un flux de contenu par page, et une
+  colonne qui s'affiche en page 1 ne peut pas être lue après la page 2. Un ATS
+  lit donc le corps de la page 1, la colonne, puis le corps de la page 2. La
+  colonne reste un bloc d'un seul tenant, jamais entrelacé ligne à ligne avec
+  le corps ;
+- **un titre pouvait rester seul en bas de page** dans les cinq modèles
+  existants, contrairement à ce qu'annonçait le J2 : `MultiPage` coupe une
+  `Column` entre ses enfants, y compris entre le titre et son premier élément.
+  Le bloc titre et premier élément est désormais insécable (`KeepTogether`),
+  et un test balaie les positions de coupure sur les huit modèles ;
+- les tests lisent enfin le **texte** du PDF, dans l'ordre d'émission, grâce à
+  un extracteur propre aux PDF du paquet `pdf` (`test/helpers/pdf_text.dart`) :
+  l'ordre de lecture, l'absence de perte et l'absence de répétition en tête de
+  page sont vérifiés sur le texte, et non plus sur la taille du fichier ;
+- les trois nouveaux modèles ont été affinés visuellement : panneaux latéraux
+  en retrait et arrondis, titres sur fond léger, dates sous les intitulés et
+  couleurs de texte adoucies. Contraste utilise désormais un nom en 30 pt et
+  un filet de 48 pt, ajustements voulus par rapport au handoff initial.
 
 ### J5 livré, au 18 septembre 2026
 
@@ -564,19 +590,28 @@ la largeur. Les modèles à bandeau latéral et à titres en marge demandent de
 placer du contenu dans une zone secondaire, sur plusieurs pages, sans casser
 l'ordre de lecture attendu par les systèmes ATS.
 
-- [ ] Étendre la description de modèle : position et largeur de la zone
-  secondaire, sections qui y sont placées. Les propriétés existent déjà dans
-  `CvDesignStructure` mais ne sont pas honorées par le générateur.
-- [ ] Émettre la zone secondaire comme un bloc distinct placé après le corps
+- [x] Étendre la description de modèle : position et largeur de la zone
+  secondaire, sections qui y sont placées. ⚠ Les propriétés inertes
+  `columns`, `sidebarPosition` et `sidebarSections` sont remplacées par
+  `CvDesignStructure.sidebar` (`CvDesignSidebar` : côté, largeur en fraction
+  de page, sections, coordonnées et photo) et par `titleMargin` pour les
+  titres en marge. Les couleurs de la colonne rejoignent les jetons visuels.
+- [x] Émettre la zone secondaire comme un bloc distinct placé après le corps
   dans l'ordre du document, afin que l'extraction linéaire reste correcte.
-- [ ] Gérer la continuation de la zone secondaire sur plusieurs pages.
-- [ ] Ajouter les modèles bandeau latéral, latéral clair et contraste.
-- [ ] Vérifier par un test que l'ordre d'émission du texte reste celui de la
+  ⚠ Après le corps **de chaque page** : voir ci-dessus.
+- [x] Gérer la continuation de la zone secondaire sur plusieurs pages.
+  ⚠ Assurée par `ZonedFlow` (`lib/core/pdf/pdf_zones.dart`) : chaque zone
+  reprend sur la page suivante là où elle s'est arrêtée, y compris au milieu
+  d'un paragraphe. Le fond arrondi de la colonne est peint en retrait sur chaque
+  page, sans texte.
+- [x] Ajouter les modèles bandeau latéral, latéral clair et contraste.
+- [x] Vérifier par un test que l'ordre d'émission du texte reste celui de la
   lecture humaine, quel que soit le modèle.
-- [ ] Vérifier qu'aucun modèle ne place de texte dans un en-tête de page ni ne
+- [x] Vérifier qu'aucun modèle ne place de texte dans un en-tête de page ni ne
   le rend sous forme d'image.
-- [ ] Si JS est livré, comme prévu dans l'ordre conseillé, vérifier le rendu
-  et la pagination de ses trois types de contenu sur les huit modèles.
+- [x] Si JS est livré, comme prévu dans l'ordre conseillé, vérifier le rendu
+  et la pagination de ses trois types de contenu sur les huit modèles. Le
+  test vérifie aussi, sur le texte extrait, qu'aucun élément n'est perdu.
 
 **Terminé quand :** les huit modèles du catalogue sont disponibles, et le texte
 d'un modèle à bandeau s'extrait dans l'ordre de lecture attendu.
@@ -676,17 +711,17 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   le diff proportionné ; des formulaires spécifiques n'apporteront quelque chose
   que le jour où les sections divergeront vraiment.
 - **Compatibilité ATS :** les systèmes ATS lisent le PDF de façon linéaire.
-  Une colonne latérale fait entrelacer les compétences avec les intitulés de
-  poste et dégrade fortement l'extraction des champs ; le texte placé dans un
-  en-tête de page est souvent ignoré. D'où la structure en une seule colonne
-  pour tous les modèles du MVP, et l'obligation d'émettre les widgets dans
-  l'ordre de lecture attendu si des structures multi-colonnes sont ajoutées
-  plus tard.
-- **Extension du catalogue :** le format de description des modèles n'est pas
-  figé tant que le moteur de zones du JZ n'existe pas. Exposer un manifeste
-  chargé depuis un dossier utilisateur avant cela reviendrait à publier un
-  format incapable de décrire autre chose que des variantes de couleur, qu'il
-  faudrait ensuite migrer.
+  Une colonne latérale mal émise fait entrelacer les compétences avec les
+  intitulés de poste et dégrade fortement l'extraction des champs ; le texte
+  placé dans un en-tête de page est souvent ignoré. `ZonedFlow` peint donc ses
+  zones dans l'ordre de sa liste, corps en premier, quelle que soit leur
+  position sur la page. Tout nouveau modèle doit passer les tests d'ordre de
+  lecture de `cv_pdf_test.dart`, qui bouclent sur `CvDesign.values`.
+- **Extension du catalogue :** le moteur de zones existe désormais, mais le
+  format de description n'a été éprouvé que sur les huit modèles intégrés.
+  Avant d'exposer un manifeste chargé depuis un dossier utilisateur, décider
+  quelles propriétés deviennent publiques : c'est ce format qu'il faudrait
+  ensuite migrer.
 - **Vignettes du catalogue :** les rendre depuis le PDF réel du CV en cours
   demande autant de générations que de modèles à l'ouverture du catalogue. Si
   cela devient perceptible, les produire en tâche de fond, du modèle courant
@@ -711,3 +746,7 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   du titre de section, avec `TextOverflow.span`, et jamais comme son enfant.
   C'est la contrainte à garder en tête en ajoutant une section au générateur,
   et notamment pour les sections personnalisées du JS.
+- **Blocs insécables :** l'inverse est tout aussi vrai : une `Column` est
+  coupée entre ses enfants dès qu'elle ne tient pas. Un groupe qui doit rester
+  solidaire, comme un titre et son premier élément, passe par `KeepTogether`,
+  et doit rester plus petit qu'une page.
