@@ -91,8 +91,8 @@ class CvWorkspace {
 
   /// Supprime définitivement le CV [id].
   ///
-  /// Supprimer le CV ouvert ouvre le plus récemment modifié des autres ;
-  /// s'il n'en reste aucun, l'écran d'accueil prend le relais.
+  /// Supprimer le CV de la session charge à sa place le plus récemment
+  /// modifié des autres.
   ///
   /// Retourne `true` s'il reste au moins un CV.
   Future<bool> delete(String id) async {

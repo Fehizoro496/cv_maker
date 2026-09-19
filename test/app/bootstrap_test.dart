@@ -25,7 +25,7 @@ void main() {
     expect(container.read(cvLibraryProvider), isEmpty);
   });
 
-  test('ouvre le dernier CV modifié, avec un historique vide', () async {
+  test('liste les CV sans en ouvrir aucun', () async {
     final repository = MemoryCvRepository([
       cv('ancien', 1),
       cv('recent', 3),
@@ -34,14 +34,17 @@ void main() {
 
     final container = await start(repository);
 
-    expect(container.read(cvSessionProvider).document, cv('recent', 3));
-    expect(container.read(cvSessionProvider.notifier).canUndo, isFalse);
     expect(container.read(cvLibraryProvider).map((s) => s.id), [
       'recent',
       'moyen',
       'ancien',
     ]);
     expect(container.read(cvRepositoryProvider), same(repository));
+    expect([
+      'recent',
+      'moyen',
+      'ancien',
+    ], isNot(contains(container.read(cvSessionProvider).document.id)));
   });
 
   test('un CV illisible n’empêche pas le démarrage', () async {
@@ -50,12 +53,10 @@ void main() {
 
     final container = await start(repository);
 
-    expect(container.read(cvSessionProvider).document.id, 'ancien');
-    expect(
-      container.read(cvLibraryProvider).map((s) => s.id),
-      contains('recent'),
-      reason: 'il reste listé',
-    );
+    expect(container.read(cvLibraryProvider).map((s) => s.id), [
+      'recent',
+      'ancien',
+    ]);
   });
 
   testWidgets('bootstrap enveloppe l’application dans un ProviderScope', (

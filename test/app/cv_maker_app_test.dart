@@ -2,11 +2,12 @@ import 'dart:ui';
 
 import 'package:cv_maker/app/cv_maker_app.dart';
 import 'package:cv_maker/features/cv/domain/cv_example.dart';
+import 'package:cv_maker/features/cv/presentation/cv_autosave.dart';
 import 'package:cv_maker/features/cv/presentation/cv_library_provider.dart';
 import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
+import 'package:cv_maker/features/cv/presentation/dashboard_screen.dart';
 import 'package:cv_maker/features/cv/presentation/editor_screen.dart';
-import 'package:cv_maker/features/cv/presentation/welcome_screen.dart';
 import 'package:cv_maker/shared/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,15 +37,29 @@ void main() {
     );
   }
 
-  testWidgets("affiche l'écran d'édition avec le titre CV Maker", (
-    tester,
-  ) async {
+  testWidgets('s’ouvre sur le tableau de bord, titré CV Maker', (tester) async {
     await pumpApp(tester);
 
     final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(materialApp.title, 'CV Maker');
     expect(materialApp.debugShowCheckedModeBanner, isFalse);
+    expect(find.byType(DashboardScreen), findsOneWidget);
+    expect(find.byType(EditorScreen), findsNothing);
+  });
+
+  testWidgets('ouvrir un CV mène à l’éditeur, « Mes CV » y ramène', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+
+    await tester.tap(find.text('CV de Camille Moreau'));
+    await tester.pumpAndSettle();
     expect(find.byType(EditorScreen), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Mes CV'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditorScreen), findsNothing);
+    expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
   testWidgets('sans CV enregistré, l’accueil mène à l’éditeur', (tester) async {
@@ -55,8 +70,7 @@ void main() {
         initialCvLibraryProvider.overrideWithValue(const []),
       ],
     );
-    expect(find.byType(WelcomeScreen), findsOneWidget);
-    expect(find.byType(EditorScreen), findsNothing);
+    expect(find.text('Bienvenue dans CV Maker'), findsOneWidget);
 
     await tester.tap(find.text('Créer mon CV'));
     await tester.pumpAndSettle();
@@ -99,7 +113,7 @@ void main() {
 
       expect(first, AppExitResponse.cancel);
       expect(find.text('Modifications non enregistrées'), findsOneWidget);
-      expect(find.text('Erreur d’enregistrement'), findsOneWidget);
+      expect(container.read(cvSaveStatusProvider), CvSaveStatus.error);
 
       final second = await tester.binding.handleRequestAppExit();
       expect(second, AppExitResponse.exit, reason: 'quitter quand même');

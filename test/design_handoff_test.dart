@@ -57,6 +57,9 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        // L'application s'ouvre sur le tableau de bord.
+        await tester.tap(find.text('CV de Camille Moreau'));
+        await tester.pumpAndSettle();
         if (capture) {
           await tester.runAsync(
             () => precacheImage(

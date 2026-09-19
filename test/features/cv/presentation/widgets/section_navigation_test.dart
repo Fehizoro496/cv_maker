@@ -9,7 +9,6 @@ import 'package:cv_maker/features/cv/presentation/catalog_preview_provider.dart'
 import 'package:cv_maker/features/cv/presentation/cv_section_presentation.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
-import 'package:cv_maker/features/cv/presentation/widgets/cv_library_dialog.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/section_navigation.dart';
 import 'package:cv_maker/shared/notifications/app_toast.dart';
 import 'package:cv_maker/shared/notifications/toast_layer.dart';
@@ -293,13 +292,22 @@ void main() {
     expect(find.textContaining('Modifié aujourd’hui à'), findsOneWidget);
   });
 
-  testWidgets('le bouton « Mes CV » ouvre la liste des CV', (tester) async {
+  testWidgets('le bouton « Mes CV » quitte l’éditeur', (tester) async {
     await pumpNavigation(tester);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(
+          body: SizedBox(width: 240, child: SectionNavigation()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(SectionNavigation), findsOneWidget);
 
     await tester.tap(find.byTooltip('Mes CV'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(CvLibraryDialog), findsOneWidget);
-    expect(find.text('1 CV enregistré sur cet ordinateur'), findsOneWidget);
+    expect(navigator.canPop(), isFalse);
   });
 }

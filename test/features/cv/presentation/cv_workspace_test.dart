@@ -186,7 +186,7 @@ void main() {
       await app.close();
 
       final next = await launch();
-      expect(next.openId, second);
+      await next.workspace.open(second);
       expect(next.editor.canUndo, isFalse);
       expect(next.editor.canRedo, isFalse);
       expect(
@@ -207,7 +207,7 @@ void main() {
       await app.close();
 
       final next = await launch();
-      expect(next.openId, id);
+      await next.workspace.open(id);
       expect(next.editor.document.personalInfo.lastName, 'Martin');
     });
 
@@ -215,16 +215,18 @@ void main() {
       'sans écriture avant l’arrêt, la dernière frappe est perdue',
       () async {
         final app = await launchWith(1);
+        final id = app.openId;
         app.editor.setDocumentField(CvDocumentFields.lastName, 'Martin');
 
         await app.quit();
 
         final next = await launch();
+        await next.workspace.open(id);
         expect(next.editor.document.personalInfo.lastName, isEmpty);
       },
     );
 
-    test('rouvre le dernier CV modifié', () async {
+    test('le dernier CV modifié est en tête de liste au lancement', () async {
       final app = await launchWith(3);
       final oldest = app.libraryIds.last;
       await app.workspace.open(oldest);
@@ -233,8 +235,12 @@ void main() {
 
       final next = await launch();
 
-      expect(next.openId, oldest);
       expect(next.libraryIds.first, oldest);
+      expect(
+        next.libraryIds,
+        isNot(contains(next.openId)),
+        reason: 'aucun CV n’est ouvert avant le choix sur le tableau de bord',
+      );
     });
 
     test('un échec d’écriture est signalé à la fermeture', () async {
@@ -250,6 +256,7 @@ void main() {
   group('contenu retrouvé après redémarrage', () {
     test('sections personnalisées, contenu, ordre et visibilité', () async {
       final app = await launchWith(1);
+      final id = app.openId;
       final editor = app.editor;
       final dated = editor.addCustomSection(
         'Publications',
@@ -277,6 +284,7 @@ void main() {
       await app.close();
 
       final next = await launch();
+      await next.workspace.open(id);
       final document = next.editor.document;
 
       expect(document.customSections, expected.customSections);
@@ -289,6 +297,7 @@ void main() {
 
     test('le modèle, la couleur d’accent et l’affichage de la photo', () async {
       final app = await launchWith(1);
+      final id = app.openId;
       app.editor.applyTemplate(
         design: CvDesign.academic,
         accentArgb: 0xFF8C1D18,
@@ -297,6 +306,7 @@ void main() {
       await app.close();
 
       final next = await launch();
+      await next.workspace.open(id);
       final presentation = next.editor.document.presentation;
 
       expect(presentation.design, CvDesign.academic);
@@ -329,7 +339,7 @@ void main() {
         await app.close();
 
         final next = await launch();
-        expect(next.openId, second);
+        await next.workspace.open(second);
         expect(next.container.read(cvSessionProvider).photo, isNull);
         expect(next.editor.document.personalInfo.firstName, 'Alice');
       },

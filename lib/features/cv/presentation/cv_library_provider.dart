@@ -19,8 +19,8 @@ final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// Les CV enregistrés au lancement.
 ///
-/// Le lancement le remplace par la liste lue en base. Par défaut, le CV
-/// d'ouverture est le seul CV connu.
+/// Le lancement le remplace par la liste lue en base. Par défaut, le
+/// document de départ de la session est le seul CV connu.
 final initialCvLibraryProvider = Provider<List<CvSummary>>(
   (ref) => [CvSummary.of(ref.read(initialCvDocumentProvider))],
 );

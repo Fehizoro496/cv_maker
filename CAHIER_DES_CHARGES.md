@@ -53,7 +53,11 @@ Le produit minimum viable comprend :
 - Supprimer un CV après confirmation.
 - Enregistrer automatiquement les modifications, à l'exception de la photo
   conservée uniquement pendant la session pour le MVP.
-- Rouvrir le dernier CV modifié au démarrage.
+- Ouvrir l'application sur un tableau de bord qui liste les CV enregistrés,
+  du plus récemment modifié au plus ancien, avec une recherche par nom (sans
+  tenir compte de la casse ni des accents), un tri par nom et la création
+  d'un nouveau CV. Sans CV enregistré, le tableau de bord invite à créer le
+  premier.
 
 ### 5.2 Informations personnelles
 
@@ -270,7 +274,8 @@ couvrent pas son parcours : publications, enseignement, distinctions, bénévola
 
 ### 6.1 Organisation desktop
 
-L'écran principal comporte trois zones :
+L'application s'ouvre sur le tableau de bord des CV (section 5.1). Ouvrir ou
+créer un CV mène à l'écran d'édition, qui comporte trois zones :
 
 ```text
 ┌──────────────┬────────────────────────┬────────────────────────┐

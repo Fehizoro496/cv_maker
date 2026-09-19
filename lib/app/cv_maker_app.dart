@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/cv/presentation/cv_autosave.dart';
-import '../features/cv/presentation/cv_library_provider.dart';
 import '../features/cv/presentation/cv_workspace.dart';
-import '../features/cv/presentation/editor_screen.dart';
-import '../features/cv/presentation/welcome_screen.dart';
+import '../features/cv/presentation/dashboard_screen.dart';
 import '../shared/notifications/app_toast.dart';
 import '../shared/notifications/toast_layer.dart';
 import 'app_theme.dart';
@@ -60,7 +58,6 @@ class _CvMakerAppState extends ConsumerState<CvMakerApp> {
   Widget build(BuildContext context) {
     // La sauvegarde automatique vit aussi longtemps que l'application.
     ref.watch(cvAutosaveProvider);
-    final hasCv = ref.watch(cvLibraryProvider.select((l) => l.isNotEmpty));
     return MaterialApp(
       title: 'CV Maker',
       debugShowCheckedModeBanner: false,
@@ -68,7 +65,9 @@ class _CvMakerAppState extends ConsumerState<CvMakerApp> {
       // Les notifications se posent au-dessus du Navigator : elles restent
       // visibles par-dessus un dialogue et après un changement d'onglet.
       builder: (context, child) => ToastLayer(child: child ?? const SizedBox()),
-      home: hasCv ? const EditorScreen() : const WelcomeScreen(),
+      // L'éditeur se pousse par-dessus le tableau de bord à l'ouverture d'un
+      // CV.
+      home: const DashboardScreen(),
     );
   }
 }

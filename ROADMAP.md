@@ -73,7 +73,7 @@ MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ### J5 livré, au 18 septembre 2026
 
-`fvm flutter analyze` ne signale aucun problème et les 460 tests passent. Les
+`fvm flutter analyze` ne signale aucun problème et les 480 tests passent. Les
 CV sont enregistrés dans une base SQLite locale et retrouvés au redémarrage ;
 l'application en gère plusieurs, chacun avec son historique de session. Points
 à connaître :
@@ -85,8 +85,11 @@ l'application en gère plusieurs, chacun avec son historique de session. Points
 - la date d'un CV en base est celle de son **écriture**, et non celle de la
   modification restaurée : un état remis par une annulation remplace donc bien
   la version enregistrée, malgré la garde contre les écritures périmées ;
-- un premier lancement sans CV affiche l'écran d'accueil ; le CV d'exemple ne
-  sert plus qu'aux tests ;
+- l'application s'ouvre sur un **tableau de bord** des CV, et non plus sur le
+  dernier CV modifié : c'est un écart voulu au handoff, reporté dans le cahier
+  des charges. Il remplace aussi le dialogue « Mes CV » : le bouton de l'en-tête
+  de l'éditeur ramène au tableau de bord. Le CV d'exemple ne sert plus
+  qu'aux tests ;
 - la sauvegarde avant fermeture repose sur `AppLifecycleListener`. Elle est
   couverte par les tests, mais la fermeture réelle de la fenêtre avec une
   saisie en attente reste à vérifier à la main au J9.
@@ -410,12 +413,15 @@ l'application, l'aperçu et l'export sont inchangés à contenu égal, et
   « Réessayer ». ⚠ L'icône d'attente ne tourne pas, pour la même raison que
   celle des notifications.
 - [x] Écran ou panneau de liste des CV : créer, renommer, dupliquer, supprimer
-  avec confirmation. Dialogue « Mes CV » du handoff, ouvert depuis l'en-tête
-  de la navigation, et écran de premier lancement. Supprimer le CV ouvert
-  ouvre le plus récent des autres.
-- [x] Rouvrir le dernier CV modifié au démarrage. Un document illisible est
-  passé sans bloquer le démarrage ; il reste listé et son ouverture est
-  signalée comme un échec.
+  avec confirmation. ⚠ D'abord livré comme le dialogue « Mes CV » du
+  handoff, puis remplacé par un tableau de bord plein écran : grille de
+  cartes, recherche insensible à la casse et aux accents (Ctrl+F), tri par
+  date ou par nom, création par un bouton, une tuile ou Ctrl+N, actions de
+  chaque CV dans un menu. Sans CV, il affiche l'accueil du premier lancement.
+- [x] ~~Rouvrir le dernier CV modifié au démarrage.~~ Remplacé par le tableau
+  de bord, où le dernier CV modifié apparaît en premier. Le démarrage ne lit
+  plus que la liste des CV : un document illisible ne peut pas le bloquer, et
+  son ouverture est signalée comme un échec.
 - [x] Conserver un historique undo/redo distinct par CV pendant la session, et
   inclure le renommage dans l'historique. ⚠ Renommer un CV fermé l'inscrit
   dans l'historique de ce CV : l'annulation est disponible une fois le CV

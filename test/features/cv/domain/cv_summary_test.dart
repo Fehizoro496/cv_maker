@@ -60,4 +60,51 @@ void main() {
 
     expect(next.map((s) => s.id), ['b']);
   });
+
+  group('recherche', () {
+    final list = [
+      summary('dev', 3, name: 'CV Développeuse Front-End'),
+      summary('design', 2, name: 'Portfolio design'),
+      summary('coeur', 1, name: 'Lettre de Cœur'),
+    ];
+
+    List<String> idsFor(String query) =>
+        list.matching(query).map((s) => s.id).toList();
+
+    test('une recherche vide garde tout, dans le même ordre', () {
+      expect(idsFor(''), ['dev', 'design', 'coeur']);
+      expect(idsFor('   '), ['dev', 'design', 'coeur']);
+    });
+
+    test('ignore la casse et les accents, dans les deux sens', () {
+      expect(idsFor('developpeuse'), ['dev']);
+      expect(idsFor('DÉVELOPPEUSE'), ['dev']);
+      expect(idsFor('coeur'), ['coeur']);
+    });
+
+    test('chaque mot doit apparaître, dans n’importe quel ordre', () {
+      expect(idsFor('front cv'), ['dev']);
+      expect(idsFor('cv design'), isEmpty);
+    });
+
+    test('une partie de mot suffit', () {
+      expect(idsFor('port'), ['design']);
+      expect(idsFor('absent'), isEmpty);
+    });
+  });
+
+  test('trie par nom, accents et casse ignorés', () {
+    final sorted = [
+      summary('z', 1, name: 'zèbre'),
+      summary('e', 1, name: 'Écologie'),
+      summary('a', 1, name: 'arbre'),
+      summary('e2', 2, name: 'ecologie'),
+    ].sortedByName();
+
+    expect(sorted.map((s) => s.id), ['a', 'e2', 'e', 'z']);
+  });
+
+  test('foldForSearch retire accents et ligatures', () {
+    expect(foldForSearch('Œuvre Ça Ärger Ñandú'), 'oeuvre ca arger nandu');
+  });
 }

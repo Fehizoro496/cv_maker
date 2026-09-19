@@ -3,15 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../shared/notifications/app_toast.dart';
+import '../../../../shared/widgets/dashed_border.dart';
 import '../../domain/cv_section.dart';
 import '../../../../shared/formatting/modified_label.dart';
 import '../catalog_preview_provider.dart';
+import '../cv_autosave.dart';
 import '../cv_library_provider.dart';
 import '../cv_section_presentation.dart';
 import '../cv_session_provider.dart';
 import '../selected_section_provider.dart';
 import 'custom_section_dialogs.dart';
-import 'cv_library_dialog.dart';
 import 'design_catalog.dart';
 
 class SectionNavigation extends ConsumerWidget {
@@ -176,6 +177,8 @@ class _OpenCvHeader extends ConsumerWidget {
               ],
             ),
           ),
+          // Le tableau de bord est sous l'éditeur : le quitter y ramène. Les
+          // modifications en attente sont écrites pour qu'il soit à jour.
           IconButton(
             tooltip: 'Mes CV',
             style: IconButton.styleFrom(
@@ -184,7 +187,10 @@ class _OpenCvHeader extends ConsumerWidget {
               fixedSize: const Size.square(32),
               minimumSize: const Size.square(32),
             ),
-            onPressed: () => showCvLibraryDialog(context),
+            onPressed: () {
+              ref.read(cvAutosaveProvider).flush();
+              Navigator.of(context).maybePop();
+            },
             icon: const Icon(Icons.folder_open_outlined, size: 18),
           ),
         ],
@@ -369,7 +375,7 @@ class _AddSectionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => CustomPaint(
-    foregroundPainter: const _DashedBorderPainter(
+    foregroundPainter: const DashedBorderPainter(
       color: AppColors.disabledBorder,
       radius: 18,
     ),
@@ -400,40 +406,6 @@ class _AddSectionButton extends ConsumerWidget {
       ),
     ),
   );
-}
-
-/// Bordure pointillée arrondie : Flutter n'en fournit pas.
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final outline = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          Offset.zero & size,
-          Radius.circular(radius),
-        ).deflate(0.5),
-      );
-    const dash = 4.0;
-    const gap = 3.0;
-    for (final metric in outline.computeMetrics()) {
-      for (var at = 0.0; at < metric.length; at += dash + gap) {
-        canvas.drawPath(metric.extractPath(at, at + dash), paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 class _OfflineFooter extends StatelessWidget {

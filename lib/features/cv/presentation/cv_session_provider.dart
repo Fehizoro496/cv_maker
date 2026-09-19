@@ -12,11 +12,11 @@ import '../domain/cv_section.dart';
 import '../domain/cv_session.dart';
 import 'cv_section_forms.dart';
 
-/// Le document ouvert au démarrage.
+/// Le document de la session avant qu'un CV soit ouvert.
 ///
-/// Le lancement le remplace par le dernier CV modifié. Sans CV enregistré —
-/// premier lancement ou tests —, la session part du CV d'exemple, que l'écran
-/// d'accueil masque tant qu'aucun CV n'est créé.
+/// L'application démarre sur le tableau de bord : ce document n'est ni
+/// affiché ni enregistré tant qu'aucun CV n'est ouvert. Les tests de
+/// l'éditeur s'en servent pour partir directement du CV d'exemple.
 final initialCvDocumentProvider = Provider<CvDocument>(
   (ref) => exampleCvDocument(),
 );

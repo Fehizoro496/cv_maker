@@ -57,4 +57,45 @@ extension CvSummaryList on List<CvSummary> {
     final byDate = b.updatedAt.compareTo(a.updatedAt);
     return byDate != 0 ? byDate : a.id.compareTo(b.id);
   });
+
+  /// Les résumés dont le nom contient chacun des mots de [query], sans tenir
+  /// compte de la casse ni des accents. Une recherche vide garde tout.
+  List<CvSummary> matching(String query) {
+    final words = foldForSearch(
+      query,
+    ).split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return [...this];
+    return [
+      for (final summary in this)
+        if (words.every(foldForSearch(summary.name).contains)) summary,
+    ];
+  }
+
+  /// Une copie triée par nom, dans l'ordre alphabétique français : casse et
+  /// accents ignorés, puis la date départage.
+  List<CvSummary> sortedByName() => [...this]
+    ..sort((a, b) {
+      final byName = foldForSearch(a.name).compareTo(foldForSearch(b.name));
+      return byName != 0 ? byName : b.updatedAt.compareTo(a.updatedAt);
+    });
+}
+
+// Chaque lettre accentuée et sa lettre de base, à la même position.
+const _accented = 'àâäáãåçéèêëîïíìñôöóòõùûüúÿ';
+const _unaccented = 'aaaaaaceeeeiiiinooooouuuuy';
+
+/// [text] en minuscules et sans accents : « Développeuse » et
+/// « developpeuse » se retrouvent l'un l'autre.
+String foldForSearch(String text) {
+  final buffer = StringBuffer();
+  for (final char in text.toLowerCase().split('')) {
+    final index = _accented.indexOf(char);
+    buffer.write(switch (char) {
+      'æ' => 'ae',
+      'œ' => 'oe',
+      _ when index >= 0 => _unaccented[index],
+      _ => char,
+    });
+  }
+  return buffer.toString();
 }
