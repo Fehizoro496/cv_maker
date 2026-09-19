@@ -1,8 +1,12 @@
+import 'dart:convert';
+
+import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/cv_example.dart';
 import 'package:cv_maker/features/cv/domain/cv_personal_info.dart';
+import 'package:cv_maker/features/cv/domain/cv_presentation_preferences.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
 import 'package:cv_maker/features/cv/presentation/widgets/save_status_chip.dart';
@@ -57,6 +61,53 @@ void main() {
 
     expect(find.text('Projets'), findsOneWidget);
     expect(find.text('Informations personnelles'), findsNothing);
+  });
+
+  testWidgets('le format de la photo se règle puis revient au modèle', (
+    tester,
+  ) async {
+    await pumpPanel(tester);
+    // Sans photo, aucun réglage de format n'est proposé.
+    expect(find.text('Format dans le CV'), findsNothing);
+
+    container
+        .read(cvSessionProvider.notifier)
+        .setPhoto(
+          base64Decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+          ),
+        );
+    await tester.pump();
+    expect(find.text('Format dans le CV'), findsOneWidget);
+    expect(find.text('Selon le modèle'), findsOneWidget);
+    expect(find.text('25 mm'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Forme Carré'));
+    await tester.pump();
+    CvPresentationPreferences presentation() =>
+        container.read(cvSessionProvider).document.presentation;
+    expect(presentation().photoShape, CvPhotoShape.square);
+    expect(find.text('Selon le modèle'), findsNothing);
+
+    // La taille avance d'un millimètre à chaque pression.
+    await tester.tap(find.byTooltip('Agrandir la photo'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Agrandir la photo'));
+    await tester.pump();
+    expect(presentation().photoSizeMm, 27);
+    expect(find.text('27 mm'), findsOneWidget);
+    await tester.tap(find.byTooltip('Réduire la photo'));
+    await tester.pump();
+    expect(presentation().photoSizeMm, 26);
+    // Le changement de taille garde la forme choisie.
+    expect(presentation().photoShape, CvPhotoShape.square);
+
+    await tester.tap(find.text('Rétablir le modèle'));
+    await tester.pump();
+    expect(presentation().photoShape, isNull);
+    expect(presentation().photoSizeMm, isNull);
+    expect(find.text('Selon le modèle'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('les boutons annuler et rétablir sont désactivés', (

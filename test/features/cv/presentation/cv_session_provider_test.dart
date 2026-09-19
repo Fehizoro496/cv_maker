@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/cv_example.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
@@ -160,6 +161,21 @@ void main() {
     editor.redo();
     expect(container.read(cvSessionProvider).photo, photo);
   });
+
+  test(
+    'des réglages de photo rapprochés ne forment qu’une étape d’historique',
+    () {
+      for (var size = 26.0; size <= 34; size++) {
+        editor.setPhotoFormat(shape: null, sizeMm: size);
+      }
+      editor.setPhotoFormat(shape: CvPhotoShape.square, sizeMm: 34);
+      expect(editor.document.designSpec.header.photoDiameterMm, 34);
+      expect(editor.document.designSpec.header.photoShape, CvPhotoShape.square);
+      editor.undo();
+      expect(editor.document.presentation.photoSizeMm, isNull);
+      expect(editor.document.presentation.photoShape, isNull);
+    },
+  );
 
   test('retirer la photo conserve le document', () {
     final document = editor.document;

@@ -324,6 +324,26 @@ void main() {
     },
   );
 
+  test('la forme et la taille de la photo changent son rendu', () async {
+    final document = exampleCvDocument();
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+    );
+    Future<String> render(CvDesignSpec spec) async =>
+        latin1.decode(await buildCvPdf(document, spec, photo: png));
+
+    for (final spec in [classicDesignSpec, sidebarDesignSpec]) {
+      final small = await render(spec.withOverrides(photoSizeMm: 20));
+      final large = await render(spec.withOverrides(photoSizeMm: 30));
+      expect(large, isNot(small));
+      final shapes = {
+        for (final shape in CvPhotoShape.values)
+          await render(spec.withOverrides(photoShape: shape)),
+      };
+      expect(shapes, hasLength(CvPhotoShape.values.length));
+    }
+  });
+
   group('sections personnalisées', () {
     String description(int i) => [
       'Élément nº $i : une description sur plusieurs lignes, accentuée, '

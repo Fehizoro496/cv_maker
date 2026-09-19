@@ -74,10 +74,12 @@ abstract class CvDocument with _$CvDocument {
   /// La description effective du modèle, réglages du CV appliqués.
   ///
   /// C'est la seule entrée de mise en forme du générateur PDF : la couleur
-  /// d'accent et l'affichage de la photo y sont déjà résolus.
+  /// d'accent et les réglages de la photo y sont déjà résolus.
   CvDesignSpec get designSpec => design.spec.withOverrides(
     accentColor: presentation.accentColor,
     showPhoto: presentation.showPhoto,
+    photoShape: presentation.photoShape,
+    photoSizeMm: presentation.photoSizeMm,
   );
 
   /// Une section facultative ou personnalisée peut être masquée.

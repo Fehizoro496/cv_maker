@@ -27,11 +27,16 @@ final catalogPreviewProvider = FutureProvider.family<Uint8List, CatalogChoice>((
 ) async {
   final session = ref.watch(cvSessionProvider);
   final rasterize = ref.watch(pdfRasterizerProvider);
+  final presentation = session.document.presentation;
   final bytes = await buildCvPdf(
     session.document,
+    // La forme et la taille de la photo, réglées dans l'éditeur, suivent le CV
+    // d'un modèle à l'autre.
     choice.design.spec.withOverrides(
       accentColor: choice.accentArgb,
       showPhoto: choice.showPhoto,
+      photoShape: presentation.photoShape,
+      photoSizeMm: presentation.photoSizeMm,
     ),
     photo: session.photo,
   );

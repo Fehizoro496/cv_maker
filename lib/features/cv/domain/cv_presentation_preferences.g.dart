@@ -12,6 +12,8 @@ _CvPresentationPreferences _$CvPresentationPreferencesFromJson(
   designId: json['designId'] as String? ?? 'classic',
   accentArgb: (json['accentArgb'] as num?)?.toInt() ?? CvAccent.defaultColor,
   showPhoto: json['showPhoto'] as bool? ?? true,
+  photoShape: $enumDecodeNullable(_$CvPhotoShapeEnumMap, json['photoShape']),
+  photoSizeMm: (json['photoSizeMm'] as num?)?.toDouble(),
   sectionOrder:
       (json['sectionOrder'] as List<dynamic>?)
           ?.map((e) => $enumDecode(_$CvSectionEnumMap, e))
@@ -30,12 +32,20 @@ Map<String, dynamic> _$CvPresentationPreferencesToJson(
   'designId': instance.designId,
   'accentArgb': instance.accentArgb,
   'showPhoto': instance.showPhoto,
+  'photoShape': ?_$CvPhotoShapeEnumMap[instance.photoShape],
+  'photoSizeMm': ?instance.photoSizeMm,
   'sectionOrder': instance.sectionOrder
       .map((e) => _$CvSectionEnumMap[e]!)
       .toList(),
   'hiddenSections': instance.hiddenSections
       .map((e) => _$CvSectionEnumMap[e]!)
       .toList(),
+};
+
+const _$CvPhotoShapeEnumMap = {
+  CvPhotoShape.circle: 'circle',
+  CvPhotoShape.rounded: 'rounded',
+  CvPhotoShape.square: 'square',
 };
 
 const _$CvSectionEnumMap = {

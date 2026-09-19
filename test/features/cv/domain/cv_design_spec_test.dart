@@ -258,6 +258,18 @@ void main() {
       }
     });
 
+    test('la forme et la taille de la photo se surchargent', () {
+      final spec = sidebarDesignSpec.withOverrides(
+        photoShape: CvPhotoShape.rounded,
+        photoSizeMm: 32,
+      );
+      expect(spec.header.photoShape, CvPhotoShape.rounded);
+      expect(spec.header.photoDiameterMm, 32);
+      // Le reste de l'en-tête reste celui du modèle.
+      expect(spec.header.photoGap, sidebarDesignSpec.header.photoGap);
+      expect(spec.header.showPhoto, sidebarDesignSpec.header.showPhoto);
+    });
+
     test('sans réglage, la description reste inchangée', () {
       final spec = bannerDesignSpec.withOverrides();
       expect(spec.tokens.accentColor, bannerDesignSpec.tokens.accentColor);

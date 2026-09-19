@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../domain/cv_custom_section.dart';
 import '../domain/cv_design.dart';
+import '../domain/cv_design_spec.dart';
 import '../domain/cv_document.dart';
 import '../domain/cv_entry.dart';
 import '../domain/cv_example.dart';
@@ -267,6 +268,23 @@ class CvSessionNotifier extends Notifier<CvSession> {
     );
     if (next == document.presentation) return;
     _commitDocument(document.copyWith(presentation: next));
+  }
+
+  /// Impose la forme et la taille de la photo ; `null` rend la main au
+  /// modèle.
+  ///
+  /// Des réglages rapprochés, comme plusieurs pressions sur « + », ne
+  /// forment qu'une étape d'historique.
+  void setPhotoFormat({required CvPhotoShape? shape, required double? sizeMm}) {
+    final next = document.presentation.withPhotoFormat(
+      shape: shape,
+      sizeMm: sizeMm,
+    );
+    if (next == document.presentation) return;
+    _commitDocument(
+      document.copyWith(presentation: next),
+      coalesceKey: 'photo/format',
+    );
   }
 
   /// La photo n'est pas persistée : elle vit dans la session, pas le document.

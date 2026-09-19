@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/app_theme.dart';
 import '../../../../shared/widgets/soft_panel.dart';
 import '../../domain/cv_custom_section.dart';
+import '../../domain/cv_design_spec.dart';
 import '../../domain/cv_entry.dart';
 import '../../domain/cv_month_year.dart';
+import '../../domain/cv_presentation_preferences.dart';
 import '../../domain/cv_section.dart';
 import '../cv_section_forms.dart';
 import '../cv_section_presentation.dart';
@@ -273,128 +275,462 @@ class _PersonalForm extends StatelessWidget {
   );
 }
 
+/// Le rayon des coins d'une photo de côté [side] découpée en [shape].
+double _photoRadius(CvPhotoShape shape, double side) => switch (shape) {
+  CvPhotoShape.circle => side / 2,
+  CvPhotoShape.rounded => side * CvPhotoShape.roundedCornerRatio,
+  CvPhotoShape.square => 0,
+};
+
+/// La forme et la taille de la photo dans le CV.
+///
+/// Sans réglage, la photo garde la forme et la taille du modèle ; les réglages
+/// suivent ensuite le CV d'un modèle à l'autre.
+class _PhotoFormat extends ConsumerWidget {
+  const _PhotoFormat();
+
+  /// Hauteur commune des deux contrôles, alignés sur une même ligne.
+  static const controlHeight = 36.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final document = ref.watch(cvSessionProvider).document;
+    final presentation = document.presentation;
+    final header = document.designSpec.header;
+    final editor = ref.read(cvSessionProvider.notifier);
+    final customized =
+        presentation.photoShape != null || presentation.photoSizeMm != null;
+    const min = CvPresentationPreferences.minPhotoSizeMm;
+    const max = CvPresentationPreferences.maxPhotoSizeMm;
+    final size = header.photoDiameterMm.clamp(min, max).roundToDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Format dans le CV',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            // L'origine du format : le modèle, ou un réglage que l'on peut
+            // annuler d'un geste.
+            SizedBox(
+              height: 32,
+              child: customized
+                  ? TextButton.icon(
+                      onPressed: () =>
+                          editor.setPhotoFormat(shape: null, sizeMm: null),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      icon: const Icon(Icons.restart_alt, size: 16),
+                      label: const Text('Rétablir le modèle'),
+                    )
+                  : const Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'Selon le modèle',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.outline,
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Les deux réglages tiennent sur une ligne, et passent l'un sous
+        // l'autre dans un panneau étroit.
+        Wrap(
+          spacing: 24,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _LabeledControl(
+              label: 'Forme',
+              child: _ShapeSelector(
+                selected: header.photoShape,
+                onSelected: (shape) => editor.setPhotoFormat(
+                  shape: shape,
+                  sizeMm: presentation.photoSizeMm,
+                ),
+              ),
+            ),
+            _LabeledControl(
+              label: 'Taille',
+              child: _SizeStepper(
+                sizeMm: size,
+                min: min,
+                max: max,
+                onChanged: (value) => editor.setPhotoFormat(
+                  shape: presentation.photoShape,
+                  sizeMm: value,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Un réglage précédé de son libellé, sur la même ligne.
+class _LabeledControl extends StatelessWidget {
+  const _LabeledControl({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // Une largeur fixe aligne les contrôles quand ils passent l'un sous
+      // l'autre.
+      SizedBox(
+        width: 42,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+      ),
+      child,
+    ],
+  );
+}
+
+/// Le cadre commun des deux contrôles de format.
+BoxDecoration _formatControlDecoration() => BoxDecoration(
+  color: AppColors.surface,
+  borderRadius: BorderRadius.circular(AppRadii.control),
+  border: Border.all(color: AppColors.cardBorder),
+);
+
+/// Les formes de photo, en choix exclusif : chaque option dessine sa forme.
+class _ShapeSelector extends StatelessWidget {
+  const _ShapeSelector({required this.selected, required this.onSelected});
+
+  final CvPhotoShape selected;
+  final ValueChanged<CvPhotoShape> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: _PhotoFormat.controlHeight,
+    padding: const EdgeInsets.all(3),
+    decoration: _formatControlDecoration(),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final shape in CvPhotoShape.values)
+          _ShapeOption(
+            shape: shape,
+            selected: shape == selected,
+            onTap: () => onSelected(shape),
+          ),
+      ],
+    ),
+  );
+}
+
+class _ShapeOption extends StatelessWidget {
+  const _ShapeOption({
+    required this.shape,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CvPhotoShape shape;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// Côté du glyphe qui représente la forme.
+  static const _glyph = 13.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : AppColors.onSurfaceVariant;
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      label: 'Forme ${shape.label}',
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? AppColors.primaryTint : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.control - 3),
+        child: InkWell(
+          onTap: selected ? null : onTap,
+          borderRadius: BorderRadius.circular(AppRadii.control - 3),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: _glyph,
+                  height: _glyph,
+                  decoration: BoxDecoration(
+                    color: selected ? color.withValues(alpha: .18) : null,
+                    borderRadius: BorderRadius.circular(
+                      _photoRadius(shape, _glyph),
+                    ),
+                    border: Border.all(color: color, width: 1.5),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  shape.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? AppColors.onSecondaryContainer
+                        : AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// La taille de la photo, millimètre par millimètre, entre [min] et [max].
+class _SizeStepper extends StatelessWidget {
+  const _SizeStepper({
+    required this.sizeMm,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  final double sizeMm;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget step(IconData icon, String tooltip, double delta) {
+      final next = sizeMm + delta;
+      final enabled = next >= min && next <= max;
+      return IconButton(
+        tooltip: tooltip,
+        onPressed: enabled ? () => onChanged(next) : null,
+        icon: Icon(icon, size: 16),
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(_PhotoFormat.controlHeight - 6),
+          minimumSize: Size.zero,
+          padding: EdgeInsets.zero,
+          foregroundColor: AppColors.onSurface,
+          disabledForegroundColor: AppColors.disabled,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.control - 3),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: _PhotoFormat.controlHeight,
+      padding: const EdgeInsets.all(2),
+      decoration: _formatControlDecoration(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          step(Icons.remove, 'Réduire la photo', -1),
+          SizedBox(
+            width: 52,
+            child: Semantics(
+              liveRegion: true,
+              label: 'Taille de la photo : ${sizeMm.round()} millimètres',
+              excludeSemantics: true,
+              child: Text(
+                '${sizeMm.round()} mm',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+          step(Icons.add, 'Agrandir la photo', 1),
+        ],
+      ),
+    );
+  }
+}
+
 class _PhotoCard extends ConsumerWidget {
   const _PhotoCard({required this.compact});
   final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photo = ref.watch(cvSessionProvider).photo;
+    final session = ref.watch(cvSessionProvider);
+    final photo = session.photo;
+    final avatarSide = compact ? 52.0 : 64.0;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadii.card),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: compact ? 26 : 32,
-            backgroundColor: AppColors.primaryTint,
-            backgroundImage: photo == null ? null : MemoryImage(photo),
-            child: photo == null
-                ? const Icon(
-                    Icons.account_circle_outlined,
-                    size: 30,
-                    color: AppColors.primary,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Photo (facultative)',
-                  style: Theme.of(context).textTheme.titleSmall,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // La vignette reprend la forme de la photo dans le CV.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  _photoRadius(
+                    session.document.designSpec.header.photoShape,
+                    avatarSide,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final file = await openFile(
-                            acceptedTypeGroups: [
-                              const XTypeGroup(
-                                label: 'Images',
-                                extensions: ['png', 'jpg', 'jpeg'],
-                              ),
-                            ],
-                          );
-                          if (file == null) return;
-                          final bytes = await file.readAsBytes();
-                          // Decode before accepting an invalid image into the session.
-                          final image = await decodeImageFromList(bytes);
-                          image.dispose();
-                          if (context.mounted) {
-                            ref
-                                .read(cvSessionProvider.notifier)
-                                .setPhoto(bytes);
-                          }
-                        } catch (_) {
-                          if (context.mounted) {
-                            await showDialog<void>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Image illisible'),
-                                content: const Text(
-                                  'Choisissez une image PNG ou JPEG valide.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Fermer'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.upload, size: 16),
-                      label: Text(compact ? 'Choisir…' : 'Choisir une image'),
-                    ),
-                    TextButton(
-                      onPressed: photo == null
-                          ? null
-                          : () => ref
-                                .read(cvSessionProvider.notifier)
-                                .setPhoto(null),
-                      child: const Text('Retirer'),
-                    ),
-                  ],
+                child: Container(
+                  width: avatarSide,
+                  height: avatarSide,
+                  color: AppColors.primaryTint,
+                  child: photo == null
+                      ? const Icon(
+                          Icons.account_circle_outlined,
+                          size: 30,
+                          color: AppColors.primary,
+                        )
+                      : Image.memory(
+                          photo,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                        ),
                 ),
-                const SizedBox(height: 8),
-                const Row(
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 15,
-                      color: AppColors.outline,
+                    Text(
+                      'Photo (facultative)',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        "La photo n'est pas enregistrée : elle devra être ajoutée à nouveau au prochain lancement.",
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.45,
-                          color: AppColors.onSurfaceVariant,
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              final file = await openFile(
+                                acceptedTypeGroups: [
+                                  const XTypeGroup(
+                                    label: 'Images',
+                                    extensions: ['png', 'jpg', 'jpeg'],
+                                  ),
+                                ],
+                              );
+                              if (file == null) return;
+                              final bytes = await file.readAsBytes();
+                              // Decode before accepting an invalid image into the session.
+                              final image = await decodeImageFromList(bytes);
+                              image.dispose();
+                              if (context.mounted) {
+                                ref
+                                    .read(cvSessionProvider.notifier)
+                                    .setPhoto(bytes);
+                              }
+                            } catch (_) {
+                              if (context.mounted) {
+                                await showDialog<void>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Image illisible'),
+                                    content: const Text(
+                                      'Choisissez une image PNG ou JPEG valide.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Fermer'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.upload, size: 16),
+                          label: Text(
+                            compact ? 'Choisir…' : 'Choisir une image',
+                          ),
                         ),
-                      ),
+                        TextButton(
+                          onPressed: photo == null
+                              ? null
+                              : () => ref
+                                    .read(cvSessionProvider.notifier)
+                                    .setPhoto(null),
+                          child: const Text('Retirer'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 15,
+                          color: AppColors.outline,
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            "La photo n'est pas enregistrée : elle devra être ajoutée à nouveau au prochain lancement.",
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.45,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (photo != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: Divider(height: 1, color: AppColors.cardBorder),
+            ),
+            const _PhotoFormat(),
+          ],
         ],
       ),
     );

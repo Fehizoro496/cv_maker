@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CvPresentationPreferences {
 
- String get designId; int get accentArgb; bool get showPhoto; List<CvSection> get sectionOrder; List<CvSection> get hiddenSections;
+ String get designId; int get accentArgb; bool get showPhoto;/// Forme de la photo ; `null` garde celle du modèle.
+ CvPhotoShape? get photoShape;/// Côté de la photo en millimètres ; `null` garde celui du modèle.
+ double? get photoSizeMm; List<CvSection> get sectionOrder; List<CvSection> get hiddenSections;
 /// Create a copy of CvPresentationPreferences
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +31,16 @@ $CvPresentationPreferencesCopyWith<CvPresentationPreferences> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CvPresentationPreferences&&(identical(other.designId, designId) || other.designId == designId)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb)&&(identical(other.showPhoto, showPhoto) || other.showPhoto == showPhoto)&&const DeepCollectionEquality().equals(other.sectionOrder, sectionOrder)&&const DeepCollectionEquality().equals(other.hiddenSections, hiddenSections));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CvPresentationPreferences&&(identical(other.designId, designId) || other.designId == designId)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb)&&(identical(other.showPhoto, showPhoto) || other.showPhoto == showPhoto)&&(identical(other.photoShape, photoShape) || other.photoShape == photoShape)&&(identical(other.photoSizeMm, photoSizeMm) || other.photoSizeMm == photoSizeMm)&&const DeepCollectionEquality().equals(other.sectionOrder, sectionOrder)&&const DeepCollectionEquality().equals(other.hiddenSections, hiddenSections));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,designId,accentArgb,showPhoto,const DeepCollectionEquality().hash(sectionOrder),const DeepCollectionEquality().hash(hiddenSections));
+int get hashCode => Object.hash(runtimeType,designId,accentArgb,showPhoto,photoShape,photoSizeMm,const DeepCollectionEquality().hash(sectionOrder),const DeepCollectionEquality().hash(hiddenSections));
 
 @override
 String toString() {
-  return 'CvPresentationPreferences(designId: $designId, accentArgb: $accentArgb, showPhoto: $showPhoto, sectionOrder: $sectionOrder, hiddenSections: $hiddenSections)';
+  return 'CvPresentationPreferences(designId: $designId, accentArgb: $accentArgb, showPhoto: $showPhoto, photoShape: $photoShape, photoSizeMm: $photoSizeMm, sectionOrder: $sectionOrder, hiddenSections: $hiddenSections)';
 }
 
 
@@ -49,7 +51,7 @@ abstract mixin class $CvPresentationPreferencesCopyWith<$Res>  {
   factory $CvPresentationPreferencesCopyWith(CvPresentationPreferences value, $Res Function(CvPresentationPreferences) _then) = _$CvPresentationPreferencesCopyWithImpl;
 @useResult
 $Res call({
- String designId, int accentArgb, bool showPhoto, List<CvSection> sectionOrder, List<CvSection> hiddenSections
+ String designId, int accentArgb, bool showPhoto, CvPhotoShape? photoShape, double? photoSizeMm, List<CvSection> sectionOrder, List<CvSection> hiddenSections
 });
 
 
@@ -66,12 +68,14 @@ class _$CvPresentationPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of CvPresentationPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? designId = null,Object? accentArgb = null,Object? showPhoto = null,Object? sectionOrder = null,Object? hiddenSections = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? designId = null,Object? accentArgb = null,Object? showPhoto = null,Object? photoShape = freezed,Object? photoSizeMm = freezed,Object? sectionOrder = null,Object? hiddenSections = null,}) {
   return _then(CvPresentationPreferences(
 designId: null == designId ? _self.designId : designId // ignore: cast_nullable_to_non_nullable
 as String,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
 as int,showPhoto: null == showPhoto ? _self.showPhoto : showPhoto // ignore: cast_nullable_to_non_nullable
-as bool,sectionOrder: null == sectionOrder ? _self.sectionOrder : sectionOrder // ignore: cast_nullable_to_non_nullable
+as bool,photoShape: freezed == photoShape ? _self.photoShape : photoShape // ignore: cast_nullable_to_non_nullable
+as CvPhotoShape?,photoSizeMm: freezed == photoSizeMm ? _self.photoSizeMm : photoSizeMm // ignore: cast_nullable_to_non_nullable
+as double?,sectionOrder: null == sectionOrder ? _self.sectionOrder : sectionOrder // ignore: cast_nullable_to_non_nullable
 as List<CvSection>,hiddenSections: null == hiddenSections ? _self.hiddenSections : hiddenSections // ignore: cast_nullable_to_non_nullable
 as List<CvSection>,
   ));
@@ -158,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String designId,  int accentArgb,  bool showPhoto,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String designId,  int accentArgb,  bool showPhoto,  CvPhotoShape? photoShape,  double? photoSizeMm,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CvPresentationPreferences() when $default != null:
-return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrder,_that.hiddenSections);case _:
+return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.photoShape,_that.photoSizeMm,_that.sectionOrder,_that.hiddenSections);case _:
   return orElse();
 
 }
@@ -179,10 +183,10 @@ return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrd
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String designId,  int accentArgb,  bool showPhoto,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String designId,  int accentArgb,  bool showPhoto,  CvPhotoShape? photoShape,  double? photoSizeMm,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)  $default,) {final _that = this;
 switch (_that) {
 case _CvPresentationPreferences():
-return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrder,_that.hiddenSections);case _:
+return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.photoShape,_that.photoSizeMm,_that.sectionOrder,_that.hiddenSections);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +203,10 @@ return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrd
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String designId,  int accentArgb,  bool showPhoto,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String designId,  int accentArgb,  bool showPhoto,  CvPhotoShape? photoShape,  double? photoSizeMm,  List<CvSection> sectionOrder,  List<CvSection> hiddenSections)?  $default,) {final _that = this;
 switch (_that) {
 case _CvPresentationPreferences() when $default != null:
-return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrder,_that.hiddenSections);case _:
+return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.photoShape,_that.photoSizeMm,_that.sectionOrder,_that.hiddenSections);case _:
   return null;
 
 }
@@ -214,12 +218,16 @@ return $default(_that.designId,_that.accentArgb,_that.showPhoto,_that.sectionOrd
 @JsonSerializable()
 
 class _CvPresentationPreferences extends CvPresentationPreferences {
-  const _CvPresentationPreferences({this.designId = 'classic', this.accentArgb = CvAccent.defaultColor, this.showPhoto = true,  List<CvSection> sectionOrder = const <CvSection>[],  List<CvSection> hiddenSections = const <CvSection>[]}): _sectionOrder = sectionOrder,_hiddenSections = hiddenSections,super._();
+  const _CvPresentationPreferences({this.designId = 'classic', this.accentArgb = CvAccent.defaultColor, this.showPhoto = true, this.photoShape, this.photoSizeMm,  List<CvSection> sectionOrder = const <CvSection>[],  List<CvSection> hiddenSections = const <CvSection>[]}): _sectionOrder = sectionOrder,_hiddenSections = hiddenSections,super._();
   factory _CvPresentationPreferences.fromJson(Map<String, dynamic> json) => _$CvPresentationPreferencesFromJson(json);
 
 @override@JsonKey() final  String designId;
 @override@JsonKey() final  int accentArgb;
 @override@JsonKey() final  bool showPhoto;
+/// Forme de la photo ; `null` garde celle du modèle.
+@override final  CvPhotoShape? photoShape;
+/// Côté de la photo en millimètres ; `null` garde celui du modèle.
+@override final  double? photoSizeMm;
  final  List<CvSection> _sectionOrder;
 @override@JsonKey() List<CvSection> get sectionOrder {
   if (_sectionOrder is EqualUnmodifiableListView) return _sectionOrder;
@@ -248,16 +256,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CvPresentationPreferences&&(identical(other.designId, designId) || other.designId == designId)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb)&&(identical(other.showPhoto, showPhoto) || other.showPhoto == showPhoto)&&const DeepCollectionEquality().equals(other._sectionOrder, _sectionOrder)&&const DeepCollectionEquality().equals(other._hiddenSections, _hiddenSections));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CvPresentationPreferences&&(identical(other.designId, designId) || other.designId == designId)&&(identical(other.accentArgb, accentArgb) || other.accentArgb == accentArgb)&&(identical(other.showPhoto, showPhoto) || other.showPhoto == showPhoto)&&(identical(other.photoShape, photoShape) || other.photoShape == photoShape)&&(identical(other.photoSizeMm, photoSizeMm) || other.photoSizeMm == photoSizeMm)&&const DeepCollectionEquality().equals(other._sectionOrder, _sectionOrder)&&const DeepCollectionEquality().equals(other._hiddenSections, _hiddenSections));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,designId,accentArgb,showPhoto,const DeepCollectionEquality().hash(_sectionOrder),const DeepCollectionEquality().hash(_hiddenSections));
+int get hashCode => Object.hash(runtimeType,designId,accentArgb,showPhoto,photoShape,photoSizeMm,const DeepCollectionEquality().hash(_sectionOrder),const DeepCollectionEquality().hash(_hiddenSections));
 
 @override
 String toString() {
-  return 'CvPresentationPreferences(designId: $designId, accentArgb: $accentArgb, showPhoto: $showPhoto, sectionOrder: $sectionOrder, hiddenSections: $hiddenSections)';
+  return 'CvPresentationPreferences(designId: $designId, accentArgb: $accentArgb, showPhoto: $showPhoto, photoShape: $photoShape, photoSizeMm: $photoSizeMm, sectionOrder: $sectionOrder, hiddenSections: $hiddenSections)';
 }
 
 
@@ -268,7 +276,7 @@ abstract mixin class _$CvPresentationPreferencesCopyWith<$Res> implements $CvPre
   factory _$CvPresentationPreferencesCopyWith(_CvPresentationPreferences value, $Res Function(_CvPresentationPreferences) _then) = __$CvPresentationPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
- String designId, int accentArgb, bool showPhoto, List<CvSection> sectionOrder, List<CvSection> hiddenSections
+ String designId, int accentArgb, bool showPhoto, CvPhotoShape? photoShape, double? photoSizeMm, List<CvSection> sectionOrder, List<CvSection> hiddenSections
 });
 
 
@@ -285,12 +293,14 @@ class __$CvPresentationPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of CvPresentationPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? designId = null,Object? accentArgb = null,Object? showPhoto = null,Object? sectionOrder = null,Object? hiddenSections = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? designId = null,Object? accentArgb = null,Object? showPhoto = null,Object? photoShape = freezed,Object? photoSizeMm = freezed,Object? sectionOrder = null,Object? hiddenSections = null,}) {
   return _then(_CvPresentationPreferences(
 designId: null == designId ? _self.designId : designId // ignore: cast_nullable_to_non_nullable
 as String,accentArgb: null == accentArgb ? _self.accentArgb : accentArgb // ignore: cast_nullable_to_non_nullable
 as int,showPhoto: null == showPhoto ? _self.showPhoto : showPhoto // ignore: cast_nullable_to_non_nullable
-as bool,sectionOrder: null == sectionOrder ? _self._sectionOrder : sectionOrder // ignore: cast_nullable_to_non_nullable
+as bool,photoShape: freezed == photoShape ? _self.photoShape : photoShape // ignore: cast_nullable_to_non_nullable
+as CvPhotoShape?,photoSizeMm: freezed == photoSizeMm ? _self.photoSizeMm : photoSizeMm // ignore: cast_nullable_to_non_nullable
+as double?,sectionOrder: null == sectionOrder ? _self._sectionOrder : sectionOrder // ignore: cast_nullable_to_non_nullable
 as List<CvSection>,hiddenSections: null == hiddenSections ? _self._hiddenSections : hiddenSections // ignore: cast_nullable_to_non_nullable
 as List<CvSection>,
   ));

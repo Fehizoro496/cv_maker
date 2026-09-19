@@ -168,7 +168,11 @@ Future<Uint8List> buildCvPdf(
             widthAt(value, tokens.minContactFontSize) > asideWidth)
           value,
   };
-  final photoSide = spec.header.photoDiameterMm * PdfPageFormat.mm;
+  // Dans la colonne latérale, la photo ne dépasse pas la largeur du texte.
+  final photoSide = math.min(
+    spec.header.photoDiameterMm * PdfPageFormat.mm,
+    sidebar?.holdsPhoto ?? false ? asideWidth : double.infinity,
+  );
 
   pw.Widget photoWidget(Uint8List bytes) {
     final image = pw.Image(
@@ -179,6 +183,11 @@ Future<Uint8List> buildCvPdf(
     );
     return switch (spec.header.photoShape) {
       CvPhotoShape.circle => pw.ClipOval(child: image),
+      CvPhotoShape.rounded => pw.ClipRRect(
+        horizontalRadius: photoSide * CvPhotoShape.roundedCornerRatio,
+        verticalRadius: photoSide * CvPhotoShape.roundedCornerRatio,
+        child: image,
+      ),
       CvPhotoShape.square => image,
     };
   }

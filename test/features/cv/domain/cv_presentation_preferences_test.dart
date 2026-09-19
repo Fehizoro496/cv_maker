@@ -1,4 +1,5 @@
 import 'package:cv_maker/features/cv/domain/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/cv_presentation_preferences.dart';
 import 'package:cv_maker/features/cv/domain/cv_section.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,34 @@ void main() {
     expect(defaults.design, CvDesign.classic);
     expect(defaults.accentColor, CvAccent.defaultColor);
     expect(defaults.showPhoto, isTrue);
+  });
+
+  group('format de la photo', () {
+    test('sans réglage, le modèle décide', () {
+      expect(defaults.photoShape, isNull);
+      expect(defaults.photoSizeMm, isNull);
+    });
+
+    test('la taille reste dans ses bornes', () {
+      expect(
+        defaults.withPhotoFormat(shape: null, sizeMm: 5).photoSizeMm,
+        CvPresentationPreferences.minPhotoSizeMm,
+      );
+      expect(
+        defaults.withPhotoFormat(shape: null, sizeMm: 99).photoSizeMm,
+        CvPresentationPreferences.maxPhotoSizeMm,
+      );
+    });
+
+    test('le réglage survit à un aller-retour JSON et au changement de '
+        'modèle', () {
+      final prefs = defaults
+          .withPhotoFormat(shape: CvPhotoShape.rounded, sizeMm: 30)
+          .withDesign(CvDesign.sidebar);
+      final reread = CvPresentationPreferences.fromJson(prefs.toJson());
+      expect(reread.photoShape, CvPhotoShape.rounded);
+      expect(reread.photoSizeMm, 30);
+    });
   });
 
   test('un identifiant de modèle inconnu retombe sur le classique', () {

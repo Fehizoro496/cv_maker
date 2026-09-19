@@ -42,23 +42,32 @@ class CvDesignSpec {
   /// Groupe 4 : titres, filets, puces et rendu des compétences.
   final CvDesignSectionStyle sections;
 
-  /// La même description, avec les deux réglages que le CV peut imposer.
+  /// La même description, avec les réglages que le CV peut imposer.
   ///
-  /// La couleur d'accent et l'affichage de la photo sont les seules propriétés
-  /// qu'un CV surcharge ; elles se résolvent donc ici, en un seul endroit,
-  /// plutôt que d'être testées dans le générateur. Un modèle sans couleur
-  /// ([CvDesignTokens.ignoresAccent]) refuse la surcharge de couleur.
-  CvDesignSpec withOverrides({int? accentColor, bool? showPhoto}) =>
-      CvDesignSpec(
-        structure: structure,
-        header: showPhoto == null
-            ? header
-            : header.copyWith(showPhoto: showPhoto),
-        tokens: accentColor == null || tokens.ignoresAccent
-            ? tokens
-            : tokens.copyWith(accentColor: accentColor),
-        sections: sections,
-      );
+  /// La couleur d'accent, l'affichage de la photo, sa forme et sa taille sont
+  /// les seules propriétés qu'un CV surcharge ; elles se résolvent donc ici,
+  /// en un seul endroit, plutôt que d'être testées dans le générateur. Un
+  /// modèle sans couleur ([CvDesignTokens.ignoresAccent]) refuse la surcharge
+  /// de couleur. Une valeur `null` garde celle du modèle.
+  CvDesignSpec withOverrides({
+    int? accentColor,
+    bool? showPhoto,
+    CvPhotoShape? photoShape,
+    double? photoSizeMm,
+  }) => CvDesignSpec(
+    structure: structure,
+    header: showPhoto == null && photoShape == null && photoSizeMm == null
+        ? header
+        : header.copyWith(
+            showPhoto: showPhoto,
+            photoShape: photoShape,
+            photoDiameterMm: photoSizeMm,
+          ),
+    tokens: accentColor == null || tokens.ignoresAccent
+        ? tokens
+        : tokens.copyWith(accentColor: accentColor),
+    sections: sections,
+  );
 }
 
 /// Groupe 1 — structure : zones de la page et place des titres de section.
@@ -206,13 +215,17 @@ class CvDesignHeader {
   final double headlineLetterSpacing;
   final double headlineGap;
 
-  CvDesignHeader copyWith({bool? showPhoto}) => CvDesignHeader(
+  CvDesignHeader copyWith({
+    bool? showPhoto,
+    CvPhotoShape? photoShape,
+    double? photoDiameterMm,
+  }) => CvDesignHeader(
     fullWidthBanner: fullWidthBanner,
     bannerPadding: bannerPadding,
     alignment: alignment,
     showPhoto: showPhoto ?? this.showPhoto,
-    photoShape: photoShape,
-    photoDiameterMm: photoDiameterMm,
+    photoShape: photoShape ?? this.photoShape,
+    photoDiameterMm: photoDiameterMm ?? this.photoDiameterMm,
     photoGap: photoGap,
     nameUppercase: nameUppercase,
     headlineUppercase: headlineUppercase,
@@ -225,7 +238,18 @@ class CvDesignHeader {
 enum CvHeaderAlignment { start, center }
 
 /// Forme sous laquelle la photo est découpée.
-enum CvPhotoShape { circle, square }
+enum CvPhotoShape {
+  circle('Cercle'),
+  rounded('Arrondi'),
+  square('Carré');
+
+  const CvPhotoShape(this.label);
+
+  final String label;
+
+  /// Rayon des coins d'une photo [rounded], en fraction de son côté.
+  static const roundedCornerRatio = .16;
+}
 
 /// Groupe 3 — jetons visuels : couleurs, typographie, interlignes et marges.
 ///
