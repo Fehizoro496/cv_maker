@@ -10,7 +10,10 @@ void main() {
     final image = Uint8List.fromList([1, 2, 3]);
     final container = ProviderContainer(
       overrides: [
-        pdfRasterizerProvider.overrideWithValue((bytes) async* {
+        pdfRasterizerProvider.overrideWithValue((
+          bytes, {
+          dpi = previewDpi,
+        }) async* {
           rasterized = bytes;
           yield image;
         }),

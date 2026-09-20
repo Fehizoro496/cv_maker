@@ -6,9 +6,24 @@ import 'package:printing/printing.dart';
 import 'preview_input_provider.dart';
 import 'widgets/cv_pdf.dart';
 
-final pdfRasterizerProvider = Provider<Stream<Uint8List> Function(Uint8List)>(
-  (ref) => (bytes) async* {
-    await for (final page in Printing.raster(bytes, dpi: 110)) {
+/// Rend chaque page d'un PDF en PNG, à la résolution demandée.
+typedef PdfRasterizer =
+    Stream<Uint8List> Function(Uint8List bytes, {double dpi});
+
+/// Résolution des aperçus pleine page : celui de l'éditeur et celui que le
+/// catalogue affiche à droite.
+const previewDpi = 110.0;
+
+/// Résolution des vignettes du catalogue.
+///
+/// Une vignette fait moins de deux cents pixels de large : la rendre à
+/// [previewDpi] produisait sept fois trop de pixels par page, tous encodés en
+/// PNG avant d'être réduits à l'affichage.
+const thumbnailDpi = 40.0;
+
+final pdfRasterizerProvider = Provider<PdfRasterizer>(
+  (ref) => (bytes, {dpi = previewDpi}) async* {
+    await for (final page in Printing.raster(bytes, dpi: dpi)) {
       yield await page.toPng();
     }
   },

@@ -6,6 +6,7 @@ import '../../domain/design/cv_design.dart';
 import '../../domain/design/cv_design_spec.dart';
 import '../session/cv_session_provider.dart';
 import 'draft_preview_provider.dart';
+import 'template_catalog_provider.dart';
 import 'widgets/cv_pdf.dart';
 
 /// Un modèle et ses deux réglages, tels que le catalogue les prévisualise.
@@ -14,13 +15,16 @@ import 'widgets/cv_pdf.dart';
 /// libre, et sert aussi de clé de cache des aperçus.
 typedef CatalogChoice = ({CvDesign design, int accentArgb, bool showPhoto});
 
-/// La première page du CV en cours, rendue avec le choix demandé.
+/// Le CV réel, rendu avec le choix en cours de composition.
 ///
-/// Les vignettes du catalogue viennent du PDF réel et non d'une image livrée
-/// dans les assets : l'utilisateur voit ses propres données dans chaque modèle.
+/// C'est le grand aperçu du panneau de droite, et lui seul : les vignettes de
+/// la grille montrent le CV d'exemple et ne dépendent pas de la session
+/// ([templateThumbnailProvider]). L'utilisateur voit donc ses propres données
+/// dans le modèle qu'il s'apprête à appliquer, pour une seule génération au
+/// lieu de huit.
 ///
-/// Le résultat est conservé le temps où le catalogue est ouvert ; il est jeté
-/// avec lui, car le CV a pu changer entre deux ouvertures.
+/// Le résultat est jeté avec le catalogue, car le CV a pu changer entre deux
+/// ouvertures.
 final catalogPreviewProvider = FutureProvider.family<Uint8List, CatalogChoice>((
   ref,
   choice,
@@ -41,8 +45,8 @@ final catalogPreviewProvider = FutureProvider.family<Uint8List, CatalogChoice>((
     photo: session.photo,
   );
   if (!ref.mounted) throw StateError('Generation superseded');
-  await for (final page in rasterize(bytes)) {
-    // Seule la première page sert de vignette.
+  await for (final page in rasterize(bytes, dpi: previewDpi)) {
+    // Seule la première page sert d'aperçu.
     return page;
   }
   throw StateError('Le PDF ne contient aucune page');

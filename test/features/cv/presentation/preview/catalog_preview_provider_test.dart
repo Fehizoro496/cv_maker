@@ -21,7 +21,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         pdfRasterizerProvider.overrideWith(
-          (ref) => (bytes) {
+          (ref) => (bytes, {dpi = previewDpi}) {
             rasterized.add(bytes);
             // Une page par génération suffit : la vignette est la première.
             return Stream.value(Uint8List.fromList([1, 2, 3]));
@@ -98,7 +98,7 @@ void main() {
     expect(pdfFingerprint(rasterized.first), pdfFingerprint(rasterized.last));
   });
 
-  test('la vignette suit le contenu du CV en cours', () async {
+  test('le grand aperçu suit le contenu du CV en cours', () async {
     final container = makeContainer();
     const choice = (
       design: CvDesign.classic,

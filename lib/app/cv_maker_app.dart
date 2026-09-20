@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/cv/presentation/preview/template_catalog_provider.dart';
 import '../features/cv/presentation/session/cv_autosave.dart';
 import '../features/cv/presentation/library/cv_workspace.dart';
 import '../features/cv/presentation/library/dashboard_screen.dart';
@@ -28,6 +29,12 @@ class _CvMakerAppState extends ConsumerState<CvMakerApp> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onExitRequested: _onExitRequested);
+    // Les vignettes du catalogue ne dépendent que des modèles : elles peuvent
+    // se préparer dès maintenant. On laisse d'abord la première image
+    // s'afficher et l'aperçu du CV ouvert se générer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) warmTemplateThumbnails(ref);
+    });
   }
 
   @override

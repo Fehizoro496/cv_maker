@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,7 +7,9 @@ import '../../../../../app/app_theme.dart';
 import '../../../../../shared/widgets/color_picker_dialog.dart';
 import '../../../domain/design/cv_design.dart';
 import '../../../domain/design/cv_design_spec.dart';
+import '../../../domain/design/cv_template.dart';
 import '../catalog_preview_provider.dart';
+import '../template_catalog_provider.dart';
 
 /// Catalogue des modèles intégrés, avec ses deux réglages.
 ///
@@ -17,7 +21,9 @@ import '../catalog_preview_provider.dart';
 /// l'appelant applique. « Annuler » et la croix retournent `null`, ce qui
 /// laisse le CV intact.
 ///
-/// Les vignettes sont rendues à partir du PDF réel du CV en cours, hors ligne.
+/// Les vignettes montrent un CV d'exemple, identique d'une ouverture à l'autre :
+/// elles ne dépendent donc que du modèle et restent en cache pour la session.
+/// Le grand aperçu, lui, rend le CV réel de l'utilisateur.
 class DesignCatalog extends ConsumerStatefulWidget {
   const DesignCatalog({
     super.key,
@@ -59,14 +65,6 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
   CatalogChoice get _choice =>
       (design: _design, accentArgb: _accentArgb, showPhoto: _showPhoto);
 
-  /// Les réglages tels qu'ils étaient à l'ouverture.
-  ///
-  /// Les vignettes des modèles non sélectionnés s'y tiennent : changer une
-  /// couleur ne régénère alors que l'aperçu du modèle choisi, et non toute la
-  /// grille.
-  ({int accentArgb, bool showPhoto}) get _baseline =>
-      (accentArgb: widget.accentArgb, showPhoto: widget.showPhoto);
-
   @override
   Widget build(BuildContext context) => Dialog(
     insetPadding: const EdgeInsets.all(24),
@@ -92,8 +90,6 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
                     constraints.maxWidth < DesignCatalog.wideBreakpoint;
                 final grid = _TemplateGrid(
                   selected: _design,
-                  selectedChoice: _choice,
-                  baseline: _baseline,
                   insideScrollView: narrow,
                   onSelected: (design) => setState(() => _design = design),
                 );
@@ -183,22 +179,14 @@ class _Header extends StatelessWidget {
   );
 }
 
-class _TemplateGrid extends StatelessWidget {
+class _TemplateGrid extends ConsumerWidget {
   const _TemplateGrid({
     required this.selected,
-    required this.selectedChoice,
-    required this.baseline,
     required this.onSelected,
     this.insideScrollView = false,
   });
 
   final CvDesign selected;
-
-  /// Le choix complet appliqué à la vignette du modèle sélectionné.
-  final CatalogChoice selectedChoice;
-
-  /// Les réglages appliqués aux autres vignettes, figés à l'ouverture.
-  final ({int accentArgb, bool showPhoto}) baseline;
 
   final ValueChanged<CvDesign> onSelected;
 
@@ -215,8 +203,9 @@ class _TemplateGrid extends StatelessWidget {
   static const columnGap = 16.0;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
     builder: (context, constraints) {
+      final templates = ref.watch(templateCatalogProvider);
       // La vignette garde le rapport A4 exact : la hauteur d'une carte se
       // déduit de la largeur de colonne plutôt que d'un ratio approché.
       final available =
@@ -239,23 +228,13 @@ class _TemplateGrid extends StatelessWidget {
           mainAxisSpacing: 14,
           mainAxisExtent: thumbnailHeight + 14 + captionGap + captionHeight,
         ),
-        itemCount: CvDesign.values.length,
+        itemCount: templates.length,
         itemBuilder: (context, index) {
-          final design = CvDesign.values[index];
-          final isSelected = design == selected;
+          final template = templates[index];
           return _TemplateCard(
-            design: design,
-            isSelected: isSelected,
-            // Les autres vignettes gardent les réglages d'ouverture : elles ne
-            // se régénèrent donc pas à chaque changement de couleur.
-            choice: isSelected
-                ? selectedChoice
-                : (
-                    design: design,
-                    accentArgb: baseline.accentArgb,
-                    showPhoto: baseline.showPhoto,
-                  ),
-            onSelected: () => onSelected(design),
+            template: template,
+            isSelected: template.id == selected.id,
+            onSelected: () => onSelected(CvDesign.fromId(template.id)),
           );
         },
       );
@@ -265,22 +244,20 @@ class _TemplateGrid extends StatelessWidget {
 
 class _TemplateCard extends StatelessWidget {
   const _TemplateCard({
-    required this.design,
+    required this.template,
     required this.isSelected,
-    required this.choice,
     required this.onSelected,
   });
 
-  final CvDesign design;
+  final CvTemplate template;
   final bool isSelected;
-  final CatalogChoice choice;
   final VoidCallback onSelected;
 
   @override
   Widget build(BuildContext context) => Semantics(
     selected: isSelected,
     button: true,
-    label: design.label,
+    label: template.label,
     child: InkWell(
       onTap: onSelected,
       borderRadius: BorderRadius.circular(10),
@@ -309,7 +286,7 @@ class _TemplateCard extends StatelessWidget {
                   ),
                   child: AspectRatio(
                     aspectRatio: 210 / 297,
-                    child: _PagePreview(choice: choice),
+                    child: _Thumbnail(templateId: template.id),
                   ),
                 ),
                 if (isSelected)
@@ -347,7 +324,7 @@ class _TemplateCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  design.label,
+                  template.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -361,7 +338,7 @@ class _TemplateCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Expanded(
                   child: Text(
-                    design.description,
+                    template.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -380,52 +357,73 @@ class _TemplateCard extends StatelessWidget {
   );
 }
 
-/// La première page du CV, rendue avec le choix demandé.
+/// La vignette d'un modèle : le CV d'exemple, indépendant de la session.
+class _Thumbnail extends ConsumerWidget {
+  const _Thumbnail({required this.templateId});
+
+  final String templateId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      _PageImage(page: ref.watch(templateThumbnailProvider(templateId)));
+}
+
+/// Le grand aperçu : le CV réel, rendu avec le choix en cours de composition.
 class _PagePreview extends ConsumerWidget {
-  const _PagePreview({required this.choice, this.elevated = false});
+  const _PagePreview({required this.choice});
 
   final CatalogChoice choice;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => _PageImage(
+    page: ref.watch(catalogPreviewProvider(choice)),
+    elevated: true,
+  );
+}
+
+/// La page rendue, ou l'attente et l'échec qui la précèdent.
+class _PageImage extends StatelessWidget {
+  const _PageImage({required this.page, this.elevated = false});
+
+  final AsyncValue<Uint8List> page;
 
   /// Le grand aperçu porte une ombre plus marquée que les vignettes.
   final bool elevated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final preview = ref.watch(catalogPreviewProvider(choice));
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: elevated ? AppColors.pageShadow : AppColors.softShadow,
-            blurRadius: elevated ? 14 : 4,
-            offset: Offset(0, elevated ? 3 : 1),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      boxShadow: [
+        BoxShadow(
+          color: elevated ? AppColors.pageShadow : AppColors.softShadow,
+          blurRadius: elevated ? 14 : 4,
+          offset: Offset(0, elevated ? 3 : 1),
+        ),
+      ],
+    ),
+    child: ClipRect(
+      child: switch (page) {
+        AsyncData(:final value) => Image.memory(
+          value,
+          fit: BoxFit.contain,
+          alignment: Alignment.topCenter,
+          semanticLabel: 'Aperçu du modèle',
+          gaplessPlayback: true,
+        ),
+        AsyncError() => const Center(
+          child: Icon(Icons.error_outline, color: AppColors.outline),
+        ),
+        _ => const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-        ],
-      ),
-      child: ClipRect(
-        child: switch (preview) {
-          AsyncData(:final value) => Image.memory(
-            value,
-            fit: BoxFit.contain,
-            alignment: Alignment.topCenter,
-            semanticLabel: 'Aperçu du modèle',
-            gaplessPlayback: true,
-          ),
-          AsyncError() => const Center(
-            child: Icon(Icons.error_outline, color: AppColors.outline),
-          ),
-          _ => const Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        },
-      ),
-    );
-  }
+        ),
+      },
+    ),
+  );
 }
 
 class _SettingsPanel extends StatelessWidget {
@@ -457,7 +455,7 @@ class _SettingsPanel extends StatelessWidget {
               child: Center(
                 child: AspectRatio(
                   aspectRatio: 210 / 297,
-                  child: _PagePreview(choice: choice, elevated: true),
+                  child: _PagePreview(choice: choice),
                 ),
               ),
             ),

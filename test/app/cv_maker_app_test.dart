@@ -28,7 +28,11 @@ void main() {
     useDesktopView(tester);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [previewOverride, ...overrides],
+        overrides: [
+          previewOverride,
+          thumbnailOverride,
+          ...overrides,
+        ],
         child: const CvMakerApp(),
       ),
     );

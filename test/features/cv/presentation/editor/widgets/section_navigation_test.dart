@@ -6,6 +6,7 @@ import 'package:cv_maker/features/cv/domain/entries/cv_custom_section.dart';
 import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/document/cv_section.dart';
 import 'package:cv_maker/features/cv/presentation/preview/catalog_preview_provider.dart';
+import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
 import 'package:cv_maker/features/cv/presentation/editor/cv_section_presentation.dart';
 import 'package:cv_maker/features/cv/presentation/session/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/editor/selected_section_provider.dart';
@@ -32,6 +33,9 @@ void main() {
       overrides: [
         catalogPreviewProvider.overrideWith(
           (ref, choice) async => Uint8List.fromList(_png),
+        ),
+        templateThumbnailProvider.overrideWith(
+          (ref, templateId) async => Uint8List.fromList(_png),
         ),
       ],
     );

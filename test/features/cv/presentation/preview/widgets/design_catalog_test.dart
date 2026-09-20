@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cv_maker/app/app_theme.dart';
 import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
 import 'package:cv_maker/features/cv/presentation/preview/catalog_preview_provider.dart';
+import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/widgets/design_catalog.dart';
 import 'package:cv_maker/shared/widgets/color_picker_dialog.dart';
 import 'package:flutter/material.dart';
@@ -18,13 +19,25 @@ final _png = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
 );
 
-/// Les combinaisons dont une vignette a été demandée.
+/// Les combinaisons dont le grand aperçu a été demandé.
 final requested = <CatalogChoice>{};
 
-/// Le catalogue est testé sur son interface : la génération des vignettes est
-/// couverte par le test de `catalogPreviewProvider`.
+/// Les modèles dont une vignette a été demandée.
+final thumbnailed = <String>[];
+
+/// Le catalogue est testé sur son interface : la génération des images est
+/// couverte par les tests de `catalogPreviewProvider` et de
+/// `templateThumbnailProvider`.
 final _fakePreviews = catalogPreviewProvider.overrideWith((ref, choice) async {
   requested.add(choice);
+  return Uint8List.fromList(_png);
+});
+
+final _fakeThumbnails = templateThumbnailProvider.overrideWith((
+  ref,
+  templateId,
+) async {
+  thumbnailed.add(templateId);
   return Uint8List.fromList(_png);
 });
 
@@ -45,9 +58,10 @@ void main() {
     useDesktopView(tester, size: size);
     result = null;
     requested.clear();
+    thumbnailed.clear();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [_fakePreviews],
+        overrides: [_fakePreviews, _fakeThumbnails],
         child: MaterialApp(
           theme: buildAppTheme(),
           home: Builder(
@@ -287,12 +301,24 @@ void main() {
     );
   });
 
-  testWidgets('changer la couleur ne régénère que le modèle choisi', (
+  testWidgets('chaque modèle demande sa vignette une seule fois', (
+    tester,
+  ) async {
+    await openCatalog(tester);
+    expect(thumbnailed, hasLength(CvDesign.values.length));
+    expect(
+      thumbnailed.toSet(),
+      CvDesign.values.map((design) => design.id).toSet(),
+    );
+  });
+
+  testWidgets('changer la couleur ne régénère que le grand aperçu', (
     tester,
   ) async {
     await openCatalog(tester, selected: CvDesign.classic);
     final before = {...requested};
     requested.clear();
+    thumbnailed.clear();
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Choisir'));
     await tester.pumpAndSettle();
@@ -304,22 +330,23 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Choisir'));
     await tester.pumpAndSettle();
 
-    // Une seule combinaison nouvelle : le modèle sélectionné dans sa couleur.
-    // La vignette et le grand aperçu la partagent, d'où une seule génération.
+    // Le grand aperçu suit la couleur ; les vignettes, qui montrent le CV
+    // d'exemple, n'en dépendent pas et ne sont pas regénérées.
     expect(before, isNotEmpty);
     expect(requested, {
       (design: CvDesign.classic, accentArgb: 0xFFAB12CD, showPhoto: true),
     });
+    expect(thumbnailed, isEmpty);
   });
 
-  testWidgets('changer de modèle ne régénère que le nouveau choix', (
+  testWidgets('changer de modèle ne régénère que le grand aperçu', (
     tester,
   ) async {
     await openCatalog(tester, selected: CvDesign.classic);
     requested.clear();
+    thumbnailed.clear();
     await tester.tap(find.text(CvDesign.compact.label));
     await tester.pumpAndSettle();
-    // Le modèle quitté retrouve sa vignette de base, déjà rendue.
     expect(
       requested,
       everyElement(
@@ -330,6 +357,8 @@ void main() {
         ),
       ),
     );
+    // Les vignettes des deux modèles étaient déjà rendues.
+    expect(thumbnailed, isEmpty);
   });
 
   testWidgets('annuler ne retourne aucun choix', (tester) async {
