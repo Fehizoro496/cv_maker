@@ -2,6 +2,7 @@ import 'package:cv_maker/app/app_theme.dart';
 import 'package:cv_maker/shared/notifications/app_toast.dart';
 import 'package:cv_maker/shared/notifications/toast_layer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -117,5 +118,91 @@ void main() {
     expect(find.text('catalogue'), findsOneWidget);
     expect(find.text('Modèle appliqué'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
+  });
+
+  group('texte long', () {
+    const longPath =
+        r'C:\\Users\\VictusF\\Documents\\Candidatures\\2026\\CV_Camille_Moreau_version_finale.pdf';
+
+    testWidgets('le filet de couleur suit la hauteur de la carte', (
+      tester,
+    ) async {
+      await pumpLayer(tester);
+      toasts().show(
+        kind: AppToastKind.success,
+        title: 'PDF exporté',
+        message: longPath,
+        actionLabel: 'Ouvrir le dossier',
+        actionIcon: Icons.folder_open_outlined,
+        onAction: () {},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final card = tester.getSize(
+        find
+            .ancestor(of: find.text(longPath), matching: find.byType(Material))
+            .first,
+      );
+      // Le filet se reconnaît à la couleur de la nature de la notification.
+      final railFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is ColoredBox &&
+            widget.color == AppColors.onSuccessContainer,
+      );
+      final rail = tester.getSize(railFinder);
+
+      expect(
+        card.height,
+        greaterThan(100),
+        reason: 'deux lignes de texte et un bouton',
+      );
+      // À un pixel de bordure près en haut et en bas : le filet est posé à
+      // l'intérieur du cadre de la carte.
+      expect(rail.height, closeTo(card.height, 2));
+      expect(rail.width, 4);
+      // Le filet n'a pas d'angles à lui : ce sont ceux de la carte, qui
+      // découpe son contenu. Un rayon de carte sur un ruban de 4 px de large
+      // donnerait une forme en goutte.
+      final clip = tester.widget<ClipRRect>(
+        find.ancestor(of: railFinder, matching: find.byType(ClipRRect)).first,
+      );
+      expect(clip.borderRadius, BorderRadius.circular(AppRadii.card - 1));
+
+      // Une notification porteuse d'une action reste six secondes.
+      await tester.pump(const Duration(seconds: 7));
+    });
+
+    testWidgets('un message trop long est coupé à deux lignes, et reste '
+        'lisible au survol', (tester) async {
+      await pumpLayer(tester);
+      toasts().show(
+        kind: AppToastKind.success,
+        title: 'PDF exporté',
+        message: longPath,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text(longPath),
+      );
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(
+        tester
+            .widget<Tooltip>(
+              find
+                  .ancestor(
+                    of: find.text(longPath),
+                    matching: find.byType(Tooltip),
+                  )
+                  .first,
+            )
+            .message,
+        longPath,
+        reason: 'le chemin entier reste accessible',
+      );
+      await tester.pump(const Duration(seconds: 5));
+    });
   });
 }

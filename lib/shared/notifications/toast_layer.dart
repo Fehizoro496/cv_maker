@@ -143,96 +143,118 @@ class _ToastCardState extends ConsumerState<_ToastCard> {
                 ),
               ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Le filet de couleur porte la nature de la notification.
-                Container(
-                  width: 4,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: style.color,
-                    borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(AppRadii.card),
-                    ),
+            // Le contenu est découpé par le cadre de la carte, rayon de la
+            // bordure déduit. C'est ce qui donne au filet ses angles : un
+            // rayon de carte sur un ruban de 4 px de large produirait une
+            // forme en goutte, et un ruban sans rayon dépasserait des coins.
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.card - 1),
+              child: Stack(
+                children: [
+                  // Le filet de couleur porte la nature de la notification.
+                  // Il est posé plutôt que placé dans la rangée : une hauteur
+                  // fixe s'arrêterait au milieu d'une carte à deux lignes de
+                  // texte ou à bouton d'action.
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 4,
+                    child: ColoredBox(color: style.color),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Icon(style.icon, size: 20, color: style.color),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          toast.title,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (toast.message != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            toast.message!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                        if (toast.hasAction) ...[
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 30,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                ref
-                                    .read(appToastsProvider.notifier)
-                                    .dismiss(toast.id);
-                                toast.onAction!();
-                              },
-                              icon: Icon(
-                                toast.actionIcon ?? Icons.refresh,
-                                size: 15,
-                              ),
-                              label: Text(toast.actionLabel!),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 12,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(width: 14),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Icon(style.icon, size: 20, color: style.color),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                toast.title,
+                                style: const TextStyle(
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
-                                shape: const StadiumBorder(),
                               ),
-                            ),
+                              if (toast.message != null) ...[
+                                const SizedBox(height: 2),
+                                // Deux lignes au plus, pour que la pile reste
+                                // lisible. Le texte entier est au survol : un
+                                // chemin d'export un peu long perd sinon sa fin,
+                                // c'est-à-dire le nom du fichier.
+                                Tooltip(
+                                  message: toast.message!,
+                                  waitDuration: const Duration(
+                                    milliseconds: 400,
+                                  ),
+                                  child: Text(
+                                    toast.message!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (toast.hasAction) ...[
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 30,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      ref
+                                          .read(appToastsProvider.notifier)
+                                          .dismiss(toast.id);
+                                      toast.onAction!();
+                                    },
+                                    icon: Icon(
+                                      toast.actionIcon ?? Icons.refresh,
+                                      size: 15,
+                                    ),
+                                    label: Text(toast.actionLabel!),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      shape: const StadiumBorder(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Fermer',
+                        iconSize: 18,
+                        style: IconButton.styleFrom(
+                          fixedSize: const Size.square(36),
+                          foregroundColor: AppColors.onSurfaceVariant,
+                        ),
+                        onPressed: () => ref
+                            .read(appToastsProvider.notifier)
+                            .dismiss(toast.id),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Fermer',
-                  iconSize: 18,
-                  style: IconButton.styleFrom(
-                    fixedSize: const Size.square(36),
-                    foregroundColor: AppColors.onSurfaceVariant,
-                  ),
-                  onPressed: () =>
-                      ref.read(appToastsProvider.notifier).dismiss(toast.id),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
