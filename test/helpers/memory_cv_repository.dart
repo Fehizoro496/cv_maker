@@ -24,12 +24,17 @@ class MemoryCvRepository implements CvRepository {
   /// Identifiants dont la lecture échoue, comme un JSON corrompu.
   final unreadable = <String>{};
 
+  /// Fait échouer [list], comme une base verrouillée ou endommagée.
+  bool failList = false;
+
   /// Durée simulée d'une écriture, pour agir pendant qu'elle a lieu.
   Duration writeDelay = Duration.zero;
 
   @override
-  Future<List<CvSummary>> list() async =>
-      documents.values.map(CvSummary.of).toList()..sortByRecency();
+  Future<List<CvSummary>> list() async {
+    if (failList) throw StateError('base illisible');
+    return documents.values.map(CvSummary.of).toList()..sortByRecency();
+  }
 
   @override
   Future<CvDocument?> read(String id) async {

@@ -1,10 +1,13 @@
 import 'package:cv_maker/app/bootstrap.dart';
+import 'package:cv_maker/app/startup_failure_screen.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/presentation/cv_library_provider.dart';
 import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
+import 'package:cv_maker/features/cv/presentation/dashboard_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../helpers/desktop_view.dart';
 import '../helpers/memory_cv_repository.dart';
 
 void main() {
@@ -65,5 +68,30 @@ void main() {
     final app = await bootstrap(MemoryCvRepository());
 
     expect(app, isA<ProviderScope>());
+  });
+
+  testWidgets('une base illisible mène à l’écran d’échec, pas à un plantage', (
+    tester,
+  ) async {
+    final repository = MemoryCvRepository([cv('ancien', 1)])..failList = true;
+
+    final app = await bootstrap(repository);
+
+    expect(app, isA<StartupFailureApp>());
+    expect((app as StartupFailureApp).details, contains('base illisible'));
+  });
+
+  testWidgets('« Réessayer » relit les CV et affiche le tableau de bord', (
+    tester,
+  ) async {
+    useDesktopView(tester);
+    final repository = MemoryCvRepository([cv('ancien', 1)])..failList = true;
+
+    await tester.pumpWidget(await bootstrap(repository));
+    repository.failList = false;
+    await tester.tap(find.text('Réessayer'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardScreen), findsOne);
   });
 }

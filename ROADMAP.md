@@ -39,7 +39,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | JS    | Sections personnalisées                     | JD        | Terminé |
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | Terminé |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | Terminé |
-| J9    | Finitions et validation du MVP              | J5, JZ, JS | À faire |
+| J9    | Finitions et validation du MVP              | J5, JZ, JS | Terminé, hors vérifications manuelles |
 
 ### Ordre conseillé pour les jalons restants
 
@@ -70,6 +70,38 @@ développement de JS ou JZ. Il reste indispensable avant la validation du
 MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ## État du projet
+
+### J9 livré, au 20 septembre 2026
+
+`fvm flutter analyze` ne signale aucun problème, les 607 tests passent et
+`fvm flutter build windows` produit un binaire. Le MVP est complet, à deux
+vérifications manuelles près, décrites plus bas. Points à connaître :
+
+- **les scénarios de validation vivent dans `test/acceptance/`**, un critère
+  de la section 12 par `test`. `mvp_acceptance_test.dart` rejoue l'application
+  sur une vraie base SQLite, jusqu'au texte du PDF ;
+  `export_acceptance_test.dart` pilote l'interface pour l'export et les
+  notifications ;
+- **une entrée-sortie réelle ne se termine jamais sous le temps simulé d'un
+  test de widgets.** L'export attendait `XFile.saveTo` : le fichier était bien
+  écrit par le système, mais la suite du code ne reprenait pas, et la
+  notification n'apparaissait jamais. Le dialogue d'enregistrement, l'écriture
+  du fichier et l'ouverture du dossier passent donc par des providers
+  (`lib/shared/system/`), remplacés dans les tests. C'est aussi ce qui rend le
+  chemin d'échec de l'export vérifiable ;
+- **l'ancien trou de la gestion d'erreurs était le démarrage.** Tout le reste
+  était couvert depuis le J5 ; mais une base verrouillée par une autre
+  instance faisait échouer la lecture de la liste, et l'application
+  disparaissait sans rien afficher. `bootstrap` rattrape désormais cet échec ;
+- **le nom d'éditeur est `Fehizoro`.** Le changer de nouveau déplacerait
+  `%APPDATA%\Fehizoro\cv_maker\` et perdrait les CV déjà enregistrés ;
+- **l'action « Ouvrir le dossier »**, laissée en suspens au JN, est branchée
+  sur `url_launcher`, ajouté pour l'occasion. Elle ouvre le dossier, pas le
+  PDF : lancer le lecteur associé n'est pas ce que la notification promet.
+
+Restent deux vérifications qu'aucun test ne peut faire, faute de fenêtre :
+fermer la fenêtre pendant une saisie, et le premier lancement sur une machine
+Windows propre et sans réseau.
 
 ### JZ livré, au 19 septembre 2026
 
@@ -670,24 +702,33 @@ réouverture après redémarrage est validée au J5.
 
 **Objectif :** vérifier tous les critères d'acceptation et stabiliser.
 
-- [ ] Gestion des erreurs de sauvegarde, de lecture de base et de génération
-  PDF. Le J5 couvre déjà l'échec d'écriture (indicateur et « Réessayer »),
-  l'échec à la fermeture et le document illisible au démarrage.
-- [ ] Remplacer le nom d'éditeur `com.example` du projet Windows, qui fixe le
-  dossier de la base de données.
+- [x] Gestion des erreurs de sauvegarde, de lecture de base et de génération
+  PDF. Le J5 couvrait déjà l'échec d'écriture (indicateur et « Réessayer »),
+  l'échec à la fermeture et le document illisible au démarrage. Le dernier trou
+  était le **démarrage lui-même** : une base verrouillée ou endommagée faisait
+  échouer `repository.list()` et l'application disparaissait sans un mot. Elle
+  affiche désormais un écran d'échec avec « Réessayer », qui relit les CV.
+- [x] Remplacer le nom d'éditeur `com.example` du projet Windows, qui fixe le
+  dossier de la base de données. ⚠ `CompanyName` vaut désormais `Fehizoro` :
+  la base est dans `%APPDATA%\Fehizoro\cv_maker\cv_maker.sqlite`. Seul le
+  projet Windows est concerné ; les autres plateformes sont hors périmètre.
 - [ ] Vérifier à la main qu'une fermeture de la fenêtre pendant la saisie
-  enregistre la dernière modification.
-- [ ] Présentation en onglets du formulaire et de l'aperçu sur une fenêtre
-  étroite, notifications comprises.
-- [ ] Exécuter les scénarios de validation de bout en bout et vérifier
+  enregistre la dernière modification. ⚠ Le comportement est couvert par les
+  tests (`handleRequestAppExit`), mais la fenêtre réelle reste à éprouver.
+- [x] Présentation en onglets du formulaire et de l'aperçu sur une fenêtre
+  étroite, notifications comprises. ⚠ Les onglets existaient depuis le J2 ;
+  ce jalon ajoute la vérification qu'une notification émise dans l'onglet
+  « Aperçu » reste visible après un passage à « Édition ».
+- [x] Exécuter les scénarios de validation de bout en bout et vérifier
   l'absence de régressions entre les fonctionnalités des différents jalons.
-- [ ] Vérifier un par un les critères d'acceptation de la section 12 du cahier
-  des charges.
-- [ ] Générer et tester le build Windows (`fvm flutter build windows`).
+- [x] Vérifier un par un les critères d'acceptation de la section 12 du cahier
+  des charges. ⚠ Tous sauf ceux qui demandent une vraie fenêtre : ils sont
+  regroupés dans les deux cases non cochées de ce jalon.
+- [x] Générer et tester le build Windows (`fvm flutter build windows`).
 - [ ] Sur une machine Windows propre, sans réseau, vérifier dès le premier
   lancement : édition, photo locale, aperçu multipage, sauvegarde, réouverture
   et export PDF avec les polices embarquées.
-- [ ] Mettre à jour le `README.md` (installation, lancement, tests).
+- [x] Mettre à jour le `README.md` (installation, lancement, tests).
 
 **Terminé quand :** tous les critères d'acceptation sont validés et le build
 Windows fonctionne sur une machine propre, entièrement hors ligne.
@@ -746,6 +787,13 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   du titre de section, avec `TextOverflow.span`, et jamais comme son enfant.
   C'est la contrainte à garder en tête en ajoutant une section au générateur,
   et notamment pour les sections personnalisées du JS.
+- **Entrées-sorties réelles et tests de widgets :** un `await` sur une vraie
+  entrée-sortie — écrire un fichier, créer un dossier temporaire — ne reprend
+  jamais sous le temps simulé d'un `testWidgets` : le système fait le travail,
+  mais la suite du code reste suspendue. Tout accès au disque déclenché par
+  l'interface passe donc par un provider de `lib/shared/system/`, que le test
+  remplace par une opération synchrone. Dans le corps d'un test, préférer les
+  variantes `...Sync`.
 - **Blocs insécables :** l'inverse est tout aussi vrai : une `Column` est
   coupée entre ses enfants dès qu'elle ne tient pas. Un groupe qui doit rester
   solidaire, comme un titre et son premier élément, passe par `KeepTogether`,

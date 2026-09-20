@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../shared/notifications/app_toast.dart';
+import '../../../../shared/system/reveal_file.dart';
+import '../../../../shared/system/save_location.dart';
 import '../../../../shared/widgets/soft_panel.dart';
 import '../draft_preview_provider.dart';
 import '../preview_input_provider.dart';
@@ -73,6 +74,26 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
     return preview;
   }
 
+  /// Ouvre le dossier du PDF exporté, et signale l'échec de l'ouverture.
+  ///
+  /// La notification reste discrète : l'export, lui, a réussi.
+  Future<void> _reveal(String path) async {
+    var opened = false;
+    try {
+      opened = await ref.read(revealFileProvider)(path);
+    } catch (_) {
+      opened = false;
+    }
+    if (opened || !mounted) return;
+    ref
+        .read(appToastsProvider.notifier)
+        .show(
+          kind: AppToastKind.info,
+          title: 'Dossier non ouvert',
+          message: path,
+        );
+  }
+
   Future<void> _export() async {
     final toasts = ref.read(appToastsProvider.notifier);
     setState(() => _exporting = true);
@@ -89,24 +110,21 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
       var preview = await _upToDatePreview();
       if (preview == null) return;
       if (waiting != null) toasts.dismiss(waiting);
-      final location = await getSaveLocation(
+      final path = await ref.read(saveLocationProvider)(
         suggestedName: 'CV.pdf',
-        acceptedTypeGroups: [
-          const XTypeGroup(label: 'PDF', extensions: ['pdf']),
-        ],
       );
-      if (location == null || !mounted) return;
+      if (path == null || !mounted) return;
       preview = await _upToDatePreview();
       if (preview == null) return;
-      await XFile.fromData(
-        preview.bytes,
-        mimeType: 'application/pdf',
-      ).saveTo(location.path);
+      await ref.read(saveBytesProvider)(path, preview.bytes);
       if (!mounted) return;
       toasts.show(
         kind: AppToastKind.success,
         title: 'PDF exporté',
-        message: location.path,
+        message: path,
+        actionLabel: 'Ouvrir le dossier',
+        actionIcon: Icons.folder_open_outlined,
+        onAction: () => _reveal(path),
       );
     } catch (_) {
       if (!mounted) return;
