@@ -39,7 +39,7 @@ Le produit minimum viable comprend :
 5. l'ajout, la modification, la suppression et la réorganisation des éléments
    répétables ;
 6. l'annulation et le rétablissement des modifications (undo/redo) ;
-7. la sauvegarde automatique des données en local, à l'exception de la photo ;
+7. la sauvegarde automatique des données en local, photo comprise ;
 8. l'export du CV au format PDF A4 ;
 9. la création, le renommage, la duplication et la suppression de plusieurs CV.
 
@@ -51,8 +51,7 @@ Le produit minimum viable comprend :
 - Afficher la liste des CV enregistrés.
 - Renommer ou dupliquer un CV.
 - Supprimer un CV après confirmation.
-- Enregistrer automatiquement les modifications, à l'exception de la photo
-  conservée uniquement pendant la session pour le MVP.
+- Enregistrer automatiquement les modifications, photo comprise.
 - Ouvrir l'application sur un tableau de bord qui liste les CV enregistrés,
   du plus récemment modifié au plus ancien, avec une recherche par nom (sans
   tenir compte de la casse ni des accents), un tri par nom et la création
@@ -72,11 +71,14 @@ Le formulaire permet de renseigner :
 - site personnel ou portfolio ;
 - profil LinkedIn et autres liens pertinents.
 
-Pour le MVP, la photo est conservée uniquement en mémoire pendant la session
-actuelle. Elle peut apparaître dans l'aperçu et être intégrée au PDF exporté,
-mais elle n'est pas sauvegardée avec le CV. Après fermeture de l'application,
-l'utilisateur doit la sélectionner à nouveau. Son stockage persistant est
-prévu après le MVP.
+La photo est enregistrée avec le CV et retrouvée à la réouverture. Elle est
+ramenée à 600 pixels de côté à l'enregistrement : le PDF n'imprime qu'une
+vignette d'environ 35 millimètres, et les millions de pixels d'un appareil
+photo alourdiraient la base comme le document exporté.
+
+Elle est stockée dans sa propre colonne, et non dans le document JSON : la
+sauvegarde automatique réécrit ce document à chaque salve de frappe, et y
+placer une image la ferait réécrire avec lui.
 
 ### 5.3 Profil professionnel
 
@@ -375,7 +377,8 @@ qui permet de construire l'historique undo/redo.
 - Gestion du SDK : FVM, selon la version définie dans `.fvmrc`.
 - Gestion d'état : Riverpod (`flutter_riverpod`).
 - Stockage : SQLite local via `drift` ; chaque CV est enregistré sous forme de
-  document JSON dans une table dédiée. La photo n'est pas persistée pour le MVP.
+  document JSON dans une table dédiée, sa photo dans une colonne à part de la
+  même ligne.
 - Génération du PDF : package `pdf`.
 - Affichage du PDF : package `printing` ou visionneuse PDF équivalente.
 - Sélection du fichier : dialogue natif Windows.
@@ -426,10 +429,9 @@ Le MVP est considéré comme terminé lorsque :
 - toutes les modifications du CV de la session actuelle peuvent être annulées
   et rétablies, y compris après un changement de CV ;
 - l'historique est vide au redémarrage de l'application ;
-- les données sont retrouvées après le redémarrage de l'application, à
-  l'exception de la photo qui doit être sélectionnée à nouveau ;
-- la photo sélectionnée pendant la session apparaît dans l'aperçu et le PDF
-  exporté ;
+- les données sont retrouvées après le redémarrage de l'application, photo
+  comprise ;
+- la photo choisie apparaît dans l'aperçu et le PDF exporté ;
 - les listes d'expériences et de formations peuvent être réorganisées ;
 - les sections facultatives peuvent être masquées ;
 - le catalogue permet de changer de modèle et le PDF reflète ce choix sans
@@ -452,7 +454,6 @@ Le MVP est considéré comme terminé lorsque :
 Les fonctions suivantes pourront être étudiées après le MVP :
 
 - prise en charge de plateformes autres que Windows ;
-- stockage persistant des photos avec les CV ;
 - ajout de modèles par l'utilisateur sans recompilation, via un manifeste
   déposé dans un dossier local ;
 - personnalisation des polices, et couleurs personnalisables au-delà de la

@@ -21,6 +21,14 @@ class CvRecords extends Table {
   IntColumn get formatVersion => integer()();
   TextColumn get document => text()();
 
+  /// La photo du CV, hors du document JSON.
+  ///
+  /// Une colonne à part parce que la sauvegarde automatique réécrit le
+  /// document à chaque salve de frappe : une image dans le JSON serait
+  /// réécrite avec lui, à chaque fois. Ici, elle n'est écrite que lorsqu'elle
+  /// change.
+  BlobColumn get photo => blob().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -44,14 +52,18 @@ class CvDatabase extends _$CvDatabase {
   /// Version du schéma SQL. Toute modification de table l'incrémente et
   /// ajoute l'étape correspondante dans [migration].
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    // Les étapes s'enchaîneront de version en version : une base en
-    // version 1 ouverte par la version 3 passera par 1 → 2 puis 2 → 3.
-    // Aucune n'existe encore.
-    onUpgrade: (m, from, to) async {},
+    // Les étapes s'enchaînent de version en version : une base en version 1
+    // ouverte par la version 3 passera par 1 → 2 puis 2 → 3.
+    onUpgrade: (m, from, to) async {
+      // 1 → 2 : la photo rejoint le CV. Les lignes déjà enregistrées la
+      // reçoivent vide, ce qui décrit bien leur état : la photo vivait alors
+      // le temps de la session.
+      if (from < 2) await m.addColumn(cvRecords, cvRecords.photo);
+    },
   );
 }

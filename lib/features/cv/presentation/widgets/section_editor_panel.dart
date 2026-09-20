@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_theme.dart';
+import '../../../../shared/images/photo_bytes.dart';
 import '../../../../shared/widgets/soft_panel.dart';
 import '../../domain/cv_custom_section.dart';
 import '../../domain/cv_design_spec.dart';
@@ -654,13 +655,14 @@ class _PhotoCard extends ConsumerWidget {
                               );
                               if (file == null) return;
                               final bytes = await file.readAsBytes();
-                              // Decode before accepting an invalid image into the session.
-                              final image = await decodeImageFromList(bytes);
-                              image.dispose();
+                              // Décoder avant d'accepter l'image dans la
+                              // session, et la ramener à une taille qui
+                              // n'alourdit ni la base ni le PDF.
+                              final photo = await normalizePhoto(bytes);
                               if (context.mounted) {
                                 ref
                                     .read(cvSessionProvider.notifier)
-                                    .setPhoto(bytes);
+                                    .setPhoto(photo);
                               }
                             } catch (_) {
                               if (context.mounted) {

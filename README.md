@@ -13,8 +13,9 @@ le binaire ; aucune donnée personnelle ne quitte l'ordinateur.
 - Plusieurs CV, enregistrés automatiquement dans une base SQLite locale.
 - Export PDF A4 paginé, identique à l'aperçu.
 
-La photo est conservée le temps de la session seulement : elle n'est pas
-enregistrée avec le CV et se choisit de nouveau à chaque lancement.
+La photo est enregistrée avec le CV et retrouvée à la réouverture. Elle est
+ramenée à 600 pixels de côté : le PDF n'en imprime qu'une vignette, et une
+photo d'appareil alourdirait la base comme le document exporté.
 
 ## Prérequis
 

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cv_maker/features/cv/data/cv_repository.dart';
 import 'package:cv_maker/features/cv/domain/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/cv_summary.dart';
@@ -14,6 +16,9 @@ class MemoryCvRepository implements CvRepository {
   }
 
   final documents = <String, CvDocument>{};
+
+  /// Les photos enregistrées, par identifiant de CV.
+  final photos = <String, Uint8List>{};
 
   /// Les documents reçus par [save], dans l'ordre, y compris ceux ignorés.
   final saves = <CvDocument>[];
@@ -56,5 +61,25 @@ class MemoryCvRepository implements CvRepository {
   Future<void> delete(String id) async {
     if (failWrites) throw StateError('écriture refusée');
     documents.remove(id);
+    photos.remove(id);
+  }
+
+  @override
+  Future<Uint8List?> readPhoto(String id) async {
+    if (unreadable.contains(id)) throw const FormatException('illisible');
+    return photos[id];
+  }
+
+  @override
+  Future<void> savePhoto(String id, Uint8List? photo) async {
+    if (writeDelay > Duration.zero) await Future<void>.delayed(writeDelay);
+    if (failWrites) throw StateError('écriture refusée');
+    // Comme en base : une photo n'existe pas sans son CV.
+    if (!documents.containsKey(id)) return;
+    if (photo == null) {
+      photos.remove(id);
+    } else {
+      photos[id] = photo;
+    }
   }
 }

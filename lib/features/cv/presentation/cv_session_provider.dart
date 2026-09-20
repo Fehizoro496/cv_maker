@@ -70,14 +70,18 @@ class CvSessionNotifier extends Notifier<CvSession> {
 
   /// Le dernier état connu du CV [id] s'il a été chargé pendant la session,
   /// modifications non encore enregistrées comprises.
-  CvDocument? loadedDocument(String id) => _histories[id]?.session.document;
+  CvSession? loadedSession(String id) => _histories[id]?.session;
+
+  /// Le document de [loadedSession].
+  CvDocument? loadedDocument(String id) => loadedSession(id)?.document;
 
   /// Ouvre [document] à la place du CV courant.
   ///
   /// Un CV déjà chargé pendant la session reprend son dernier état, son
-  /// historique et sa photo : [document] ne sert qu'à un CV encore inconnu.
-  void open(CvDocument document) {
-    load(document);
+  /// historique et sa photo : [document] et [photo] ne servent qu'à un CV
+  /// encore inconnu.
+  void open(CvDocument document, {Uint8List? photo}) {
+    load(document, photo: photo);
     final next = _histories[document.id]!;
     if (identical(next, _current)) return;
     _current = next;
@@ -85,11 +89,11 @@ class CvSessionNotifier extends Notifier<CvSession> {
     state = next.session;
   }
 
-  /// Charge [document] sans l'ouvrir, avec un historique vide ; sans effet
-  /// s'il est déjà chargé.
-  void load(CvDocument document) => _histories.putIfAbsent(
+  /// Charge [document] et sa [photo] enregistrée sans les ouvrir, avec un
+  /// historique vide ; sans effet s'il est déjà chargé.
+  void load(CvDocument document, {Uint8List? photo}) => _histories.putIfAbsent(
     document.id,
-    () => _CvHistory(CvSession(document: document)),
+    () => _CvHistory(CvSession(document: document, photo: photo)),
   );
 
   /// Oublie l'état et l'historique du CV [id], supprimé.

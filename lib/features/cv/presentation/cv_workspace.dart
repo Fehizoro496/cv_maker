@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -57,7 +59,12 @@ class CvWorkspace {
     if (id == openId) return true;
     final document = await _documentOf(id);
     if (document == null) return false;
-    await _openDocument(document);
+    // La photo n'est lue que pour un CV encore inconnu de la session : un CV
+    // déjà ouvert garde la sienne, modifications comprises.
+    final photo = _session.loadedSession(id) == null
+        ? await _repository.readPhoto(id)
+        : null;
+    await _openDocument(document, photo: photo);
     return true;
   }
 
@@ -85,7 +92,12 @@ class CvWorkspace {
       createdAt: now,
       updatedAt: now,
     );
-    await _autosave.run(() => _repository.save(copy));
+    await _autosave.run(() async {
+      await _repository.save(copy);
+      // Une copie est une copie complète : la photo suit le contenu.
+      final photo = await _photoOf(id);
+      if (photo != null) await _repository.savePhoto(copy.id, photo);
+    });
     _library.upsert(CvSummary.of(copy));
   }
 
@@ -108,13 +120,18 @@ class CvWorkspace {
   /// Écrit les modifications en attente avant la fermeture de l'application.
   Future<bool> saveBeforeExit() => _autosave.flush();
 
-  Future<void> _openDocument(CvDocument document) async {
+  Future<void> _openDocument(CvDocument document, {Uint8List? photo}) async {
     await _autosave.flush();
-    _session.open(document);
+    _session.open(document, photo: photo);
   }
 
   /// Le CV [id] tel que la session le connaît, sinon tel qu'il est
   /// enregistré.
   Future<CvDocument?> _documentOf(String id) async =>
       _session.loadedDocument(id) ?? await _repository.read(id);
+
+  /// La photo du CV [id] telle que la session la connaît, sinon telle
+  /// qu'elle est enregistrée.
+  Future<Uint8List?> _photoOf(String id) async =>
+      _session.loadedSession(id)?.photo ?? await _repository.readPhoto(id);
 }

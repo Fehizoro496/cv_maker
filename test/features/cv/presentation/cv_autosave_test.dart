@@ -186,4 +186,66 @@ void main() {
     await expectLater(failing, throwsStateError);
     expect(await autosave.run(() async => 42), 42);
   });
+
+  group('photo', () {
+    final photo = Uint8List.fromList(List.filled(16, 0xAB));
+
+    test('une photo choisie est écrite après la pause', () async {
+      editor.setPhoto(photo);
+      expect(status(), CvSaveStatus.saving);
+      expect(repository.photos, isEmpty);
+
+      await pause();
+
+      expect(repository.photos['example'], photo);
+      expect(status(), CvSaveStatus.saved);
+    });
+
+    test('elle s’écrit sans faire réécrire le document', () async {
+      await autosave.flush();
+      repository.saves.clear();
+
+      editor.setPhoto(photo);
+      await autosave.flush();
+
+      expect(repository.photos['example'], photo);
+      expect(repository.saves, isEmpty, reason: 'le document n’a pas changé');
+    });
+
+    test('retirer la photo l’efface', () async {
+      editor.setPhoto(photo);
+      await autosave.flush();
+
+      editor.setPhoto(null);
+      await autosave.flush();
+
+      expect(repository.photos, isEmpty);
+    });
+
+    test('une annulation réenregistre la photo restaurée', () async {
+      editor.setPhoto(photo);
+      await autosave.flush();
+      editor.setPhoto(null);
+      await autosave.flush();
+
+      editor.undo();
+      await autosave.flush();
+
+      expect(repository.photos['example'], photo);
+    });
+
+    test('un échec d’écriture laisse la photo en attente', () async {
+      repository.failWrites = true;
+
+      editor.setPhoto(photo);
+      expect(await autosave.flush(), isFalse);
+      expect(status(), CvSaveStatus.error);
+      expect(autosave.hasPending, isTrue);
+
+      repository.failWrites = false;
+      expect(await autosave.flush(), isTrue);
+      expect(repository.photos['example'], photo);
+      expect(status(), CvSaveStatus.saved);
+    });
+  });
 }

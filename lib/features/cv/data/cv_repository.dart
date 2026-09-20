@@ -8,8 +8,9 @@ import 'cv_database.dart';
 
 /// Le stockage local des CV.
 ///
-/// Seul un [CvDocument] y entre : la photo, qui vit dans la session, ne peut
-/// donc pas être enregistrée par mégarde.
+/// La photo a ses propres opérations : [save] ne l'écrit ni ne l'efface
+/// jamais. Une sauvegarde de document, déclenchée à chaque salve de frappe,
+/// ne réécrit donc pas l'image, et ne peut pas la perdre.
 abstract interface class CvRepository {
   /// Les CV enregistrés, du plus récemment modifié au plus ancien.
   Future<List<CvSummary>> list();
@@ -26,6 +27,14 @@ abstract interface class CvRepository {
 
   /// Supprime le CV d'identifiant [id] ; sans effet s'il n'existe pas.
   Future<void> delete(String id);
+
+  /// La photo du CV [id], ou `null` s'il n'en a pas.
+  Future<Uint8List?> readPhoto(String id);
+
+  /// Remplace la photo du CV [id] ; [photo] à `null` la retire.
+  ///
+  /// Sans effet si le CV n'existe pas : une photo n'existe pas seule.
+  Future<void> savePhoto(String id, Uint8List? photo);
 }
 
 /// Le stockage SQLite, via drift.
@@ -97,6 +106,23 @@ class DriftCvRepository implements CvRepository {
   @override
   Future<void> delete(String id) =>
       (_db.delete(_db.cvRecords)..where((r) => r.id.equals(id))).go();
+
+  @override
+  Future<Uint8List?> readPhoto(String id) async {
+    final records = _db.cvRecords;
+    final query = _db.selectOnly(records)
+      ..addColumns([records.photo])
+      ..where(records.id.equals(id));
+    final row = await query.getSingleOrNull();
+    return row?.read(records.photo);
+  }
+
+  @override
+  Future<void> savePhoto(String id, Uint8List? photo) async {
+    await (_db.update(_db.cvRecords)..where((r) => r.id.equals(id))).write(
+      CvRecordsCompanion(photo: Value(photo)),
+    );
+  }
 
   /// Amène un document écrit au format [from] au format courant.
   static Map<String, dynamic> _migrate(

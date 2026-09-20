@@ -6,22 +6,22 @@ import 'cv_document.dart';
 
 part 'cv_session.freezed.dart';
 
-/// État complet de l'édition d'un CV : ce qui est enregistré et ce qui ne
-/// l'est pas.
+/// État complet de l'édition d'un CV : son contenu et sa photo.
 ///
-/// La photo n'est pas persistée pour le MVP ; elle n'appartient donc pas à
-/// [CvDocument], qui est sérialisé tel quel. Les réunir dans une seule valeur
-/// immuable permet à l'historique d'annulation de n'empiler qu'un objet et de
-/// restaurer le document et la photo ensemble, sans risque de les désynchroniser.
+/// La photo est enregistrée, mais dans sa propre colonne, et non dans le JSON
+/// du document : la sauvegarde automatique réécrit le document à chaque salve
+/// de frappe, et y glisser une image la réécrirait avec lui. Elle reste donc
+/// hors de [CvDocument], qui est sérialisé tel quel.
 ///
-/// [CvSession] n'est volontairement pas sérialisable : seul [document] est
-/// enregistré.
+/// Les réunir dans une seule valeur immuable permet à l'historique
+/// d'annulation de n'empiler qu'un objet et de restaurer le document et la
+/// photo ensemble, sans risque de les désynchroniser.
 @freezed
 abstract class CvSession with _$CvSession {
   const factory CvSession({
     required CvDocument document,
 
-    /// Photo choisie pendant la session, absente après un redémarrage.
+    /// Photo du CV, retrouvée à la réouverture.
     ///
     /// L'égalité de [CvSession] compare les photos par référence : une même
     /// image rechargée depuis le disque produit une session différente. C'est

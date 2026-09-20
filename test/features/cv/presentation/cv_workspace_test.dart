@@ -315,35 +315,102 @@ void main() {
     });
   });
 
-  group('photos de session', () {
-    test(
-      'propres à chaque CV, jamais écrites, absentes au redémarrage',
-      () async {
-        final app = await launchWith(2);
-        final first = app.libraryIds.last;
-        final second = app.openId;
-        final photo = Uint8List.fromList(List.filled(64, 0xAB));
-        app.editor.setPhoto(photo);
-        app.editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
+  group('photos', () {
+    test('propres à chaque CV et retrouvées au redémarrage', () async {
+      final app = await launchWith(2);
+      final first = app.libraryIds.last;
+      final second = app.openId;
+      final photo = Uint8List.fromList(List.filled(64, 0xAB));
+      app.editor.setPhoto(photo);
+      app.editor.setDocumentField(CvDocumentFields.firstName, 'Alice');
 
-        await app.workspace.open(first);
-        expect(app.container.read(cvSessionProvider).photo, isNull);
-        await app.workspace.open(second);
-        expect(app.container.read(cvSessionProvider).photo, same(photo));
+      await app.workspace.open(first);
+      expect(app.container.read(cvSessionProvider).photo, isNull);
+      await app.workspace.open(second);
+      expect(app.container.read(cvSessionProvider).photo, same(photo));
+      await app.close();
 
-        final records = await app.db.select(app.db.cvRecords).get();
-        for (final record in records) {
-          expect(record.document, isNot(contains('photo')));
-          expect(record.document, isNot(contains('171,171,171')));
-        }
-        await app.close();
+      final next = await launch();
+      await next.workspace.open(second);
 
-        final next = await launch();
-        await next.workspace.open(second);
-        expect(next.container.read(cvSessionProvider).photo, isNull);
-        expect(next.editor.document.personalInfo.firstName, 'Alice');
-      },
-    );
+      expect(next.container.read(cvSessionProvider).photo, photo);
+      expect(next.editor.document.personalInfo.firstName, 'Alice');
+      expect(
+        await next.repository.readPhoto(first),
+        isNull,
+        reason: 'la photo appartient à un seul CV',
+      );
+    });
+
+    test('la photo reste hors du document JSON', () async {
+      final app = await launchWith(1);
+      app.editor.setPhoto(Uint8List.fromList(List.filled(64, 0xAB)));
+      await app.workspace.saveBeforeExit();
+
+      final records = await app.db.select(app.db.cvRecords).get();
+
+      for (final record in records) {
+        expect(record.document, isNot(contains('photo')));
+        expect(record.document, isNot(contains('171,171,171')));
+        expect(record.photo, isNotNull, reason: 'elle a sa propre colonne');
+      }
+    });
+
+    test('retirer la photo l’efface en base', () async {
+      final app = await launchWith(1);
+      final id = app.openId;
+      app.editor.setPhoto(Uint8List.fromList(List.filled(64, 0xAB)));
+      await app.workspace.saveBeforeExit();
+
+      app.editor.setPhoto(null);
+      await app.workspace.saveBeforeExit();
+
+      expect(await app.repository.readPhoto(id), isNull);
+    });
+
+    test('une annulation restaure la photo, et l’enregistre', () async {
+      final app = await launchWith(1);
+      final id = app.openId;
+      final photo = Uint8List.fromList(List.filled(64, 0xAB));
+      app.editor.setPhoto(photo);
+      await app.workspace.saveBeforeExit();
+
+      app.editor.setPhoto(null);
+      app.editor.undo();
+      await app.close();
+
+      final next = await launch();
+      expect(await next.repository.readPhoto(id), photo);
+    });
+
+    test('dupliquer un CV copie sa photo', () async {
+      final app = await launchWith(1);
+      final source = app.openId;
+      final photo = Uint8List.fromList(List.filled(64, 0xAB));
+      app.editor.setPhoto(photo);
+
+      await app.workspace.duplicate(source);
+
+      final copy = app.libraryIds.firstWhere((id) => id != source);
+      expect(
+        await app.repository.readPhoto(copy),
+        photo,
+        reason: 'même avant que la source ne soit écrite',
+      );
+      await app.workspace.saveBeforeExit();
+      expect(await app.repository.readPhoto(source), photo);
+    });
+
+    test('supprimer un CV emporte sa photo', () async {
+      final app = await launchWith(2);
+      final removed = app.openId;
+      app.editor.setPhoto(Uint8List.fromList(List.filled(64, 0xAB)));
+      await app.workspace.saveBeforeExit();
+
+      await app.workspace.delete(removed);
+
+      expect(await app.repository.readPhoto(removed), isNull);
+    });
   });
 
   group('renommer', () {

@@ -71,6 +71,15 @@ class $CvRecordsTable extends CvRecords
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _photoMeta = const VerificationMeta('photo');
+  @override
+  late final GeneratedColumn<Uint8List> photo = GeneratedColumn<Uint8List>(
+    'photo',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -79,6 +88,7 @@ class $CvRecordsTable extends CvRecords
     updatedAt,
     formatVersion,
     document,
+    photo,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -140,6 +150,12 @@ class $CvRecordsTable extends CvRecords
     } else if (isInserting) {
       context.missing(_documentMeta);
     }
+    if (data.containsKey('photo')) {
+      context.handle(
+        _photoMeta,
+        photo.isAcceptableOrUnknown(data['photo']!, _photoMeta),
+      );
+    }
     return context;
   }
 
@@ -173,6 +189,10 @@ class $CvRecordsTable extends CvRecords
         DriftSqlType.string,
         data['${effectivePrefix}document'],
       )!,
+      photo: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}photo'],
+      ),
     );
   }
 
@@ -192,6 +212,14 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
   /// le document peut évoluer sans que la table change.
   final int formatVersion;
   final String document;
+
+  /// La photo du CV, hors du document JSON.
+  ///
+  /// Une colonne à part parce que la sauvegarde automatique réécrit le
+  /// document à chaque salve de frappe : une image dans le JSON serait
+  /// réécrite avec lui, à chaque fois. Ici, elle n'est écrite que lorsqu'elle
+  /// change.
+  final Uint8List? photo;
   const CvRecord({
     required this.id,
     required this.name,
@@ -199,6 +227,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     required this.updatedAt,
     required this.formatVersion,
     required this.document,
+    this.photo,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -209,6 +238,9 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['format_version'] = Variable<int>(formatVersion);
     map['document'] = Variable<String>(document);
+    if (!nullToAbsent || photo != null) {
+      map['photo'] = Variable<Uint8List>(photo);
+    }
     return map;
   }
 
@@ -220,6 +252,9 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       updatedAt: Value(updatedAt),
       formatVersion: Value(formatVersion),
       document: Value(document),
+      photo: photo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photo),
     );
   }
 
@@ -235,6 +270,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       formatVersion: serializer.fromJson<int>(json['formatVersion']),
       document: serializer.fromJson<String>(json['document']),
+      photo: serializer.fromJson<Uint8List?>(json['photo']),
     );
   }
   @override
@@ -247,6 +283,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'formatVersion': serializer.toJson<int>(formatVersion),
       'document': serializer.toJson<String>(document),
+      'photo': serializer.toJson<Uint8List?>(photo),
     };
   }
 
@@ -257,6 +294,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     DateTime? updatedAt,
     int? formatVersion,
     String? document,
+    Value<Uint8List?> photo = const Value.absent(),
   }) => CvRecord(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -264,6 +302,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     updatedAt: updatedAt ?? this.updatedAt,
     formatVersion: formatVersion ?? this.formatVersion,
     document: document ?? this.document,
+    photo: photo.present ? photo.value : this.photo,
   );
   CvRecord copyWithCompanion(CvRecordsCompanion data) {
     return CvRecord(
@@ -275,6 +314,7 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           ? data.formatVersion.value
           : this.formatVersion,
       document: data.document.present ? data.document.value : this.document,
+      photo: data.photo.present ? data.photo.value : this.photo,
     );
   }
 
@@ -286,14 +326,22 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('formatVersion: $formatVersion, ')
-          ..write('document: $document')
+          ..write('document: $document, ')
+          ..write('photo: $photo')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, createdAt, updatedAt, formatVersion, document);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    formatVersion,
+    document,
+    $driftBlobEquality.hash(photo),
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -303,7 +351,8 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.formatVersion == this.formatVersion &&
-          other.document == this.document);
+          other.document == this.document &&
+          $driftBlobEquality.equals(other.photo, this.photo));
 }
 
 class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
@@ -313,6 +362,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
   final Value<DateTime> updatedAt;
   final Value<int> formatVersion;
   final Value<String> document;
+  final Value<Uint8List?> photo;
   final Value<int> rowid;
   const CvRecordsCompanion({
     this.id = const Value.absent(),
@@ -321,6 +371,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     this.updatedAt = const Value.absent(),
     this.formatVersion = const Value.absent(),
     this.document = const Value.absent(),
+    this.photo = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CvRecordsCompanion.insert({
@@ -330,6 +381,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     required DateTime updatedAt,
     required int formatVersion,
     required String document,
+    this.photo = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -344,6 +396,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     Expression<DateTime>? updatedAt,
     Expression<int>? formatVersion,
     Expression<String>? document,
+    Expression<Uint8List>? photo,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -353,6 +406,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (formatVersion != null) 'format_version': formatVersion,
       if (document != null) 'document': document,
+      if (photo != null) 'photo': photo,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -364,6 +418,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     Value<DateTime>? updatedAt,
     Value<int>? formatVersion,
     Value<String>? document,
+    Value<Uint8List?>? photo,
     Value<int>? rowid,
   }) {
     return CvRecordsCompanion(
@@ -373,6 +428,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
       updatedAt: updatedAt ?? this.updatedAt,
       formatVersion: formatVersion ?? this.formatVersion,
       document: document ?? this.document,
+      photo: photo ?? this.photo,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -398,6 +454,9 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     if (document.present) {
       map['document'] = Variable<String>(document.value);
     }
+    if (photo.present) {
+      map['photo'] = Variable<Uint8List>(photo.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -413,6 +472,7 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
           ..write('updatedAt: $updatedAt, ')
           ..write('formatVersion: $formatVersion, ')
           ..write('document: $document, ')
+          ..write('photo: $photo, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -441,6 +501,7 @@ typedef $$CvRecordsTableCreateCompanionBuilder =
       required DateTime updatedAt,
       required int formatVersion,
       required String document,
+      Value<Uint8List?> photo,
       Value<int> rowid,
     });
 typedef $$CvRecordsTableUpdateCompanionBuilder =
@@ -451,6 +512,7 @@ typedef $$CvRecordsTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<int> formatVersion,
       Value<String> document,
+      Value<Uint8List?> photo,
       Value<int> rowid,
     });
 
@@ -490,6 +552,11 @@ class $$CvRecordsTableFilterComposer
 
   ColumnFilters<String> get document => $composableBuilder(
     column: $table.document,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -532,6 +599,11 @@ class $$CvRecordsTableOrderingComposer
     column: $table.document,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CvRecordsTableAnnotationComposer
@@ -562,6 +634,9 @@ class $$CvRecordsTableAnnotationComposer
 
   GeneratedColumn<String> get document =>
       $composableBuilder(column: $table.document, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get photo =>
+      $composableBuilder(column: $table.photo, builder: (column) => column);
 }
 
 class $$CvRecordsTableTableManager
@@ -598,6 +673,7 @@ class $$CvRecordsTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> formatVersion = const Value.absent(),
                 Value<String> document = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CvRecordsCompanion(
                 id: id,
@@ -606,6 +682,7 @@ class $$CvRecordsTableTableManager
                 updatedAt: updatedAt,
                 formatVersion: formatVersion,
                 document: document,
+                photo: photo,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -616,6 +693,7 @@ class $$CvRecordsTableTableManager
                 required DateTime updatedAt,
                 required int formatVersion,
                 required String document,
+                Value<Uint8List?> photo = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CvRecordsCompanion.insert(
                 id: id,
@@ -624,6 +702,7 @@ class $$CvRecordsTableTableManager
                 updatedAt: updatedAt,
                 formatVersion: formatVersion,
                 document: document,
+                photo: photo,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

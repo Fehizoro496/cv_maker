@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,6 +50,13 @@ final cvAutosaveProvider = Provider<CvAutosave>((ref) {
   ) {
     if (previous?.id == next.id) autosave.schedule(next);
   });
+  // La photo suit le même chemin, mais dans sa propre file : elle s'écrit
+  // seule, sans faire réécrire le document.
+  ref.listen(cvSessionProvider, (previous, next) {
+    if (previous == null || previous.document.id != next.document.id) return;
+    if (identical(previous.photo, next.photo)) return;
+    autosave.schedulePhoto(next.document.id, next.photo);
+  });
   ref.onDispose(autosave._dispose);
   return autosave;
 });
@@ -65,13 +73,17 @@ class CvAutosave {
   /// Un CV quitté avant l'écriture garde ici sa version, qui sera écrite avec
   /// les autres.
   final _pending = <String, CvDocument>{};
+
+  /// Les photos à écrire, une par CV. La clé porte l'attente : `null` y est
+  /// une valeur, celle d'une photo retirée.
+  final _pendingPhotos = <String, Uint8List?>{};
   Timer? _timer;
 
   /// Les écritures s'exécutent l'une après l'autre, dans l'ordre de leur
   /// demande : une écriture ne peut pas en doubler une plus récente.
   Future<void> _queue = Future.value();
 
-  bool get hasPending => _pending.isNotEmpty;
+  bool get hasPending => _pending.isNotEmpty || _pendingPhotos.isNotEmpty;
 
   /// Programme l'écriture de [document] après [delay].
   void schedule(CvDocument document) {
@@ -81,10 +93,22 @@ class CvAutosave {
     _timer = Timer(delay, flush);
   }
 
+  /// Programme l'écriture de la [photo] du CV [id] après [delay].
+  ///
+  /// Une photo retirée est une écriture comme une autre : c'est `null` qui
+  /// est enregistré.
+  void schedulePhoto(String id, Uint8List? photo) {
+    _pendingPhotos[id] = photo;
+    _setStatus(CvSaveStatus.saving);
+    _timer?.cancel();
+    _timer = Timer(delay, flush);
+  }
+
   /// Renonce à écrire le CV [id], qui va être supprimé.
   void discard(String id) {
     _pending.remove(id);
-    if (_pending.isEmpty) {
+    _pendingPhotos.remove(id);
+    if (!hasPending) {
       _timer?.cancel();
       _timer = null;
       _setStatus(CvSaveStatus.saved);
@@ -99,7 +123,7 @@ class CvAutosave {
     _timer?.cancel();
     _timer = null;
     return run(() async {
-      if (_pending.isEmpty) return true;
+      if (!hasPending) return true;
       _setStatus(CvSaveStatus.saving);
       try {
         for (final document in [..._pending.values]) {
@@ -115,11 +139,23 @@ class CvAutosave {
           }
           _ref.read(cvLibraryProvider.notifier).upsert(CvSummary.of(saved));
         }
+        // Les photos ensuite : le CV créé à l'instant existe alors en base,
+        // et une photo ne s'écrit pas sans sa ligne.
+        for (final id in [..._pendingPhotos.keys]) {
+          final photo = _pendingPhotos[id];
+          await _ref.read(cvRepositoryProvider).savePhoto(id, photo);
+          if (!_ref.mounted) return true;
+          // Un changement de photo arrivé pendant l'écriture reste en attente.
+          if (_pendingPhotos.containsKey(id) &&
+              identical(_pendingPhotos[id], photo)) {
+            _pendingPhotos.remove(id);
+          }
+        }
       } catch (_) {
         _setStatus(CvSaveStatus.error);
         return false;
       }
-      _setStatus(_pending.isEmpty ? CvSaveStatus.saved : CvSaveStatus.saving);
+      _setStatus(hasPending ? CvSaveStatus.saving : CvSaveStatus.saved);
       return true;
     });
   }

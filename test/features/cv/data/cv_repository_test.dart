@@ -199,4 +199,61 @@ void main() {
 
     expect((await repository.read('example'))!.customSections, isEmpty);
   });
+
+  group('photo', () {
+    final photo = Uint8List.fromList(List.filled(32, 0xAB));
+
+    test('un CV sans photo n’en rend aucune', () async {
+      await repository.save(cv('a', DateTime.utc(2026, 9, 20)));
+
+      expect(await repository.readPhoto('a'), isNull);
+      expect(await repository.readPhoto('absent'), isNull);
+    });
+
+    test('enregistre puis relit la photo d’un CV', () async {
+      await repository.save(cv('a', DateTime.utc(2026, 9, 20)));
+
+      await repository.savePhoto('a', photo);
+
+      expect(await repository.readPhoto('a'), photo);
+    });
+
+    test('`null` retire la photo enregistrée', () async {
+      await repository.save(cv('a', DateTime.utc(2026, 9, 20)));
+      await repository.savePhoto('a', photo);
+
+      await repository.savePhoto('a', null);
+
+      expect(await repository.readPhoto('a'), isNull);
+    });
+
+    test('enregistrer le document ne touche pas à la photo', () async {
+      final at = DateTime.utc(2026, 9, 20);
+      await repository.save(cv('a', at));
+      await repository.savePhoto('a', photo);
+
+      // C'est l'écriture que déclenche chaque salve de frappe.
+      await repository.save(
+        cv('a', at.add(const Duration(minutes: 1)), name: 'Renommé'),
+      );
+
+      expect(await repository.readPhoto('a'), photo);
+      expect((await repository.read('a'))!.name, 'Renommé');
+    });
+
+    test('la photo disparaît avec son CV', () async {
+      await repository.save(cv('a', DateTime.utc(2026, 9, 20)));
+      await repository.savePhoto('a', photo);
+
+      await repository.delete('a');
+
+      expect(await repository.readPhoto('a'), isNull);
+    });
+
+    test('une photo sans CV n’est pas enregistrée', () async {
+      await repository.savePhoto('absent', photo);
+
+      expect(await repository.readPhoto('absent'), isNull);
+    });
+  });
 }

@@ -177,21 +177,27 @@ void main() {
   });
 
   group('persistance', () {
-    test('les données sont retrouvées après le redémarrage, à l’exception '
-        'de la photo', () async {
-      final app = await launchWithCv();
-      final id = app.openId;
-      app.fillEverything();
-      app.editor.setPhoto(Uint8List.fromList([1, 2, 3]));
-      await app.close();
+    test(
+      'les données sont retrouvées après le redémarrage, photo comprise',
+      () async {
+        final app = await launchWithCv();
+        final id = app.openId;
+        final photo = await _photoBytes();
+        app.fillEverything();
+        app.editor.setPhoto(photo);
+        await app.close();
 
-      final next = await launch();
-      await next.workspace.open(id);
+        final next = await launch();
+        await next.workspace.open(id);
 
-      expect(next.editor.document.personalInfo.firstName, 'Camille');
-      expect(pdfText(await next.pdf()), contains(_valueFor(CvSection.skills)));
-      expect(next.container.read(cvSessionProvider).photo, isNull);
-    });
+        expect(next.editor.document.personalInfo.firstName, 'Camille');
+        expect(
+          pdfText(await next.pdf()),
+          contains(_valueFor(CvSection.skills)),
+        );
+        expect(next.container.read(cvSessionProvider).photo, photo);
+      },
+    );
 
     test('la couleur d’accent et l’affichage de la photo sont retrouvés '
         'après un redémarrage', () async {
@@ -261,7 +267,7 @@ void main() {
     });
 
     test(
-      'la photo de la session apparaît dans le PDF sans entrer en base',
+      'la photo apparaît dans le PDF, et s’enregistre hors du document',
       () async {
         final app = await launchWithCv();
         final id = app.openId;
@@ -269,21 +275,24 @@ void main() {
 
         final without = (await app.pdf()).length;
         app.editor.setPhoto(await _photoBytes());
-        final with_ = (await app.pdf()).length;
+        final withPhoto = (await app.pdf()).length;
         await app.close();
 
         expect(
-          with_,
+          withPhoto,
           greaterThan(without),
           reason: 'l’image entre dans le PDF',
         );
-        final stored = await File(file.path).readAsBytes();
-        expect(
-          String.fromCharCodes(stored.where((b) => b > 31 && b < 127)),
-          isNot(contains('photo')),
-        );
         final next = await launch();
-        expect(await next.repository.read(id), isNotNull);
+        expect(await next.repository.readPhoto(id), await _photoBytes());
+        final record = await (next.db.select(
+          next.db.cvRecords,
+        )..where((r) => r.id.equals(id))).getSingle();
+        expect(
+          record.document,
+          isNot(contains('photo')),
+          reason: 'le document JSON, réécrit à chaque frappe, l’ignore',
+        );
       },
     );
   });

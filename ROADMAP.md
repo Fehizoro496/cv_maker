@@ -40,6 +40,7 @@ ce jalon. Les autres sections viennent ensuite s'y greffer.
 | J5    | Persistance SQLite et gestion multi-CV      | JD        | Terminé |
 | JZ    | Moteur de zones et modèles à deux zones     | J8        | Terminé |
 | J9    | Finitions et validation du MVP              | J5, JZ, JS | Terminé, hors vérifications manuelles |
+| JP    | Photo enregistrée avec le CV                | J9        | Terminé |
 
 ### Ordre conseillé pour les jalons restants
 
@@ -70,6 +71,28 @@ développement de JS ou JZ. Il reste indispensable avant la validation du
 MVP. Les contrôles après redémarrage de J6, J8 et JS sont regroupés au J5.
 
 ## État du projet
+
+### JP livré, au 20 septembre 2026
+
+`fvm flutter analyze` ne signale aucun problème et les 632 tests passent. La
+photo est enregistrée avec le CV, ce que le MVP renvoyait après lui (section
+13 du cahier des charges, mise à jour). Points à connaître :
+
+- **la photo a sa propre colonne**, et non une place dans le document JSON :
+  la sauvegarde automatique réécrit ce document à chaque salve de frappe, et
+  une image y aurait été réécrite avec lui, à chaque fois. `CvRepository.save`
+  ne touche jamais à la photo ; `readPhoto` et `savePhoto` s'en chargent, et
+  la sauvegarde automatique leur tient une file distincte ;
+- **le schéma passe en version 2.** Une base en version 1 gagne la colonne par
+  `addColumn`, et ses CV la reçoivent vide, ce qui décrit bien leur état :
+  la photo vivait alors le temps de la session ;
+- **une image est ramenée à 600 pixels de côté** à la sélection
+  (`lib/shared/images/photo_bytes.dart`). Une image déjà assez petite est
+  gardée telle quelle : la ré-encoder la transformerait en PNG plus lourd,
+  `dart:ui` ne sachant pas écrire de JPEG. C'est le prix de l'absence de
+  dépendance supplémentaire ;
+- **dupliquer un CV copie sa photo**, y compris lorsque celle du CV source
+  n'est pas encore écrite : la copie la prend alors dans la session.
 
 ### J9 livré, au 20 septembre 2026
 
@@ -490,7 +513,9 @@ l'application, l'aperçu et l'export sont inchangés à contenu égal, et
   et leur visibilité, ainsi que le modèle et les réglages du J8.
 - [x] Vérifier que les photos du J6 restent propres à chaque CV pendant la
   session, ne sont jamais écrites en base et disparaissent au redémarrage.
-  ⚠ Dupliquer un CV ne copie pas sa photo.
+  ⚠ Dépassé par le JP : la photo est désormais enregistrée, et dupliquer un
+  CV la copie. Ce qui reste vrai : elle est propre à chaque CV, et le
+  document JSON ne la contient pas.
 
 **Terminé quand :** les CV et leurs modifications sont retrouvés après un
 redémarrage, et changer de CV conserve l'historique de chacun pendant la
@@ -502,18 +527,22 @@ session.
 
 **Objectif :** ajouter une photo au CV sans la persister.
 
+⚠ Le **JP** lève la restriction : la photo est enregistrée avec le CV. Ce
+jalon reste décrit tel qu'il a été livré ; ce qui en survit est signalé ligne
+à ligne.
+
 - [x] Sélectionner une image depuis le disque.
-- [x] Conserver la photo en mémoire, associée au CV, pendant la session
-  uniquement.
+- [x] ~~Conserver la photo en mémoire, associée au CV, pendant la session
+  uniquement.~~ Remplacé par le JP.
 - [x] Exclure la photo du JSON sauvegardé. Vérifié sur `CvDocument.toJson`,
-  puis sur la base au J5.
+  puis sur la base au J5. ⚠ Toujours vrai : le JP lui donne sa propre
+  colonne, il ne la met pas dans le document.
 - [x] Afficher la photo dans le PDF.
 - [x] Retirer ou remplacer la photo.
 - [x] Inclure les changements de photo dans l'historique undo/redo.
 
 **Terminé quand :** la photo apparaît dans le PDF pendant la session et est
-exclue du JSON du document. La vérification après réouverture d'un CV
-persisté relève du J5.
+exclue du JSON du document.
 
 ---
 
@@ -735,6 +764,29 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
 
 ---
 
+## JP — Photo enregistrée avec le CV
+
+**Objectif :** retrouver sa photo à la réouverture d'un CV, ce que le J6
+laissait à la session.
+
+- [x] Ajouter la colonne `photo` à la table des CV, et la migration 1 → 2 qui
+  la donne aux bases existantes.
+- [x] Donner à la photo ses propres opérations de dépôt, `readPhoto` et
+  `savePhoto`, et vérifier par un test que `save` ne l'écrit ni ne l'efface.
+- [x] Tenir une file d'attente distincte dans la sauvegarde automatique : une
+  photo s'écrit sans faire réécrire le document.
+- [x] Relire la photo à l'ouverture d'un CV, et la copier à la duplication.
+- [x] Ramener une image à 600 pixels de côté à la sélection, sans dépendance
+  supplémentaire.
+- [x] Enregistrer les photos restaurées par une annulation, comme le reste.
+- [x] Reporter le changement dans le cahier des charges, qui le classait hors
+  périmètre.
+
+**Terminé quand :** une photo choisie, remplacée ou retirée se retrouve telle
+quelle après un redémarrage, sans entrer dans le document JSON.
+
+---
+
 ## Points d'attention
 
 - **Performance de la génération PDF :** si la régénération devient lente sur un
@@ -787,6 +839,11 @@ Windows fonctionne sur une machine propre, entièrement hors ligne.
   du titre de section, avec `TextOverflow.span`, et jamais comme son enfant.
   C'est la contrainte à garder en tête en ajoutant une section au générateur,
   et notamment pour les sections personnalisées du JS.
+- **Photo hors du document :** la photo est enregistrée, mais jamais dans
+  `CvDocument`. Le document est réécrit à chaque salve de frappe ; une image
+  qui y entrerait serait réécrite avec lui, et gonflerait le JSON d'un tiers
+  en base64. Elle vit dans `CvSession`, sa propre colonne et ses propres
+  opérations de dépôt.
 - **Entrées-sorties réelles et tests de widgets :** un `await` sur une vraie
   entrée-sortie — écrire un fichier, créer un dossier temporaire — ne reprend
   jamais sous le temps simulé d'un `testWidgets` : le système fait le travail,
