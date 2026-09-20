@@ -1,15 +1,15 @@
-import 'package:cv_maker/features/cv/domain/cv_certification.dart';
-import 'package:cv_maker/features/cv/domain/cv_date_range.dart';
-import 'package:cv_maker/features/cv/domain/cv_document.dart';
-import 'package:cv_maker/features/cv/domain/cv_education.dart';
-import 'package:cv_maker/features/cv/domain/cv_example.dart';
-import 'package:cv_maker/features/cv/domain/cv_experience.dart';
-import 'package:cv_maker/features/cv/domain/cv_language.dart';
-import 'package:cv_maker/features/cv/domain/cv_month_year.dart';
-import 'package:cv_maker/features/cv/domain/cv_note.dart';
-import 'package:cv_maker/features/cv/domain/cv_project.dart';
-import 'package:cv_maker/features/cv/domain/cv_section.dart';
-import 'package:cv_maker/features/cv/domain/cv_skill.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_certification.dart';
+import 'package:cv_maker/features/cv/domain/dates/cv_date_range.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_education.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_example.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_experience.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_language.dart';
+import 'package:cv_maker/features/cv/domain/dates/cv_month_year.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_note.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_project.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_section.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_skill.dart';
 
 /// Une description longue, sur plusieurs lignes, pour éprouver la pagination.
 String _description(int index) => [

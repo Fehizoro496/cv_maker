@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:cv_maker/app/cv_maker_app.dart';
-import 'package:cv_maker/features/cv/domain/cv_section.dart';
-import 'package:cv_maker/features/cv/presentation/draft_preview_provider.dart';
-import 'package:cv_maker/features/cv/presentation/selected_section_provider.dart';
-import 'package:cv_maker/features/cv/presentation/widgets/section_navigation.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_section.dart';
+import 'package:cv_maker/features/cv/presentation/preview/draft_preview_provider.dart';
+import 'package:cv_maker/features/cv/presentation/editor/selected_section_provider.dart';
+import 'package:cv_maker/features/cv/presentation/editor/widgets/section_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';

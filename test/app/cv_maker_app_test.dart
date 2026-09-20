@@ -1,13 +1,13 @@
 import 'dart:ui';
 
 import 'package:cv_maker/app/cv_maker_app.dart';
-import 'package:cv_maker/features/cv/domain/cv_example.dart';
-import 'package:cv_maker/features/cv/presentation/cv_autosave.dart';
-import 'package:cv_maker/features/cv/presentation/cv_library_provider.dart';
-import 'package:cv_maker/features/cv/presentation/cv_section_forms.dart';
-import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
-import 'package:cv_maker/features/cv/presentation/dashboard_screen.dart';
-import 'package:cv_maker/features/cv/presentation/editor_screen.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_example.dart';
+import 'package:cv_maker/features/cv/presentation/session/cv_autosave.dart';
+import 'package:cv_maker/features/cv/presentation/library/cv_library_provider.dart';
+import 'package:cv_maker/features/cv/presentation/editor/cv_section_forms.dart';
+import 'package:cv_maker/features/cv/presentation/session/cv_session_provider.dart';
+import 'package:cv_maker/features/cv/presentation/library/dashboard_screen.dart';
+import 'package:cv_maker/features/cv/presentation/editor/editor_screen.dart';
 import 'package:cv_maker/shared/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

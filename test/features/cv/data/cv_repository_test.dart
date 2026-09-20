@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:cv_maker/features/cv/data/cv_database.dart';
 import 'package:cv_maker/features/cv/data/cv_repository.dart';
-import 'package:cv_maker/features/cv/domain/cv_custom_section.dart';
-import 'package:cv_maker/features/cv/domain/cv_design.dart';
-import 'package:cv_maker/features/cv/domain/cv_document.dart';
-import 'package:cv_maker/features/cv/domain/cv_example.dart';
-import 'package:cv_maker/features/cv/domain/cv_section.dart';
-import 'package:cv_maker/features/cv/domain/cv_summary.dart';
+import 'package:cv_maker/features/cv/domain/entries/cv_custom_section.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_example.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_section.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_summary.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';

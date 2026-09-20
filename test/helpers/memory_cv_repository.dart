@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:cv_maker/features/cv/data/cv_repository.dart';
-import 'package:cv_maker/features/cv/domain/cv_document.dart';
-import 'package:cv_maker/features/cv/domain/cv_summary.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_summary.dart';
 
 /// Un stockage en mémoire, pour les tests d'interface.
 ///

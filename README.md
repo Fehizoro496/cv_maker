@@ -74,6 +74,26 @@ Les deux doivent réussir avant toute livraison. Chaque fichier de `lib/` a son
 test miroir dans `test/` ; `test/acceptance/` réunit les scénarios de bout en
 bout qui valident les critères d'acceptation du MVP.
 
+## Organisation du code CV
+
+Dans `lib/features/cv/`, les fichiers sont regroupés par responsabilité :
+
+- `domain/document/` : document complet, informations personnelles, sections,
+  résumé et exemple de CV.
+- `domain/entries/` : éléments des sections (expériences, formations,
+  compétences, etc.) et opérations sur leurs listes.
+- `domain/dates/` : dates et périodes.
+- `domain/design/` : modèles visuels et préférences de présentation.
+- `domain/session/` : état de la session d'édition.
+- `presentation/library/` : tableau de bord et gestion des CV.
+- `presentation/editor/` : écran d'édition, formulaires et navigation.
+- `presentation/preview/` : génération PDF, aperçu et catalogue des designs.
+- `presentation/session/` : état d'édition et sauvegarde automatique.
+
+Les widgets restent dans le sous-dossier `widgets/` de leur fonctionnalité.
+Les fichiers générés restent à côté de leur modèle source. Les tests suivent
+la même arborescence sous `test/features/cv/`.
+
 ## Code généré
 
 Les modèles du domaine utilisent `freezed` et `json_serializable`, et la base

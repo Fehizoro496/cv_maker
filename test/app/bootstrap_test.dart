@@ -1,9 +1,9 @@
 import 'package:cv_maker/app/bootstrap.dart';
 import 'package:cv_maker/app/startup_failure_screen.dart';
-import 'package:cv_maker/features/cv/domain/cv_document.dart';
-import 'package:cv_maker/features/cv/presentation/cv_library_provider.dart';
-import 'package:cv_maker/features/cv/presentation/cv_session_provider.dart';
-import 'package:cv_maker/features/cv/presentation/dashboard_screen.dart';
+import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
+import 'package:cv_maker/features/cv/presentation/library/cv_library_provider.dart';
+import 'package:cv_maker/features/cv/presentation/session/cv_session_provider.dart';
+import 'package:cv_maker/features/cv/presentation/library/dashboard_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

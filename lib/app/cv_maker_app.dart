@@ -3,9 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/cv/presentation/cv_autosave.dart';
-import '../features/cv/presentation/cv_workspace.dart';
-import '../features/cv/presentation/dashboard_screen.dart';
+import '../features/cv/presentation/session/cv_autosave.dart';
+import '../features/cv/presentation/library/cv_workspace.dart';
+import '../features/cv/presentation/library/dashboard_screen.dart';
 import '../shared/notifications/app_toast.dart';
 import '../shared/notifications/toast_layer.dart';
 import 'app_theme.dart';

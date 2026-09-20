@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../features/cv/data/cv_repository.dart';
-import '../features/cv/presentation/cv_library_provider.dart';
+import '../features/cv/presentation/library/cv_library_provider.dart';
 import 'cv_maker_app.dart';
 import 'startup_failure_screen.dart';
 

@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
-import '../domain/cv_document.dart';
-import '../domain/cv_summary.dart';
+import '../domain/document/cv_document.dart';
+import '../domain/document/cv_summary.dart';
 import 'cv_database.dart';
 
 /// Le stockage local des CV.
