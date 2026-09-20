@@ -29,6 +29,21 @@ class CvRecords extends Table {
   /// change.
   BlobColumn get photo => blob().nullable()();
 
+  /// L'aperçu de la première page, en PNG, pour la liste d'accueil.
+  ///
+  /// Un aperçu se calcule en composant le PDF du CV puis en le rasterisant :
+  /// beaucoup trop cher pour être refait à chaque affichage de la liste. Il
+  /// est donc rangé avec le CV, comme la photo, et recalculé seulement quand
+  /// le CV a changé depuis.
+  BlobColumn get thumbnail => blob().nullable()();
+
+  /// La valeur de [updatedAt] au moment où [thumbnail] a été rendu.
+  ///
+  /// C'est ce qui dit si l'aperçu est à jour : égale à [updatedAt], il montre
+  /// bien le CV enregistré ; plus ancienne, il montre une version dépassée et
+  /// demande à être refait. Nulle lorsqu'aucun aperçu n'a encore été rendu.
+  DateTimeColumn get thumbnailUpdatedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -52,7 +67,7 @@ class CvDatabase extends _$CvDatabase {
   /// Version du schéma SQL. Toute modification de table l'incrémente et
   /// ajoute l'étape correspondante dans [migration].
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -64,6 +79,13 @@ class CvDatabase extends _$CvDatabase {
       // reçoivent vide, ce qui décrit bien leur état : la photo vivait alors
       // le temps de la session.
       if (from < 2) await m.addColumn(cvRecords, cvRecords.photo);
+      // 2 → 3 : l'aperçu de la liste d'accueil est enregistré avec le CV.
+      // Les lignes déjà enregistrées le reçoivent vide ; il sera rendu au
+      // premier affichage, puis conservé.
+      if (from < 3) {
+        await m.addColumn(cvRecords, cvRecords.thumbnail);
+        await m.addColumn(cvRecords, cvRecords.thumbnailUpdatedAt);
+      }
     },
   );
 }

@@ -31,6 +31,7 @@ void main() {
         overrides: [
           previewOverride,
           thumbnailOverride,
+          cvThumbnailOverride,
           ...overrides,
         ],
         child: const CvMakerApp(),

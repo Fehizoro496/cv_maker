@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cv_maker/features/cv/presentation/library/cv_thumbnail_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/catalog_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/draft_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
@@ -24,4 +25,12 @@ final thumbnailOverride = templateThumbnailProvider.overrideWith(
 
 final catalogPreviewOverride = catalogPreviewProvider.overrideWith(
   (ref, choice) async => Uint8List.fromList(samplePng),
+);
+
+/// Neutralise la génération des aperçus de la liste d'accueil.
+///
+/// L'accueil en demande un par CV listé : sans cette surcharge, tout test qui
+/// l'affiche lirait la base et composerait un PDF par carte.
+final cvThumbnailOverride = cvThumbnailProvider.overrideWith(
+  (ref, summary) => Stream.value(Uint8List.fromList(samplePng)),
 );

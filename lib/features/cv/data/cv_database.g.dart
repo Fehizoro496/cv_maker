@@ -80,6 +80,28 @@ class $CvRecordsTable extends CvRecords
     type: DriftSqlType.blob,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _thumbnailMeta = const VerificationMeta(
+    'thumbnail',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> thumbnail = GeneratedColumn<Uint8List>(
+    'thumbnail',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thumbnailUpdatedAtMeta =
+      const VerificationMeta('thumbnailUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> thumbnailUpdatedAt =
+      GeneratedColumn<DateTime>(
+        'thumbnail_updated_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -89,6 +111,8 @@ class $CvRecordsTable extends CvRecords
     formatVersion,
     document,
     photo,
+    thumbnail,
+    thumbnailUpdatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -156,6 +180,21 @@ class $CvRecordsTable extends CvRecords
         photo.isAcceptableOrUnknown(data['photo']!, _photoMeta),
       );
     }
+    if (data.containsKey('thumbnail')) {
+      context.handle(
+        _thumbnailMeta,
+        thumbnail.isAcceptableOrUnknown(data['thumbnail']!, _thumbnailMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_updated_at')) {
+      context.handle(
+        _thumbnailUpdatedAtMeta,
+        thumbnailUpdatedAt.isAcceptableOrUnknown(
+          data['thumbnail_updated_at']!,
+          _thumbnailUpdatedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -193,6 +232,14 @@ class $CvRecordsTable extends CvRecords
         DriftSqlType.blob,
         data['${effectivePrefix}photo'],
       ),
+      thumbnail: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}thumbnail'],
+      ),
+      thumbnailUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}thumbnail_updated_at'],
+      ),
     );
   }
 
@@ -220,6 +267,21 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
   /// réécrite avec lui, à chaque fois. Ici, elle n'est écrite que lorsqu'elle
   /// change.
   final Uint8List? photo;
+
+  /// L'aperçu de la première page, en PNG, pour la liste d'accueil.
+  ///
+  /// Un aperçu se calcule en composant le PDF du CV puis en le rasterisant :
+  /// beaucoup trop cher pour être refait à chaque affichage de la liste. Il
+  /// est donc rangé avec le CV, comme la photo, et recalculé seulement quand
+  /// le CV a changé depuis.
+  final Uint8List? thumbnail;
+
+  /// La valeur de [updatedAt] au moment où [thumbnail] a été rendu.
+  ///
+  /// C'est ce qui dit si l'aperçu est à jour : égale à [updatedAt], il montre
+  /// bien le CV enregistré ; plus ancienne, il montre une version dépassée et
+  /// demande à être refait. Nulle lorsqu'aucun aperçu n'a encore été rendu.
+  final DateTime? thumbnailUpdatedAt;
   const CvRecord({
     required this.id,
     required this.name,
@@ -228,6 +290,8 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     required this.formatVersion,
     required this.document,
     this.photo,
+    this.thumbnail,
+    this.thumbnailUpdatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -240,6 +304,12 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     map['document'] = Variable<String>(document);
     if (!nullToAbsent || photo != null) {
       map['photo'] = Variable<Uint8List>(photo);
+    }
+    if (!nullToAbsent || thumbnail != null) {
+      map['thumbnail'] = Variable<Uint8List>(thumbnail);
+    }
+    if (!nullToAbsent || thumbnailUpdatedAt != null) {
+      map['thumbnail_updated_at'] = Variable<DateTime>(thumbnailUpdatedAt);
     }
     return map;
   }
@@ -255,6 +325,12 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       photo: photo == null && nullToAbsent
           ? const Value.absent()
           : Value(photo),
+      thumbnail: thumbnail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnail),
+      thumbnailUpdatedAt: thumbnailUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailUpdatedAt),
     );
   }
 
@@ -271,6 +347,10 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       formatVersion: serializer.fromJson<int>(json['formatVersion']),
       document: serializer.fromJson<String>(json['document']),
       photo: serializer.fromJson<Uint8List?>(json['photo']),
+      thumbnail: serializer.fromJson<Uint8List?>(json['thumbnail']),
+      thumbnailUpdatedAt: serializer.fromJson<DateTime?>(
+        json['thumbnailUpdatedAt'],
+      ),
     );
   }
   @override
@@ -284,6 +364,8 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
       'formatVersion': serializer.toJson<int>(formatVersion),
       'document': serializer.toJson<String>(document),
       'photo': serializer.toJson<Uint8List?>(photo),
+      'thumbnail': serializer.toJson<Uint8List?>(thumbnail),
+      'thumbnailUpdatedAt': serializer.toJson<DateTime?>(thumbnailUpdatedAt),
     };
   }
 
@@ -295,6 +377,8 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     int? formatVersion,
     String? document,
     Value<Uint8List?> photo = const Value.absent(),
+    Value<Uint8List?> thumbnail = const Value.absent(),
+    Value<DateTime?> thumbnailUpdatedAt = const Value.absent(),
   }) => CvRecord(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -303,6 +387,10 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     formatVersion: formatVersion ?? this.formatVersion,
     document: document ?? this.document,
     photo: photo.present ? photo.value : this.photo,
+    thumbnail: thumbnail.present ? thumbnail.value : this.thumbnail,
+    thumbnailUpdatedAt: thumbnailUpdatedAt.present
+        ? thumbnailUpdatedAt.value
+        : this.thumbnailUpdatedAt,
   );
   CvRecord copyWithCompanion(CvRecordsCompanion data) {
     return CvRecord(
@@ -315,6 +403,10 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           : this.formatVersion,
       document: data.document.present ? data.document.value : this.document,
       photo: data.photo.present ? data.photo.value : this.photo,
+      thumbnail: data.thumbnail.present ? data.thumbnail.value : this.thumbnail,
+      thumbnailUpdatedAt: data.thumbnailUpdatedAt.present
+          ? data.thumbnailUpdatedAt.value
+          : this.thumbnailUpdatedAt,
     );
   }
 
@@ -327,7 +419,9 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           ..write('updatedAt: $updatedAt, ')
           ..write('formatVersion: $formatVersion, ')
           ..write('document: $document, ')
-          ..write('photo: $photo')
+          ..write('photo: $photo, ')
+          ..write('thumbnail: $thumbnail, ')
+          ..write('thumbnailUpdatedAt: $thumbnailUpdatedAt')
           ..write(')'))
         .toString();
   }
@@ -341,6 +435,8 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
     formatVersion,
     document,
     $driftBlobEquality.hash(photo),
+    $driftBlobEquality.hash(thumbnail),
+    thumbnailUpdatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -352,7 +448,9 @@ class CvRecord extends DataClass implements Insertable<CvRecord> {
           other.updatedAt == this.updatedAt &&
           other.formatVersion == this.formatVersion &&
           other.document == this.document &&
-          $driftBlobEquality.equals(other.photo, this.photo));
+          $driftBlobEquality.equals(other.photo, this.photo) &&
+          $driftBlobEquality.equals(other.thumbnail, this.thumbnail) &&
+          other.thumbnailUpdatedAt == this.thumbnailUpdatedAt);
 }
 
 class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
@@ -363,6 +461,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
   final Value<int> formatVersion;
   final Value<String> document;
   final Value<Uint8List?> photo;
+  final Value<Uint8List?> thumbnail;
+  final Value<DateTime?> thumbnailUpdatedAt;
   final Value<int> rowid;
   const CvRecordsCompanion({
     this.id = const Value.absent(),
@@ -372,6 +472,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     this.formatVersion = const Value.absent(),
     this.document = const Value.absent(),
     this.photo = const Value.absent(),
+    this.thumbnail = const Value.absent(),
+    this.thumbnailUpdatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CvRecordsCompanion.insert({
@@ -382,6 +484,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     required int formatVersion,
     required String document,
     this.photo = const Value.absent(),
+    this.thumbnail = const Value.absent(),
+    this.thumbnailUpdatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -397,6 +501,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     Expression<int>? formatVersion,
     Expression<String>? document,
     Expression<Uint8List>? photo,
+    Expression<Uint8List>? thumbnail,
+    Expression<DateTime>? thumbnailUpdatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -407,6 +513,9 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
       if (formatVersion != null) 'format_version': formatVersion,
       if (document != null) 'document': document,
       if (photo != null) 'photo': photo,
+      if (thumbnail != null) 'thumbnail': thumbnail,
+      if (thumbnailUpdatedAt != null)
+        'thumbnail_updated_at': thumbnailUpdatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -419,6 +528,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     Value<int>? formatVersion,
     Value<String>? document,
     Value<Uint8List?>? photo,
+    Value<Uint8List?>? thumbnail,
+    Value<DateTime?>? thumbnailUpdatedAt,
     Value<int>? rowid,
   }) {
     return CvRecordsCompanion(
@@ -429,6 +540,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
       formatVersion: formatVersion ?? this.formatVersion,
       document: document ?? this.document,
       photo: photo ?? this.photo,
+      thumbnail: thumbnail ?? this.thumbnail,
+      thumbnailUpdatedAt: thumbnailUpdatedAt ?? this.thumbnailUpdatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -457,6 +570,14 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
     if (photo.present) {
       map['photo'] = Variable<Uint8List>(photo.value);
     }
+    if (thumbnail.present) {
+      map['thumbnail'] = Variable<Uint8List>(thumbnail.value);
+    }
+    if (thumbnailUpdatedAt.present) {
+      map['thumbnail_updated_at'] = Variable<DateTime>(
+        thumbnailUpdatedAt.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -473,6 +594,8 @@ class CvRecordsCompanion extends UpdateCompanion<CvRecord> {
           ..write('formatVersion: $formatVersion, ')
           ..write('document: $document, ')
           ..write('photo: $photo, ')
+          ..write('thumbnail: $thumbnail, ')
+          ..write('thumbnailUpdatedAt: $thumbnailUpdatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -502,6 +625,8 @@ typedef $$CvRecordsTableCreateCompanionBuilder =
       required int formatVersion,
       required String document,
       Value<Uint8List?> photo,
+      Value<Uint8List?> thumbnail,
+      Value<DateTime?> thumbnailUpdatedAt,
       Value<int> rowid,
     });
 typedef $$CvRecordsTableUpdateCompanionBuilder =
@@ -513,6 +638,8 @@ typedef $$CvRecordsTableUpdateCompanionBuilder =
       Value<int> formatVersion,
       Value<String> document,
       Value<Uint8List?> photo,
+      Value<Uint8List?> thumbnail,
+      Value<DateTime?> thumbnailUpdatedAt,
       Value<int> rowid,
     });
 
@@ -557,6 +684,16 @@ class $$CvRecordsTableFilterComposer
 
   ColumnFilters<Uint8List> get photo => $composableBuilder(
     column: $table.photo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get thumbnail => $composableBuilder(
+    column: $table.thumbnail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get thumbnailUpdatedAt => $composableBuilder(
+    column: $table.thumbnailUpdatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -604,6 +741,16 @@ class $$CvRecordsTableOrderingComposer
     column: $table.photo,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<Uint8List> get thumbnail => $composableBuilder(
+    column: $table.thumbnail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get thumbnailUpdatedAt => $composableBuilder(
+    column: $table.thumbnailUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CvRecordsTableAnnotationComposer
@@ -637,6 +784,14 @@ class $$CvRecordsTableAnnotationComposer
 
   GeneratedColumn<Uint8List> get photo =>
       $composableBuilder(column: $table.photo, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get thumbnail =>
+      $composableBuilder(column: $table.thumbnail, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get thumbnailUpdatedAt => $composableBuilder(
+    column: $table.thumbnailUpdatedAt,
+    builder: (column) => column,
+  );
 }
 
 class $$CvRecordsTableTableManager
@@ -674,6 +829,8 @@ class $$CvRecordsTableTableManager
                 Value<int> formatVersion = const Value.absent(),
                 Value<String> document = const Value.absent(),
                 Value<Uint8List?> photo = const Value.absent(),
+                Value<Uint8List?> thumbnail = const Value.absent(),
+                Value<DateTime?> thumbnailUpdatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CvRecordsCompanion(
                 id: id,
@@ -683,6 +840,8 @@ class $$CvRecordsTableTableManager
                 formatVersion: formatVersion,
                 document: document,
                 photo: photo,
+                thumbnail: thumbnail,
+                thumbnailUpdatedAt: thumbnailUpdatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -694,6 +853,8 @@ class $$CvRecordsTableTableManager
                 required int formatVersion,
                 required String document,
                 Value<Uint8List?> photo = const Value.absent(),
+                Value<Uint8List?> thumbnail = const Value.absent(),
+                Value<DateTime?> thumbnailUpdatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CvRecordsCompanion.insert(
                 id: id,
@@ -703,6 +864,8 @@ class $$CvRecordsTableTableManager
                 formatVersion: formatVersion,
                 document: document,
                 photo: photo,
+                thumbnail: thumbnail,
+                thumbnailUpdatedAt: thumbnailUpdatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

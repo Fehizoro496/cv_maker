@@ -43,6 +43,7 @@ void main() {
         overrides: [
           ...overrides,
           previewOverride,
+          cvThumbnailOverride,
           clockProvider.overrideWithValue(() => now),
         ],
         child: MaterialApp(

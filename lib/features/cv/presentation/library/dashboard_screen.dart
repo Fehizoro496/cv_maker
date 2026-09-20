@@ -8,6 +8,7 @@ import '../../../../shared/notifications/app_toast.dart';
 import '../../../../shared/widgets/dashed_border.dart';
 import '../../domain/document/cv_summary.dart';
 import 'cv_library_provider.dart';
+import 'cv_thumbnail_provider.dart';
 import 'cv_workspace.dart';
 import '../editor/editor_screen.dart';
 import 'widgets/cv_dialogs.dart';
@@ -455,7 +456,7 @@ class _CvCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Expanded(child: _PagePreview()),
+            Expanded(child: _PagePreview(summary: summary)),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
               child: Row(
@@ -549,8 +550,59 @@ class _MenuLabel extends StatelessWidget {
 }
 
 /// Une page stylisée : le contenu réel n'est lu qu'à l'ouverture du CV.
-class _PagePreview extends StatelessWidget {
-  const _PagePreview();
+/// L'aperçu de la première page du CV, sur le fond de la carte.
+///
+/// Tant qu'aucun rendu n'est disponible, la maquette de lignes tient la place :
+/// elle a la forme d'une page et n'attire pas l'œil, là où un indicateur de
+/// chargement par carte ferait clignoter toute la grille.
+class _PagePreview extends ConsumerWidget {
+  const _PagePreview({required this.summary});
+
+  final CvSummary summary;
+
+  /// Proportions de la vignette, celles d'une page A4.
+  static const width = 84.0;
+  static const height = 112.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final png = ref.watch(cvThumbnailProvider(summary)).value;
+    return ColoredBox(
+      color: AppColors.surfaceContainerLow,
+      child: Center(
+        child: Container(
+          width: width,
+          height: height,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(3),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.pageShadow,
+                offset: Offset(0, 1),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: png == null
+              ? const _PageSkeleton()
+              : Image.memory(
+                  png,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  semanticLabel: 'Aperçu du CV',
+                  gaplessPlayback: true,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// La forme d'une page, en attendant son rendu.
+class _PageSkeleton extends StatelessWidget {
+  const _PageSkeleton();
 
   @override
   Widget build(BuildContext context) {
@@ -563,39 +615,21 @@ class _PagePreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(2),
       ),
     );
-    return ColoredBox(
-      color: AppColors.surfaceContainerLow,
-      child: Center(
-        child: Container(
-          width: 84,
-          height: 112,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(3),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.pageShadow,
-                offset: Offset(0, 1),
-                blurRadius: 4,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              line(40, height: 6, color: AppColors.primary),
-              line(28),
-              const SizedBox(height: 4),
-              line(64),
-              line(56),
-              line(60),
-              const SizedBox(height: 4),
-              line(64),
-              line(48),
-            ],
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          line(40, height: 6, color: AppColors.primary),
+          line(28),
+          const SizedBox(height: 4),
+          line(64),
+          line(56),
+          line(60),
+          const SizedBox(height: 4),
+          line(64),
+          line(48),
+        ],
       ),
     );
   }

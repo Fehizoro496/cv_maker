@@ -35,6 +35,29 @@ abstract interface class CvRepository {
   ///
   /// Sans effet si le CV n'existe pas : une photo n'existe pas seule.
   Future<void> savePhoto(String id, Uint8List? photo);
+
+  /// L'aperçu enregistré du CV [id], à jour ou non.
+  ///
+  /// Retourne `null` si le CV n'existe pas ou n'a pas encore d'aperçu. La
+  /// date est celle du CV au moment du rendu : l'appelant la compare à
+  /// [CvSummary.updatedAt] pour savoir si l'aperçu est encore valable.
+  Future<CvThumbnail?> readThumbnail(String id);
+
+  /// Enregistre l'aperçu du CV [id], rendu à partir de sa version [updatedAt].
+  ///
+  /// Sans effet si le CV n'existe pas, ou s'il a été modifié depuis : un
+  /// rendu lent ne peut donc pas remplacer un aperçu plus récent.
+  Future<void> saveThumbnail(String id, Uint8List png, DateTime updatedAt);
+}
+
+/// Un aperçu enregistré et la version du CV qu'il montre.
+class CvThumbnail {
+  const CvThumbnail(this.png, this.updatedAt);
+
+  final Uint8List png;
+
+  /// La valeur de `CvDocument.updatedAt` au moment du rendu.
+  final DateTime updatedAt;
 }
 
 /// Le stockage SQLite, via drift.
@@ -121,6 +144,35 @@ class DriftCvRepository implements CvRepository {
   Future<void> savePhoto(String id, Uint8List? photo) async {
     await (_db.update(_db.cvRecords)..where((r) => r.id.equals(id))).write(
       CvRecordsCompanion(photo: Value(photo)),
+    );
+  }
+
+  @override
+  Future<CvThumbnail?> readThumbnail(String id) async {
+    final records = _db.cvRecords;
+    final query = _db.selectOnly(records)
+      ..addColumns([records.thumbnail, records.thumbnailUpdatedAt])
+      ..where(records.id.equals(id));
+    final row = await query.getSingleOrNull();
+    final png = row?.read(records.thumbnail);
+    final updatedAt = row?.read(records.thumbnailUpdatedAt);
+    if (png == null || updatedAt == null) return null;
+    return CvThumbnail(png, updatedAt);
+  }
+
+  @override
+  Future<void> saveThumbnail(
+    String id,
+    Uint8List png,
+    DateTime updatedAt,
+  ) async {
+    await (_db.update(
+      _db.cvRecords,
+    )..where((r) => r.id.equals(id) & r.updatedAt.equals(updatedAt))).write(
+      CvRecordsCompanion(
+        thumbnail: Value(png),
+        thumbnailUpdatedAt: Value(updatedAt),
+      ),
     );
   }
 

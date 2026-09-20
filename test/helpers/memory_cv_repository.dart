@@ -20,6 +20,9 @@ class MemoryCvRepository implements CvRepository {
   /// Les photos enregistrées, par identifiant de CV.
   final photos = <String, Uint8List>{};
 
+  /// Les aperçus enregistrés, par identifiant de CV.
+  final thumbnails = <String, CvThumbnail>{};
+
   /// Les documents reçus par [save], dans l'ordre, y compris ceux ignorés.
   final saves = <CvDocument>[];
 
@@ -62,6 +65,7 @@ class MemoryCvRepository implements CvRepository {
     if (failWrites) throw StateError('écriture refusée');
     documents.remove(id);
     photos.remove(id);
+    thumbnails.remove(id);
   }
 
   @override
@@ -81,5 +85,24 @@ class MemoryCvRepository implements CvRepository {
     } else {
       photos[id] = photo;
     }
+  }
+
+  @override
+  Future<CvThumbnail?> readThumbnail(String id) async {
+    if (unreadable.contains(id)) throw const FormatException('illisible');
+    return thumbnails[id];
+  }
+
+  @override
+  Future<void> saveThumbnail(
+    String id,
+    Uint8List png,
+    DateTime updatedAt,
+  ) async {
+    if (writeDelay > Duration.zero) await Future<void>.delayed(writeDelay);
+    if (failWrites) throw StateError('écriture refusée');
+    // Comme en base : ni CV disparu, ni CV modifié depuis le rendu.
+    if (documents[id]?.updatedAt != updatedAt) return;
+    thumbnails[id] = CvThumbnail(png, updatedAt);
   }
 }
