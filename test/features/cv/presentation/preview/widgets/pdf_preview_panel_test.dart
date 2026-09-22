@@ -1,4 +1,7 @@
 import 'package:cv_maker/features/cv/presentation/preview/widgets/pdf_preview_panel.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_canvas.dart';
+import 'package:cv_maker/shared/notifications/app_toast.dart';
+import 'package:cv_maker/shared/system/save_location.dart';
 import 'package:flutter/gestures.dart';
 import 'package:cv_maker/features/cv/presentation/preview/draft_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/editor/cv_section_forms.dart';
@@ -14,6 +17,65 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../../helpers/desktop_view.dart';
 
 void main() {
+  testWidgets(
+    'un export avec dépassement canvas explique la cause sans écrire de fichier',
+    (tester) async {
+      useDesktopView(tester);
+      var written = false;
+      final container = ProviderContainer(
+        overrides: [
+          draftPreviewProvider.overrideWith(
+            (ref) async => throw const CanvasLayoutException('experience'),
+          ),
+          saveBytesProvider.overrideWithValue((path, bytes) async {
+            written = true;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: buildAppTheme(),
+            home: const Scaffold(body: PdfPreviewPanel()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Exporter'));
+      await tester.pumpAndSettle();
+      expect(written, isFalse);
+      expect(
+        container.read(appToastsProvider).last.message,
+        contains('cadre « experience »'),
+      );
+      container.read(appToastsProvider.notifier).dismissAll();
+    },
+  );
+  testWidgets('un dépassement canvas indique le cadre à corriger', (
+    tester,
+  ) async {
+    useDesktopView(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          draftPreviewProvider.overrideWith(
+            (ref) async => throw const CanvasLayoutException('profile'),
+          ),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: PdfPreviewPanel()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Le contenu dépasse le cadre « profile »'),
+      findsOneWidget,
+    );
+  });
   testWidgets('typing keeps the preview stable and refresh flushes once', (
     tester,
   ) async {

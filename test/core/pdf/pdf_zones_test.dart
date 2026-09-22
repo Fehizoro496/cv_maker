@@ -29,6 +29,30 @@ void main() {
 
   group('ZonedFlow', () {
     test(
+      'les cadres avec décalage et hauteur fixe continuent sans perte',
+      () async {
+        final result = await pages(
+          () => [
+            ZonedFlow(
+              zones: [
+                PdfZone(
+                  left: 20,
+                  top: 100,
+                  width: 200,
+                  height: 70,
+                  children: lines('item', 30),
+                ),
+              ],
+            ),
+          ],
+        );
+        expect(result.length, greaterThan(1));
+        expect(result.expand((page) => page), [
+          for (var i = 0; i < 30; i++) 'item$i',
+        ]);
+      },
+    );
+    test(
       'les zones sont émises dans l’ordre de la liste, pas de la page',
       () async {
         final result = await pages(

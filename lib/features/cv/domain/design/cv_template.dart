@@ -1,5 +1,9 @@
+import 'package:json_annotation/json_annotation.dart';
+
 import 'cv_design.dart';
 import 'cv_design_spec.dart';
+
+part 'cv_template.g.dart';
 
 /// Un modèle de CV proposé au catalogue : une identité et un rendu.
 ///
@@ -9,23 +13,33 @@ import 'cv_design_spec.dart';
 /// [CvDesign], mais rien ici n'en dépend : un modèle lu dans un fichier ou
 /// dans la base se décrit avec le même type, pourvu qu'il porte un [id]
 /// stable — c'est cet identifiant, et non l'enum, que le CV enregistre.
+@JsonSerializable(checked: true, disallowUnrecognizedKeys: true)
 class CvTemplate {
+  factory CvTemplate.fromJson(Map<String, dynamic> json) =>
+      _$CvTemplateFromJson(json);
+  Map<String, dynamic> toJson() => _$CvTemplateToJson(this);
+
   const CvTemplate({
     required this.id,
     required this.label,
     required this.description,
     required this.spec,
+    this.revision = 1,
   });
 
   /// Le modèle décrit par une valeur de l'enum intégré.
   CvTemplate.of(CvDesign design)
-    : id = design.id,
+    : revision = 1,
+      id = design.id,
       label = design.label,
       description = design.description,
       spec = design.spec;
 
   /// Identifiant stable, enregistré avec le CV et clé des aperçus.
   final String id;
+
+  /// Révision immuable, incrémentée par l’application de création.
+  final int revision;
 
   /// Nom affiché dans le catalogue.
   final String label;

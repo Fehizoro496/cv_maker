@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_design_spec.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_template.dart';
+import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/catalog_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/session/cv_session_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/draft_preview_provider.dart';
@@ -37,7 +40,7 @@ void main() {
     final container = makeContainer();
     final png = await container.read(
       catalogPreviewProvider((
-        design: CvDesign.classic,
+        templateId: CvDesign.classic.id,
         accentArgb: CvAccent.defaultColor,
         showPhoto: true,
       )).future,
@@ -52,7 +55,7 @@ void main() {
     for (final design in CvDesign.values) {
       await container.read(
         catalogPreviewProvider((
-          design: design,
+          templateId: design.id,
           accentArgb: CvAccent.defaultColor,
           showPhoto: true,
         )).future,
@@ -66,12 +69,52 @@ void main() {
     );
   });
 
+  test(
+    'un identifiant externe utilise sa description et non le modèle de repli',
+    () async {
+      rasterized = [];
+      final container = ProviderContainer(
+        overrides: [
+          initialTemplatesProvider.overrideWithValue([
+            const CvTemplate(
+              id: 'external',
+              label: 'Externe',
+              description: '',
+              spec: compactDesignSpec,
+            ),
+          ]),
+          pdfRasterizerProvider.overrideWith(
+            (ref) => (bytes, {dpi = previewDpi}) {
+              rasterized.add(bytes);
+              return Stream.value(Uint8List.fromList([1]));
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      for (final id in ['external', 'compact', 'classic']) {
+        await container.read(
+          catalogPreviewProvider((
+            templateId: id,
+            accentArgb: CvAccent.defaultColor,
+            showPhoto: true,
+          )).future,
+        );
+      }
+      expect(pdfFingerprint(rasterized[0]), pdfFingerprint(rasterized[1]));
+      expect(
+        pdfFingerprint(rasterized[0]),
+        isNot(pdfFingerprint(rasterized[2])),
+      );
+    },
+  );
+
   test('la couleur d’accent change le PDF généré', () async {
     final container = makeContainer();
     for (final argb in [CvAccent.defaultColor, 0xFF7A2F4A]) {
       await container.read(
         catalogPreviewProvider((
-          design: CvDesign.classic,
+          templateId: CvDesign.classic.id,
           accentArgb: argb,
           showPhoto: true,
         )).future,
@@ -89,7 +132,7 @@ void main() {
     for (final argb in [CvAccent.defaultColor, 0xFF1E5233]) {
       await container.read(
         catalogPreviewProvider((
-          design: CvDesign.plain,
+          templateId: CvDesign.plain.id,
           accentArgb: argb,
           showPhoto: true,
         )).future,
@@ -100,8 +143,8 @@ void main() {
 
   test('le grand aperçu suit le contenu du CV en cours', () async {
     final container = makeContainer();
-    const choice = (
-      design: CvDesign.classic,
+    final choice = (
+      templateId: CvDesign.classic.id,
       accentArgb: CvAccent.defaultColor,
       showPhoto: true,
     );

@@ -6,11 +6,39 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('le schéma est en version 3', () {
+  test('la migration 3 vers 4 ajoute le catalogue sans toucher aux CV', () async {
+    final dir = await Directory.systemTemp.createTemp('catalog_migration');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final file = File('${dir.path}/cv.sqlite');
+    final legacy = CvDatabase(NativeDatabase(file));
+    await legacy.customStatement('DROP TABLE template_records');
+    await legacy.customStatement(
+      'INSERT INTO cv_records (id, name, created_at, updated_at, format_version, document) '
+      'VALUES (?, ?, ?, ?, ?, ?)',
+      [
+        'saved',
+        'CV conservé',
+        '2026-09-21T00:00:00.000Z',
+        '2026-09-21T00:00:00.000Z',
+        1,
+        '{}',
+      ],
+    );
+    await legacy.customStatement('PRAGMA user_version = 3');
+    await legacy.close();
+    final migrated = CvDatabase(NativeDatabase(file));
+    expect(await migrated.select(migrated.templateRecords).get(), isEmpty);
+    final saved = await migrated.select(migrated.cvRecords).getSingle();
+    expect(saved.id, 'saved');
+    expect(saved.name, 'CV conservé');
+    expect(saved.document, '{}');
+    await migrated.close();
+  });
+  test('le schéma est en version 4', () {
     final db = CvDatabase(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 3);
+    expect(db.schemaVersion, 4);
   });
 
   test('une base neuve crée la table des CV et note sa version', () async {
@@ -19,7 +47,7 @@ void main() {
 
     expect(await db.select(db.cvRecords).get(), isEmpty);
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 3);
+    expect(version.read<int>('user_version'), 4);
   });
 
   test(
@@ -42,6 +70,7 @@ void main() {
       // base la crée déjà dans sa forme courante : la table est donc
       // remplacée par sa forme d'origine, puis la version ramenée à 1.
       final legacy = CvDatabase(NativeDatabase(file));
+      await legacy.customStatement('DROP TABLE IF EXISTS "template_records"');
       await legacy.customStatement('DROP TABLE IF EXISTS "cv_records"');
       await legacy.customStatement(
         'CREATE TABLE "cv_records" ("id" TEXT NOT NULL, '
@@ -66,7 +95,7 @@ void main() {
       final version = await migrated
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(version.read<int>('user_version'), 3);
+      expect(version.read<int>('user_version'), 4);
     },
   );
 
@@ -86,6 +115,7 @@ void main() {
 
       // Le schéma tel que la version 2 l'écrivait : la photo, sans l'aperçu.
       final legacy = CvDatabase(NativeDatabase(file));
+      await legacy.customStatement('DROP TABLE IF EXISTS "template_records"');
       await legacy.customStatement('DROP TABLE IF EXISTS "cv_records"');
       await legacy.customStatement(
         'CREATE TABLE "cv_records" ("id" TEXT NOT NULL, '
@@ -118,7 +148,7 @@ void main() {
       final version = await migrated
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(version.read<int>('user_version'), 3);
+      expect(version.read<int>('user_version'), 4);
     },
   );
 

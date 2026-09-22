@@ -1,3 +1,4 @@
+import '../../../domain/design/cv_canvas.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -297,6 +298,11 @@ class _PhotoFormat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final document = ref.watch(cvSessionProvider).document;
     final presentation = document.presentation;
+    if (document.designSpec.canvas.isFixed) {
+      return const Text(
+        'La position, la taille et les arrondis de la photo sont définis dans le canvas du modèle.',
+      );
+    }
     final header = document.designSpec.header;
     final editor = ref.read(cvSessionProvider.notifier);
     final customized =

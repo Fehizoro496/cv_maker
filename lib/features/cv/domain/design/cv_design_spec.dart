@@ -1,5 +1,10 @@
+import 'package:json_annotation/json_annotation.dart';
+
 import 'cv_design.dart';
-import '../document/cv_section.dart';
+import 'cv_canvas.dart';
+import 'builtin_canvases.dart';
+
+part 'cv_design_spec.g.dart';
 
 /// Description de la mise en forme d'un modèle de CV, lue par le générateur.
 ///
@@ -10,28 +15,32 @@ import '../document/cv_section.dart';
 /// l'identité du modèle. Ajouter un modèle consiste donc à écrire une nouvelle
 /// constante, sans toucher au rendu.
 ///
-/// Les quatre groupes de propriétés sont indépendants les uns des autres, comme
-/// le prévoit la section 5.9 du cahier des charges. La séparation entre les
-/// groupes [structure] et [header], qui décrivent des formes, et [tokens], qui
-/// ne décrit que des couleurs, des tailles et des espacements, est
-/// structurante : les jetons visuels sont destinés à devenir personnalisables
-/// par l'utilisateur indépendamment du modèle choisi.
+/// [canvas] définit toute la disposition. [header], [tokens] et [sections]
+/// fournissent les styles des blocs de contenu structurés dans les cadres.
 ///
 /// Les couleurs sont des entiers ARGB (`0xFF2F5D8C`) et non des `PdfColor` :
 /// le domaine reste ainsi indépendant du paquet `pdf`.
 ///
 /// Les modèles intégrés sont des constantes ; leur comparaison par `==` est
 /// donc une comparaison d'identité, suffisante pour les besoins actuels.
+@JsonSerializable(
+  checked: true,
+  disallowUnrecognizedKeys: true,
+  includeIfNull: true,
+)
 class CvDesignSpec {
+  factory CvDesignSpec.fromJson(Map<String, dynamic> json) =>
+      _$CvDesignSpecFromJson(json);
+  Map<String, dynamic> toJson() => _$CvDesignSpecToJson(this);
+
   const CvDesignSpec({
-    this.structure = const CvDesignStructure(),
+    required this.canvas,
     this.header = const CvDesignHeader(),
     this.tokens = const CvDesignTokens(),
     this.sections = const CvDesignSectionStyle(),
   });
 
-  /// Groupe 1 : nombre de colonnes et colonne latérale.
-  final CvDesignStructure structure;
+  final CvCanvas canvas;
 
   /// Groupe 2 : forme de l'en-tête et de la photo.
   final CvDesignHeader header;
@@ -55,7 +64,7 @@ class CvDesignSpec {
     CvPhotoShape? photoShape,
     double? photoSizeMm,
   }) => CvDesignSpec(
-    structure: structure,
+    canvas: canvas,
     header: showPhoto == null && photoShape == null && photoSizeMm == null
         ? header
         : header.copyWith(
@@ -70,106 +79,17 @@ class CvDesignSpec {
   );
 }
 
-/// Groupe 1 — structure : zones de la page et place des titres de section.
-///
-/// Les systèmes ATS lisent le PDF de façon linéaire. Un modèle peut placer du
-/// contenu dans une colonne latérale ou ses titres en marge, mais le générateur
-/// émet toujours le texte dans l'ordre de lecture : sur chaque page, le corps
-/// d'abord, puis la colonne latérale comme un bloc distinct.
-class CvDesignStructure {
-  const CvDesignStructure({
-    this.sidebar,
-    this.titleMargin = 0,
-    this.sectionOrder = const <CvSection>[],
-  });
-
-  /// La colonne latérale, ou `null` pour un corps sur toute la largeur.
-  final CvDesignSidebar? sidebar;
-
-  /// Part de la largeur du corps réservée aux titres de section, placés en
-  /// marge à gauche de leur contenu ; `0` pour des titres au-dessus.
-  final double titleMargin;
-
-  /// Ordre imposé par le modèle, ou vide pour suivre celui du CV.
-  ///
-  /// Le modèle académique place ainsi les formations avant les expériences sans
-  /// toucher à l'ordre enregistré : changer de modèle ne modifie pas le CV.
-  /// Les sections absentes de cette liste gardent leur ordre habituel, derrière
-  /// celles qui y figurent.
-  final List<CvSection> sectionOrder;
-
-  /// Vrai si tout le contenu tient dans une seule zone.
-  bool get isSingleColumn => sidebar == null;
-
-  /// Vrai si [section] est déplacée dans la colonne latérale.
-  bool inSidebar(CvSection section) =>
-      sidebar?.sections.contains(section) ?? false;
-
-  /// L'ordre effectif des sections, [documentOrder] servant de référence.
-  List<CvSection> orderedSections(List<CvSection> documentOrder) {
-    if (sectionOrder.isEmpty) return documentOrder;
-    return [
-      for (final section in sectionOrder)
-        if (documentOrder.contains(section)) section,
-      for (final section in documentOrder)
-        if (!sectionOrder.contains(section)) section,
-    ];
-  }
-}
-
-/// La colonne latérale d'un modèle à deux zones.
-///
-/// Son fond occupe la hauteur de chaque page, avec un retrait optionnel ; son
-/// contenu commence en haut de la première page et se poursuit, s'il déborde,
-/// dans la même colonne des pages suivantes.
-class CvDesignSidebar {
-  const CvDesignSidebar({
-    required this.position,
-    required this.width,
-    this.sections = const <CvSection>[],
-    this.holdsContact = true,
-    this.holdsPhoto = false,
-    this.gutter = 14,
-    this.surfaceInset = 0,
-    this.cornerRadius = 0,
-    this.maxGrowth = .1,
-  });
-
-  final CvSidebarPosition position;
-
-  /// Largeur de la colonne, en fraction de la largeur de la page.
-  final double width;
-
-  /// Sections standard déplacées dans la colonne, dans l'ordre du CV.
-  ///
-  /// Les sections personnalisées restent toujours dans le corps.
-  final List<CvSection> sections;
-
-  /// Les coordonnées quittent l'en-tête pour ouvrir la colonne.
-  final bool holdsContact;
-
-  /// La photo quitte l'en-tête pour le haut de la colonne.
-  final bool holdsPhoto;
-
-  /// Espace entre le bord de la colonne et le texte, de part et d'autre.
-  final double gutter;
-
-  /// Retrait et arrondi du panneau de fond, sans déplacer son texte.
-  final double surfaceInset;
-  final double cornerRadius;
-
-  /// Élargissement maximal de la colonne, en fraction de [width], pour
-  /// loger une coordonnée entière à la taille du texte.
-  ///
-  /// Au-delà, la coordonnée est réduite, puis rejoint l'en-tête.
-  final double maxGrowth;
-}
-
-/// Côté où se place la colonne latérale d'un modèle à deux zones.
-enum CvSidebarPosition { left, right }
-
 /// Groupe 2 — en-tête : bandeau, alignement, présence et forme de la photo.
+@JsonSerializable(
+  checked: true,
+  disallowUnrecognizedKeys: true,
+  includeIfNull: true,
+)
 class CvDesignHeader {
+  factory CvDesignHeader.fromJson(Map<String, dynamic> json) =>
+      _$CvDesignHeaderFromJson(json);
+  Map<String, dynamic> toJson() => _$CvDesignHeaderToJson(this);
+
   const CvDesignHeader({
     this.fullWidthBanner = false,
     this.bannerPadding = 0,
@@ -255,7 +175,16 @@ enum CvPhotoShape {
 ///
 /// Ce groupe ne contient aucune forme : uniquement des valeurs destinées à
 /// devenir personnalisables indépendamment du modèle choisi.
+@JsonSerializable(
+  checked: true,
+  disallowUnrecognizedKeys: true,
+  includeIfNull: true,
+)
 class CvDesignTokens {
+  factory CvDesignTokens.fromJson(Map<String, dynamic> json) =>
+      _$CvDesignTokensFromJson(json);
+  Map<String, dynamic> toJson() => _$CvDesignTokensToJson(this);
+
   const CvDesignTokens({
     this.accentColor = 0xFF2F5D8C,
     this.onAccentColor = 0xFFFFFFFF,
@@ -270,7 +199,6 @@ class CvDesignTokens {
     this.sidebarHeadingColor,
     this.sidebarTextColor,
     this.scale = const CvDesignTypeScale(),
-    this.pageMarginMm = 18,
     this.bodyLineSpacing = 3,
     this.headerGap = 12,
     this.entryGap = 8,
@@ -325,9 +253,6 @@ class CvDesignTokens {
 
   final CvDesignTypeScale scale;
 
-  /// Marge du document, en millimètres.
-  final double pageMarginMm;
-
   /// Interligne additionnel du corps de texte.
   final double bodyLineSpacing;
 
@@ -349,9 +274,7 @@ class CvDesignTokens {
   /// couleur reviendrait à en faire un autre modèle.
   final bool ignoresAccent;
 
-  /// En dessous de ce seuil, une coordonnée quitte la colonne pour l'en-tête,
-  /// une fois la colonne élargie au maximum de
-  /// [CvDesignSidebar.maxGrowth].
+  /// En dessous de ce seuil, une coordonnée quitte son cadre pour l'en-tête.
   final double minContactFontSize;
 
   /// La couleur effective des titres de section.
@@ -382,7 +305,6 @@ class CvDesignTokens {
     sidebarHeadingColor: sidebarHeadingColor,
     sidebarTextColor: sidebarTextColor,
     scale: scale,
-    pageMarginMm: pageMarginMm,
     bodyLineSpacing: bodyLineSpacing,
     headerGap: headerGap,
     entryGap: entryGap,
@@ -394,7 +316,16 @@ class CvDesignTokens {
 }
 
 /// Échelle typographique d'un modèle, en points.
+@JsonSerializable(
+  checked: true,
+  disallowUnrecognizedKeys: true,
+  includeIfNull: true,
+)
 class CvDesignTypeScale {
+  factory CvDesignTypeScale.fromJson(Map<String, dynamic> json) =>
+      _$CvDesignTypeScaleFromJson(json);
+  Map<String, dynamic> toJson() => _$CvDesignTypeScaleToJson(this);
+
   const CvDesignTypeScale({
     this.body = 9.5,
     this.name = 23,
@@ -428,7 +359,16 @@ class CvDesignTypeScale {
 }
 
 /// Groupe 4 — décorations : titres, filets, puces et rendu des compétences.
+@JsonSerializable(
+  checked: true,
+  disallowUnrecognizedKeys: true,
+  includeIfNull: true,
+)
 class CvDesignSectionStyle {
+  factory CvDesignSectionStyle.fromJson(Map<String, dynamic> json) =>
+      _$CvDesignSectionStyleFromJson(json);
+  Map<String, dynamic> toJson() => _$CvDesignSectionStyleToJson(this);
+
   const CvDesignSectionStyle({
     this.titleCase = CvSectionTitleCase.upper,
     this.titleLetterSpacing = 1.12,
@@ -459,6 +399,7 @@ class CvDesignSectionStyle {
   final double titleRuleWidth;
 
   /// Épaisseur du filet sous l'en-tête ; `null` pour aucun filet.
+  @JsonKey(readValue: _readHeaderRule, fromJson: _nullableDouble)
   final double? headerRuleThickness;
 
   /// Longueur du filet sous l'en-tête ; `null` pour toute la largeur.
@@ -480,16 +421,25 @@ class CvDesignSectionStyle {
 /// Casse appliquée aux titres de section.
 enum CvSectionTitleCase { upper, none }
 
+// json_serializable applique la valeur par défaut sur null : la sentinelle
+// distingue un filet explicitement absent d'une propriété omise (filet de 1).
+const _noHeaderRule = Object();
+Object _readHeaderRule(Map json, String key) =>
+    json.containsKey(key) ? json[key] ?? _noHeaderRule : 1;
+double? _nullableDouble(Object? value) =>
+    identical(value, _noHeaderRule) ? null : (value as num?)?.toDouble();
+
 /// Le modèle par défaut : une seule colonne et un filet d'accent.
 ///
 /// Il sert de référence commune aux autres : marges, échelle typographique et
 /// règles de pagination sont les siennes, et chaque autre modèle n'en décrit
 /// que ses écarts. Il sert aussi de repli lorsqu'un CV référence un modèle
 /// inconnu.
-const classicDesignSpec = CvDesignSpec();
+const classicDesignSpec = CvDesignSpec(canvas: classicCanvas);
 
 /// Noir et blanc, sans aucune couleur d'accent.
 const plainDesignSpec = CvDesignSpec(
+  canvas: plainCanvas,
   tokens: CvDesignTokens(
     accentColor: 0xFF1B1F23,
     mutedColor: 0xFF43474E,
@@ -500,6 +450,7 @@ const plainDesignSpec = CvDesignSpec(
 
 /// Un bandeau d'accent pleine largeur et des titres de section encadrés.
 const bannerDesignSpec = CvDesignSpec(
+  canvas: bannerCanvas,
   header: CvDesignHeader(fullWidthBanner: true, bannerPadding: 16),
   tokens: CvDesignTokens(tintHeadingSurface: true),
   sections: CvDesignSectionStyle(
@@ -512,6 +463,7 @@ const bannerDesignSpec = CvDesignSpec(
 
 /// Interlignes serrés et espacements réduits : plus de contenu par page.
 const compactDesignSpec = CvDesignSpec(
+  canvas: compactCanvas,
   tokens: CvDesignTokens(
     scale: CvDesignTypeScale(
       body: 8.5,
@@ -520,7 +472,6 @@ const compactDesignSpec = CvDesignSpec(
       entryTitle: 9.5,
       meta: 8,
     ),
-    pageMarginMm: 15,
     bodyLineSpacing: 1.6,
     headerGap: 8,
     entryGap: 5,
@@ -531,13 +482,7 @@ const compactDesignSpec = CvDesignSpec(
 
 /// En-tête centré, filet discret et formations avant les expériences.
 const academicDesignSpec = CvDesignSpec(
-  structure: CvDesignStructure(
-    sectionOrder: [
-      CvSection.profile,
-      CvSection.education,
-      CvSection.experiences,
-    ],
-  ),
+  canvas: academicCanvas,
   header: CvDesignHeader(alignment: CvHeaderAlignment.center),
   tokens: CvDesignTokens(scale: CvDesignTypeScale(name: 26, sectionTitle: 10)),
   sections: CvDesignSectionStyle(
@@ -550,17 +495,7 @@ const academicDesignSpec = CvDesignSpec(
 /// Une colonne en aplat d'accent à gauche : photo, coordonnées, compétences
 /// et langues ; le corps à droite.
 const sidebarDesignSpec = CvDesignSpec(
-  structure: CvDesignStructure(
-    sidebar: CvDesignSidebar(
-      position: CvSidebarPosition.left,
-      width: .34,
-      sections: [CvSection.skills, CvSection.languages],
-      holdsPhoto: true,
-      gutter: 26,
-      surfaceInset: 12,
-      cornerRadius: 16,
-    ),
-  ),
+  canvas: sidebarCanvas,
   header: CvDesignHeader(headlineGap: 6, photoDiameterMm: 28),
   tokens: CvDesignTokens(
     titleColor: 0xFF202B38,
@@ -568,7 +503,6 @@ const sidebarDesignSpec = CvDesignSpec(
     mutedColor: 0xFF667383,
     tintHeadingSurface: true,
     scale: CvDesignTypeScale(name: 27, body: 9.2, entryTitle: 10.5, footer: 8),
-    pageMarginMm: 15,
     bodyLineSpacing: 2.5,
     headerGap: 14,
     entryGap: 12,
@@ -587,16 +521,7 @@ const sidebarDesignSpec = CvDesignSpec(
 
 /// Une colonne grise à droite : coordonnées, langues et centres d'intérêt.
 const lightSidebarDesignSpec = CvDesignSpec(
-  structure: CvDesignStructure(
-    sidebar: CvDesignSidebar(
-      position: CvSidebarPosition.right,
-      width: .32,
-      sections: [CvSection.languages, CvSection.interests],
-      gutter: 26,
-      surfaceInset: 12,
-      cornerRadius: 16,
-    ),
-  ),
+  canvas: lightSidebarCanvas,
   tokens: CvDesignTokens(
     sidebarSurfaceColor: 0xFFEDF0F5,
     sidebarTextColor: 0xFF1B1F23,
@@ -605,7 +530,6 @@ const lightSidebarDesignSpec = CvDesignSpec(
     mutedColor: 0xFF667383,
     tintHeadingSurface: true,
     scale: CvDesignTypeScale(name: 27, body: 9.2, entryTitle: 10.5, footer: 8),
-    pageMarginMm: 15,
     bodyLineSpacing: 2.5,
     headerGap: 14,
     entryGap: 12,
@@ -626,7 +550,7 @@ const lightSidebarDesignSpec = CvDesignSpec(
 /// Nom en capitales, titres de section dans une marge à gauche et court filet
 /// d'accent sous l'en-tête.
 const contrastDesignSpec = CvDesignSpec(
-  structure: CvDesignStructure(titleMargin: .26),
+  canvas: contrastCanvas,
   header: CvDesignHeader(
     nameUppercase: true,
     headlineUppercase: true,

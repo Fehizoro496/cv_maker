@@ -1,4 +1,8 @@
 import 'package:cv_maker/app/bootstrap.dart';
+import 'package:cv_maker/features/cv/data/template_repository.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_design_spec.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_template.dart';
+import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
 import 'package:cv_maker/app/startup_failure_screen.dart';
 import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
 import 'package:cv_maker/features/cv/presentation/library/cv_library_provider.dart';
@@ -11,6 +15,19 @@ import '../helpers/desktop_view.dart';
 import '../helpers/memory_cv_repository.dart';
 
 void main() {
+  test('le démarrage recharge les modèles importés', () async {
+    final templates = _Templates();
+    final container = ProviderContainer(
+      overrides: await startupOverrides(
+        MemoryCvRepository(),
+        templates: templates,
+      ),
+    );
+    addTearDown(container.dispose);
+    expect(container.read(templateCatalogProvider), hasLength(9));
+    expect(container.read(templateByIdProvider('external')).label, 'Externe');
+    expect(container.read(templateRepositoryProvider), same(templates));
+  });
   CvDocument cv(String id, int day) =>
       CvDocument.empty(id: id, now: DateTime.utc(2026, 9, day), name: 'CV $id');
 
@@ -94,4 +111,18 @@ void main() {
 
     expect(find.byType(DashboardScreen), findsOne);
   });
+}
+
+class _Templates implements TemplateRepository {
+  @override
+  Future<List<CvTemplate>> list() async => [
+    const CvTemplate(
+      id: 'external',
+      label: 'Externe',
+      description: '',
+      spec: compactDesignSpec,
+    ),
+  ];
+  @override
+  Future<void> save(CvTemplate template) async {}
 }

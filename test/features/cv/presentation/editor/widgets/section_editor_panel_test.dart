@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:cv_maker/features/cv/domain/design/template_file.dart';
 
 import 'package:cv_maker/features/cv/domain/design/cv_design_spec.dart';
 import 'package:cv_maker/features/cv/domain/dates/cv_month_year.dart';
@@ -36,6 +38,31 @@ void main() {
       ),
     );
   }
+
+  testWidgets('le canvas gère les dimensions de la photo dans ses cadres', (
+    tester,
+  ) async {
+    await pumpPanel(tester);
+    final editor = container.read(cvSessionProvider.notifier);
+    editor.applyCatalogTemplate(
+      template: TemplateFile.decode(
+        File('docs/examples/canvas.cv-template.json').readAsStringSync(),
+      ),
+      accentArgb: 0xFF123456,
+      showPhoto: true,
+    );
+    editor.setPhoto(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('sont définis dans le canvas du modèle'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Agrandir la photo'), findsNothing);
+  });
 
   IconButton buttonWithTooltip(WidgetTester tester, String tooltip) =>
       tester.widget<IconButton>(

@@ -1,3 +1,4 @@
+import 'package:cv_maker/features/cv/domain/design/builtin_canvases.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -8,6 +9,8 @@ import 'package:cv_maker/features/cv/domain/dates/cv_date_range.dart';
 import 'package:cv_maker/features/cv/domain/document/cv_document.dart';
 import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
 import 'package:cv_maker/features/cv/domain/design/cv_design_spec.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_canvas.dart';
+import 'package:cv_maker/features/cv/domain/design/template_file.dart';
 import 'package:cv_maker/features/cv/domain/document/cv_example.dart';
 import 'package:cv_maker/features/cv/domain/dates/cv_month_year.dart';
 import 'package:cv_maker/features/cv/domain/document/cv_personal_info.dart';
@@ -53,6 +56,203 @@ bool isA4Portrait(List<int> bytes) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'un cadre de flux trop petit produit une erreur ciblée sans boucle',
+    () async {
+      const spec = CvDesignSpec(
+        canvas: CvCanvas(
+          pages: [
+            CvCanvasPage(
+              elements: [
+                CvCanvasElement(
+                  id: 'tiny-flow',
+                  type: CvCanvasElementType.flow,
+                  x: 10,
+                  y: 10,
+                  width: 150,
+                  height: 1,
+                  sectionOrder: [CvSection.experiences],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await expectLater(
+        buildCvPdf(exampleCvDocument(), spec),
+        throwsA(
+          isA<CanvasLayoutException>().having(
+            (e) => e.elementId,
+            'cadre',
+            'tiny-flow',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'le fichier canvas exemple rend deux pages avec sections et portrait',
+    () async {
+      final template = TemplateFile.decode(
+        File('docs/examples/canvas.cv-template.json').readAsStringSync(),
+      );
+      final doc = exampleCvDocument();
+      final saved = doc.copyWith(
+        presentation: doc.presentation.copyWith(
+          designId: template.id,
+          templateSnapshot: template,
+        ),
+      );
+      final reopened = CvDocument.fromJson(
+        jsonDecode(jsonEncode(saved.toJson())) as Map<String, dynamic>,
+      );
+      final bytes = await buildCvPdf(
+        reopened,
+        reopened.designSpec,
+        photo: await File(
+          'assets/previews/portrait_placeholder.png',
+        ).readAsBytes(),
+      );
+      final pages = pdfPageTexts(bytes);
+      expect(pages, hasLength(2));
+      expect(pages.first.join(' '), contains('Nexora'));
+      expect(pages.last.join(' '), contains('Flutter'));
+      expect(latin1.decode(bytes), contains('/Subtype/Image'));
+    },
+  );
+
+  test(
+    'le canvas rend ses pages et les champs du CV aux positions demandées',
+    () async {
+      CvDesignSpec canvas(double x) => CvDesignSpec(
+        canvas: CvCanvas(
+          pages: [
+            CvCanvasPage(
+              elements: [
+                CvCanvasElement(
+                  id: 'name',
+                  type: CvCanvasElementType.text,
+                  x: x,
+                  y: 20,
+                  width: 150,
+                  height: 20,
+                  binding: 'personalInfo.fullName',
+                  fontSize: 24,
+                ),
+              ],
+            ),
+            const CvCanvasPage(
+              elements: [
+                CvCanvasElement(
+                  id: 'job',
+                  type: CvCanvasElementType.text,
+                  x: 20,
+                  y: 30,
+                  width: 150,
+                  height: 20,
+                  binding: 'experiences.0.company',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      final bytes = await buildCvPdf(exampleCvDocument(), canvas(20));
+      final pages = pdfPageTexts(bytes);
+      expect(pages, hasLength(2));
+      expect(pages.first.join(' '), contains('Camille'));
+      expect(pages.last.join(' '), contains('Nexora'));
+      expect(isA4Portrait(bytes), isTrue);
+      final shifted = await buildCvPdf(exampleCvDocument(), canvas(40));
+      expect(pdfFingerprint(bytes), isNot(pdfFingerprint(shifted)));
+    },
+  );
+
+  test(
+    'le canvas refuse le texte et les sections qui dépassent leur cadre',
+    () async {
+      for (final type in [
+        CvCanvasElementType.text,
+        CvCanvasElementType.section,
+      ]) {
+        final spec = CvDesignSpec(
+          canvas: CvCanvas(
+            pages: [
+              CvCanvasPage(
+                elements: [
+                  CvCanvasElement(
+                    id: 'too-small',
+                    type: type,
+                    x: 10,
+                    y: 10,
+                    width: 40,
+                    height: 1,
+                    text: type == CvCanvasElementType.text
+                        ? 'Texte trop grand pour son cadre'
+                        : '',
+                    section: type == CvCanvasElementType.section
+                        ? CvSection.experiences
+                        : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+        await expectLater(
+          buildCvPdf(exampleCvDocument(), spec),
+          throwsA(
+            isA<CanvasLayoutException>().having(
+              (e) => e.elementId,
+              'cadre',
+              'too-small',
+            ),
+          ),
+        );
+      }
+    },
+  );
+
+  test(
+    'un canvas omet les champs des sections masquées et les indices absents',
+    () async {
+      final doc = exampleCvDocument().withSectionVisible(
+        CvSection.projects,
+        false,
+      );
+      const spec = CvDesignSpec(
+        canvas: CvCanvas(
+          pages: [
+            CvCanvasPage(
+              elements: [
+                CvCanvasElement(
+                  id: 'hidden',
+                  type: CvCanvasElementType.text,
+                  x: 10,
+                  y: 10,
+                  width: 180,
+                  height: 20,
+                  binding: 'projects.0.name',
+                ),
+                CvCanvasElement(
+                  id: 'absent',
+                  type: CvCanvasElementType.text,
+                  x: 10,
+                  y: 40,
+                  width: 180,
+                  height: 20,
+                  binding: 'experiences.99.company',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      expect(pdfPageTexts(await buildCvPdf(doc, spec)).single, isEmpty);
+    },
+  );
 
   for (final design in CvDesign.values) {
     test(
@@ -110,6 +310,7 @@ void main() {
 
   test('the spec alone changes what the generator emits', () async {
     const spec = CvDesignSpec(
+      canvas: classicCanvas,
       tokens: CvDesignTokens(accentColor: 0xFFAB12CD),
       sections: CvDesignSectionStyle(
         titleCase: CvSectionTitleCase.none,
@@ -182,6 +383,7 @@ void main() {
           await buildCvPdf(
             document,
             const CvDesignSpec(
+              canvas: classicCanvas,
               header: CvDesignHeader(alignment: CvHeaderAlignment.center),
               tokens: CvDesignTokens(
                 scale: CvDesignTypeScale(name: 26, sectionTitle: 10),
@@ -522,7 +724,7 @@ void main() {
             reason: design.name,
           );
           expect(isA4Portrait(bytes), isTrue);
-          if (design.spec.structure.sidebar != null) {
+          if (canvasSidebar(design.spec) != null) {
             expect(
               text.indexOf(email),
               lessThan(text.indexOf('PROFIL PROFESSIONNEL')),
@@ -533,55 +735,60 @@ void main() {
       );
     }
 
-    test('une coordonnée un peu trop large élargit la colonne plutôt que '
-        'de rapetisser', () async {
-      const spec = sidebarDesignSpec;
-      final sidebar = spec.structure.sidebar!;
-      final asideWidth =
-          sidebar.width * PdfPageFormat.a4.width - 2 * sidebar.gutter;
-      final font = (await PdfFonts.load()).regular.getFont(
-        pw.Context(document: pw.Document().document),
-      );
-      // La première adresse qui dépasse tout juste la colonne d'origine à la
-      // taille du texte.
-      var email = '';
-      for (var n = 1; ; n++) {
-        email = '${'c' * n}@exemple.fr';
-        final width =
-            font.stringMetrics(email).advanceWidth * spec.tokens.scale.body;
-        if (width > asideWidth + 1) break;
-      }
-      final base = exampleCvDocument();
-      final bytes = await buildCvPdf(
-        base.copyWith(personalInfo: base.personalInfo.copyWith(email: email)),
-        spec,
-      );
-      final links = linkRects(bytes);
-      final mail = links['mailto:$email']!;
-      final phone = links.entries
-          .firstWhere((link) => link.key.startsWith('tel:'))
-          .value;
-      // L'adresse reste dans la colonne, plus large que la colonne
-      // d'origine, et à la même hauteur de ligne que le téléphone : elle
-      // n'a pas été réduite.
-      expect(mail[2] - mail[0], greaterThan(asideWidth));
-      expect(mail[3] - mail[1], closeTo(phone[3] - phone[1], .01));
-      final text = pdfText(bytes);
-      expect(text.indexOf(email), greaterThan(text.indexOf('CONTACT')));
-    });
+    test(
+      'une coordonnée trop large s’adapte sans déplacer le cadre canvas',
+      () async {
+        const spec = sidebarDesignSpec;
+        final sidebar = canvasSidebar(spec)!;
+        final asideWidth =
+            (sidebar.width - 2 * sidebar.padding) * PdfPageFormat.mm;
+        final font = (await PdfFonts.load()).regular.getFont(
+          pw.Context(document: pw.Document().document),
+        );
+        // La première adresse qui dépasse tout juste la colonne d'origine à la
+        // taille du texte.
+        var email = '';
+        for (var n = 1; ; n++) {
+          email = '${'c' * n}@exemple.fr';
+          final width =
+              font.stringMetrics(email).advanceWidth * spec.tokens.scale.body;
+          if (width > asideWidth + 1) break;
+        }
+        final base = exampleCvDocument();
+        final bytes = await buildCvPdf(
+          base.copyWith(personalInfo: base.personalInfo.copyWith(email: email)),
+          spec,
+        );
+        final links = linkRects(bytes);
+        final mail = links['mailto:$email']!;
+        final phone = links.entries
+            .firstWhere((link) => link.key.startsWith('tel:'))
+            .value;
+        // Le canvas conserve sa largeur exacte ; le texte du lien s'y adapte.
+        expect(mail[2] - mail[0], closeTo(asideWidth, .01));
+        expect(mail[3] - mail[1], lessThanOrEqualTo(phone[3] - phone[1] + .01));
+        final text = pdfText(bytes);
+        expect(text.indexOf(email), greaterThan(text.indexOf('CONTACT')));
+      },
+    );
 
     test(
       'les décorations et les dates empilées sont pilotées par la description',
       () async {
         final document = exampleCvDocument();
-        const baseline = CvDesignSpec();
+        const baseline = CvDesignSpec(canvas: classicCanvas);
         final original = await buildCvPdf(document, baseline);
         for (final spec in [
-          const CvDesignSpec(header: CvDesignHeader(headlineGap: 8)),
           const CvDesignSpec(
+            canvas: classicCanvas,
+            header: CvDesignHeader(headlineGap: 8),
+          ),
+          const CvDesignSpec(
+            canvas: classicCanvas,
             sections: CvDesignSectionStyle(stackEntryMeta: true),
           ),
           const CvDesignSpec(
+            canvas: classicCanvas,
             tokens: CvDesignTokens(headingSurfaceColor: 0xFFF0F4F8),
             sections: CvDesignSectionStyle(
               titleRadius: 6,
@@ -704,20 +911,22 @@ void main() {
 
     /// Les titres du corps, dans l'ordre où le modèle les place.
     List<String> mainHeadings(CvDesignSpec spec, CvDocument document) => [
-      for (final section in spec.structure.orderedSections(
-        document.presentation.orderedSections,
-      ))
+      for (final section in {
+        ...canvasBody(spec).sectionOrder,
+        ...document.presentation.orderedSections,
+      })
         if (section != CvSection.personalInfo &&
-            !spec.structure.inSidebar(section) &&
+            !(canvasSidebar(spec)?.sectionOrder.contains(section) ?? false) &&
             document.hasContent(section))
           heading(spec, section.label),
     ];
 
     /// Les titres de la colonne latérale, dans l'ordre du CV.
     List<String> asideHeadings(CvDesignSpec spec, CvDocument document) => [
-      if (spec.structure.sidebar != null) heading(spec, 'Contact'),
+      if (canvasSidebar(spec) != null) heading(spec, 'Contact'),
       for (final section in document.presentation.orderedSections)
-        if (spec.structure.inSidebar(section) && document.hasContent(section))
+        if ((canvasSidebar(spec)?.sectionOrder.contains(section) ?? false) &&
+            document.hasContent(section))
           heading(spec, section.label),
     ];
 
@@ -801,7 +1010,11 @@ void main() {
           expect(pages.length, greaterThan(1));
           // La colonne entière vient à la fin de la première page, d'un seul
           // tenant.
-          final last = spec.structure.inSidebar(CvSection.interests)
+          final last =
+              (canvasSidebar(
+                    spec,
+                  )?.sectionOrder.contains(CvSection.interests) ??
+                  false)
               ? 'Collection de spécimens imprimés.'
               : 'Espagnol (B1)';
           expect(pages.first, endsWith(last));
@@ -844,9 +1057,12 @@ void main() {
           final bytes = await buildCvPdf(document, spec);
           expect(pageCount(bytes), greaterThan(1));
           expect(isA4Portrait(bytes), isTrue);
-          // Chaque page reprend là où la précédente s'est arrêtée.
+          // Chaque page reprend là où la précédente s'est arrêtée. Le pied
+          // de page peut séparer « nº » du nombre dans le flux PDF extrait.
           final numbers = {
-            for (final match in RegExp(r'nº (\d+)').allMatches(pdfText(bytes)))
+            for (final match in RegExp(
+              r'nº\s+(\d+)',
+            ).allMatches(pdfText(bytes).replaceAll(RegExp(r'\d+ / \d+'), '')))
               int.parse(match.group(1)!),
           };
           final count = spec == sidebarDesignSpec ? 120 : 40;
@@ -958,3 +1174,21 @@ void main() {
     }
   });
 }
+
+CvCanvasElement canvasBody(CvDesignSpec spec) =>
+    spec.canvas.pages.first.elements.firstWhere(
+      (e) =>
+          e.type == CvCanvasElementType.flow &&
+          e.palette == CvCanvasPalette.body,
+    );
+CvCanvasElement? canvasSidebar(CvDesignSpec spec) => spec
+    .canvas
+    .pages
+    .first
+    .elements
+    .where(
+      (e) =>
+          e.type == CvCanvasElementType.flow &&
+          e.palette == CvCanvasPalette.sidebar,
+    )
+    .firstOrNull;

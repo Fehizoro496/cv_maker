@@ -109,6 +109,11 @@ génération au préalable.
 
 ## Documentation
 
+- [Format d'échange des templates](docs/template-format.md) — import/export JSON,
+  révisions et contrat commun avec la future application de création.
+- [Canvas libre V2](docs/canvas-format.md) — pages, cadres positionnés au millimètre,
+  styles et liaisons aux données du CV.
+
 - `CAHIER_DES_CHARGES.md` — le périmètre, les fonctionnalités et les critères
   d'acceptation.
 - `ROADMAP.md` — les jalons, leur état et les points à connaître.

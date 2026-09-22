@@ -48,7 +48,15 @@ class CvRecords extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [CvRecords])
+/// Dernière révision importée de chaque modèle, indépendante des CV.
+class TemplateRecords extends Table {
+  TextColumn get id => text()();
+  TextColumn get payload => text()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [CvRecords, TemplateRecords])
 class CvDatabase extends _$CvDatabase {
   CvDatabase(super.executor);
 
@@ -67,14 +75,15 @@ class CvDatabase extends _$CvDatabase {
   /// Version du schéma SQL. Toute modification de table l'incrémente et
   /// ajoute l'étape correspondante dans [migration].
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     // Les étapes s'enchaînent de version en version : une base en version 1
-    // ouverte par la version 3 passera par 1 → 2 puis 2 → 3.
+    // ouverte par la version 4 reçoit aussi le stockage des modèles importés.
     onUpgrade: (m, from, to) async {
+      if (from < 4) await m.createTable(templateRecords);
       // 1 → 2 : la photo rejoint le CV. Les lignes déjà enregistrées la
       // reçoivent vide, ce qui décrit bien leur état : la photo vivait alors
       // le temps de la session.

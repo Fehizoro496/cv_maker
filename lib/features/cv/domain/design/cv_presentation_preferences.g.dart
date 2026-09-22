@@ -10,6 +10,9 @@ _CvPresentationPreferences _$CvPresentationPreferencesFromJson(
   Map<String, dynamic> json,
 ) => _CvPresentationPreferences(
   designId: json['designId'] as String? ?? 'classic',
+  templateSnapshot: json['templateSnapshot'] == null
+      ? null
+      : CvTemplate.fromJson(json['templateSnapshot'] as Map<String, dynamic>),
   accentArgb: (json['accentArgb'] as num?)?.toInt() ?? CvAccent.defaultColor,
   showPhoto: json['showPhoto'] as bool? ?? true,
   photoShape: $enumDecodeNullable(_$CvPhotoShapeEnumMap, json['photoShape']),
@@ -30,6 +33,7 @@ Map<String, dynamic> _$CvPresentationPreferencesToJson(
   _CvPresentationPreferences instance,
 ) => <String, dynamic>{
   'designId': instance.designId,
+  'templateSnapshot': ?instance.templateSnapshot?.toJson(),
   'accentArgb': instance.accentArgb,
   'showPhoto': instance.showPhoto,
   'photoShape': ?_$CvPhotoShapeEnumMap[instance.photoShape],

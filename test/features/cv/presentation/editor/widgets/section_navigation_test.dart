@@ -63,6 +63,8 @@ void main() {
 
     await tester.tap(find.text('Catalogue des modèles'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(CvDesign.banner.label).last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text(CvDesign.banner.label).last);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
@@ -87,6 +89,8 @@ void main() {
   testWidgets('annuler le catalogue ne change rien', (tester) async {
     await pumpNavigation(tester);
     await tester.tap(find.text('Catalogue des modèles'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(CvDesign.compact.label).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text(CvDesign.compact.label).last);
     await tester.pumpAndSettle();

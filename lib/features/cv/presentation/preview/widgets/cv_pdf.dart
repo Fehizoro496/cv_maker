@@ -11,6 +11,7 @@ import '../../../domain/entries/cv_certification.dart';
 import '../../../domain/entries/cv_custom_section.dart';
 import '../../../domain/dates/cv_date_range.dart';
 import '../../../domain/design/cv_design_spec.dart';
+import '../../../domain/design/cv_canvas.dart';
 import '../../../domain/document/cv_document.dart';
 import '../../../domain/entries/cv_education.dart';
 import '../../../domain/entries/cv_experience.dart';
@@ -42,16 +43,235 @@ Future<Uint8List> buildCvPdf(
   CvDesignSpec spec, {
   Uint8List? photo,
 }) async {
+  final canvas = spec.canvas;
+  canvas.validate();
   final fonts = await PdfFonts.load();
   final pdf = pw.Document(theme: fonts.theme);
-  final tokens = spec.tokens;
-  final structure = spec.structure;
-  final sidebar = structure.sidebar;
-  final accent = PdfColor.fromInt(tokens.accentColor);
-  final font = fonts.regular.getFont(pw.Context(document: pdf.document));
+  const mm = PdfPageFormat.mm;
+  for (final page in canvas.pages) {
+    final children = <pw.Widget>[];
+    final zones = <PdfZone>[];
+    for (final e in page.elements) {
+      final color = PdfColor.fromInt(e.color);
+      pw.Widget content;
+      switch (e.type) {
+        case CvCanvasElementType.flow:
+          zones.add(
+            PdfZone(
+              left: (e.x + e.padding) * mm,
+              top: (e.y + e.padding) * mm,
+              width: (e.width - 2 * e.padding) * mm,
+              height: (e.height - 2 * e.padding) * mm,
+              children: _canvasFlow(e, page, document, spec, photo, fonts, pdf),
+              overflowError: CanvasLayoutException(e.id),
+            ),
+          );
+          content = pw.SizedBox();
+        case CvCanvasElementType.rectangle:
+          content = pw.SizedBox();
+        case CvCanvasElementType.photo:
+          if (photo == null || !spec.header.showPhoto) continue;
+          content = pw.ClipRRect(
+            horizontalRadius: e.radius * mm,
+            verticalRadius: e.radius * mm,
+            child: pw.Image(
+              pw.MemoryImage(photo),
+              fit: pw.BoxFit.cover,
+              width: (e.width - 2 * e.padding) * mm,
+              height: (e.height - 2 * e.padding) * mm,
+            ),
+          );
+        case CvCanvasElementType.text:
+          final text = e.binding == null
+              ? e.text
+              : _canvasBinding(document, e.binding!);
+          content = _CanvasFit(
+            e.id,
+            child: pw.Text(
+              text,
+              textAlign: switch (e.align) {
+                CvCanvasTextAlign.left => pw.TextAlign.left,
+                CvCanvasTextAlign.center => pw.TextAlign.center,
+                CvCanvasTextAlign.right => pw.TextAlign.right,
+                CvCanvasTextAlign.justify => pw.TextAlign.justify,
+              },
+              style: pw.TextStyle(
+                fontSize: e.fontSize,
+                color: color,
+                fontWeight: e.bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                fontStyle: e.italic ? pw.FontStyle.italic : pw.FontStyle.normal,
+              ),
+            ),
+          );
+        case CvCanvasElementType.section:
+          final section = e.section!;
+          if (!document.isVisible(section) || !document.hasContent(section)) {
+            continue;
+          }
+          final sectionSpec = CvDesignSpec(
+            canvas: spec.canvas,
+            tokens: CvDesignTokens.fromJson({
+              ...spec.tokens.toJson(),
+              'scale': {...spec.tokens.scale.toJson(), 'body': e.fontSize},
+            }),
+            sections: spec.sections,
+          );
+          final renderer = _SectionRenderer(
+            sectionSpec,
+            width: (e.width - 2 * e.padding) * mm,
+            palette: _Palette(
+              heading: color,
+              title: color,
+              body: color,
+              muted: color,
+            ),
+          );
+          content = _CanvasFit(
+            e.id,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisSize: pw.MainAxisSize.min,
+              children: renderer.standardSection(section, document).toList(),
+            ),
+          );
+      }
+      children.add(
+        pw.Positioned(
+          left: e.x * mm,
+          top: e.y * mm,
+          child: pw.Container(
+            width: e.width * mm,
+            height: e.height * mm,
+            padding: pw.EdgeInsets.all(e.padding * mm),
+            decoration: pw.BoxDecoration(
+              color: e.palette == CvCanvasPalette.sidebar
+                  ? PdfColor.fromInt(
+                      e.background ?? spec.tokens.effectiveSidebarSurfaceColor,
+                    )
+                  : e.background == null
+                  ? null
+                  : PdfColor.fromInt(e.background!),
+              border: e.borderWidth == 0
+                  ? null
+                  : pw.Border.all(
+                      color: PdfColor.fromInt(e.borderColor),
+                      width: e.borderWidth * mm,
+                    ),
+              borderRadius: pw.BorderRadius.circular(e.radius * mm),
+            ),
+            child: content,
+          ),
+        ),
+      );
+    }
+    pw.Widget decorations() => pw.Container(
+      width: 210 * mm,
+      height: 297 * mm,
+      color: PdfColor.fromInt(page.background),
+      child: pw.Stack(children: children),
+    );
+    if (zones.isEmpty) {
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.zero,
+          build: (_) => decorations(),
+        ),
+      );
+    } else {
+      pdf.addPage(
+        pw.MultiPage(
+          maxPages: 200,
+          pageTheme: pw.PageTheme(
+            pageFormat: PdfPageFormat.a4,
+            margin: pw.EdgeInsets.zero,
+            theme: fonts.theme.copyWith(
+              defaultTextStyle: pw.TextStyle(
+                fontSize: spec.tokens.scale.body,
+                lineSpacing: spec.tokens.bodyLineSpacing,
+                color: PdfColor.fromInt(spec.tokens.bodyColor),
+              ),
+            ),
+            buildBackground: (_) =>
+                pw.FullPage(ignoreMargins: true, child: decorations()),
+          ),
+          footer: page.showPageNumber
+              ? (context) => pw.Container(
+                  height: 10 * mm,
+                  alignment: pw.Alignment.centerRight,
+                  padding: pw.EdgeInsets.only(right: 15 * mm),
+                  child: pw.Text(
+                    '${context.pageNumber} / ${context.pagesCount}',
+                    style: pw.TextStyle(
+                      fontSize: spec.tokens.scale.footer,
+                      color: PdfColor.fromInt(spec.tokens.footerColor),
+                    ),
+                  ),
+                )
+              : null,
+          build: (_) => [ZonedFlow(zones: zones)],
+        ),
+      );
+    }
+  }
+  return pdf.save();
+}
 
-  // Les coordonnées, sous leur forme affichée. Une adresse de site perd son
-  // protocole et son « www. » : le lien cliquable garde l'adresse complète.
+List<pw.Widget> _canvasFlow(
+  CvCanvasElement frame,
+  CvCanvasPage page,
+  CvDocument document,
+  CvDesignSpec spec,
+  Uint8List? photo,
+  PdfFonts fonts,
+  pw.Document pdf,
+) {
+  const mm = PdfPageFormat.mm;
+  final width = (frame.width - 2 * frame.padding) * mm;
+  final tokens = spec.tokens;
+  final side = frame.palette == CvCanvasPalette.sidebar;
+  final custom = frame.palette == CvCanvasPalette.custom;
+  final textColor = PdfColor.fromInt(
+    custom
+        ? frame.color
+        : side
+        ? tokens.effectiveSidebarTextColor
+        : tokens.bodyColor,
+  );
+  final renderer = _SectionRenderer(
+    custom
+        ? CvDesignSpec(
+            canvas: spec.canvas,
+            tokens: CvDesignTokens.fromJson({
+              ...tokens.toJson(),
+              'scale': {...tokens.scale.toJson(), 'body': frame.fontSize},
+            }),
+            sections: spec.sections,
+          )
+        : spec,
+    width: width,
+    titleMargin: frame.titleMargin,
+    stackInline: side,
+    palette: _Palette(
+      heading: PdfColor.fromInt(
+        custom
+            ? frame.color
+            : side
+            ? tokens.effectiveSidebarHeadingColor
+            : tokens.effectiveHeadingColor,
+      ),
+      title: side || custom ? textColor : PdfColor.fromInt(tokens.titleColor),
+      body: textColor,
+      muted: side || custom ? textColor : PdfColor.fromInt(tokens.mutedColor),
+      headingSurface:
+          !side && !custom && tokens.effectiveHeadingSurfaceColor != null
+          ? PdfColor.fromInt(tokens.effectiveHeadingSurfaceColor!)
+          : null,
+      headingRule: !side && !custom && spec.sections.titleRuleWidth > 0
+          ? PdfColor.fromInt(tokens.accentColor)
+          : null,
+    ),
+  );
   final info = document.personalInfo;
   final contact = [
     if (info.location.isNotEmpty) _Contact(info.location, flows: true),
@@ -65,116 +285,24 @@ Future<Uint8List> buildCvPdf(
     for (final link in info.links)
       if (link.url.isNotEmpty) _Contact.url(link.url),
   ];
-  double widthAt(_Contact value, double fontSize) =>
-      font.stringMetrics(value.text).advanceWidth * fontSize;
-
-  // Les zones de la page, en points depuis le bord gauche du contenu. La
-  // colonne latérale utilise son propre retrait [CvDesignSidebar.gutter]
-  // de part et d'autre, plutôt que la marge du corps de la page.
-  const format = PdfPageFormat.a4;
-  final margin = tokens.pageMarginMm * PdfPageFormat.mm;
-  final contentWidth = format.width - 2 * margin;
-  var mainLeft = 0.0;
-  var mainWidth = contentWidth;
-  var asideLeft = 0.0;
-  var asideWidth = 0.0;
-  var band = 0.0;
-  if (sidebar != null) {
-    final gutter = sidebar.gutter;
-    band = sidebar.width * format.width;
-    // Une coordonnée trop large élargit d'abord la colonne, dans la limite
-    // du modèle, avant d'être réduite puis, en dernier recours, renvoyée
-    // dans l'en-tête.
-    if (sidebar.holdsContact) {
-      final widest = [
-        for (final value in [...contact, ...links])
-          if (!value.flows) widthAt(value, tokens.scale.body),
-      ].fold(0.0, math.max);
-      band += (widest - (band - 2 * gutter)).clamp(
-        0.0,
-        band * sidebar.maxGrowth,
-      );
-    }
-    asideWidth = band - 2 * gutter;
-    switch (sidebar.position) {
-      case CvSidebarPosition.left:
-        asideLeft = gutter - margin;
-        mainLeft = band - margin + gutter;
-        mainWidth = contentWidth - mainLeft;
-      case CvSidebarPosition.right:
-        final bandStart = format.width - band - margin;
-        mainWidth = bandStart - gutter;
-        asideLeft = bandStart + gutter;
-    }
-  }
-
-  final main = _SectionRenderer(
-    spec,
-    width: mainWidth,
-    titleMargin: structure.titleMargin,
-    palette: _Palette(
-      heading: PdfColor.fromInt(tokens.effectiveHeadingColor),
-      title: PdfColor.fromInt(tokens.titleColor),
-      body: PdfColor.fromInt(tokens.bodyColor),
-      muted: PdfColor.fromInt(tokens.mutedColor),
-      headingSurface: tokens.effectiveHeadingSurfaceColor == null
-          ? null
-          : PdfColor.fromInt(tokens.effectiveHeadingSurfaceColor!),
-      headingRule: spec.sections.titleRuleWidth == 0 ? null : accent,
-    ),
+  final contactFrame = page.elements
+      .where((e) => e.type == CvCanvasElementType.flow && e.showContacts)
+      .firstOrNull;
+  final photoInFlow = page.elements.any(
+    (e) => e.type == CvCanvasElementType.flow && e.showPhoto,
   );
-  final asideText = PdfColor.fromInt(tokens.effectiveSidebarTextColor);
-  final aside = _SectionRenderer(
-    spec,
-    width: asideWidth,
-    stackInline: true,
-    palette: _Palette(
-      heading: PdfColor.fromInt(tokens.effectiveSidebarHeadingColor),
-      title: asideText,
-      body: asideText,
-      muted: asideText,
-    ),
+  final hasHeader = page.elements.any(
+    (e) => e.type == CvCanvasElementType.flow && e.showHeader,
   );
-
-  final mainBlocks = <pw.Widget>[];
-  final asideBlocks = <pw.Widget>[];
-  // Le modèle peut imposer son ordre sans toucher à celui du CV.
-  final sectionOrder = structure.orderedSections(
-    document.presentation.orderedSections,
-  );
-  for (final section in sectionOrder) {
-    // Les informations personnelles constituent l'en-tête, rendu à part.
-    if (section == CvSection.personalInfo) continue;
-    if (!document.isVisible(section) || !document.hasContent(section)) continue;
-    if (structure.inSidebar(section)) {
-      asideBlocks.addAll(aside.standardSection(section, document));
-    } else {
-      mainBlocks.addAll(main.standardSection(section, document));
-    }
-  }
-  // Les sections personnalisées suivent les sections standard, dans leur ordre
-  // de création, avec les composants des sections dont elles prennent la forme.
-  for (final custom in document.customSections) {
-    if (!custom.visible || !custom.hasContent) continue;
-    mainBlocks.addAll(main.customSection(custom));
-  }
-
+  final font = fonts.regular.getFont(pw.Context(document: pdf.document));
+  bool tooWide(_Contact value) =>
+      contactFrame != null &&
+      !value.flows &&
+      font.stringMetrics(value.text).advanceWidth * tokens.minContactFontSize >
+          (contactFrame.width - 2 * contactFrame.padding) * mm;
   final showPhoto = spec.header.showPhoto ? photo : null;
-  final contactInHeader = !(sidebar?.holdsContact ?? false);
-  final wideContacts = {
-    if (!contactInHeader)
-      for (final value in [...contact, ...links])
-        if (!value.flows &&
-            widthAt(value, tokens.minContactFontSize) > asideWidth)
-          value,
-  };
-  // Dans la colonne latérale, la photo ne dépasse pas la largeur du texte.
-  final photoSide = math.min(
-    spec.header.photoDiameterMm * PdfPageFormat.mm,
-    sidebar?.holdsPhoto ?? false ? asideWidth : double.infinity,
-  );
-
-  pw.Widget photoWidget(Uint8List bytes) {
+  final photoSide = math.min(spec.header.photoDiameterMm * mm, width);
+  pw.Widget portrait(Uint8List bytes) {
     final image = pw.Image(
       pw.MemoryImage(bytes),
       width: photoSide,
@@ -192,110 +320,128 @@ Future<Uint8List> buildCvPdf(
     };
   }
 
-  if (sidebar != null) {
-    final sidebarContact = [
-      ...contact,
-      ...links,
-    ].where((value) => !wideContacts.contains(value)).toList();
-    // La colonne s'ouvre sur la photo puis les coordonnées qu'elle reprend à
-    // l'en-tête.
-    asideBlocks.insertAll(0, [
-      if (sidebar.holdsPhoto && showPhoto != null)
-        pw.Center(child: photoWidget(showPhoto)),
-      if (sidebar.holdsContact && sidebarContact.isNotEmpty)
-        ...aside._contactSection(sidebarContact),
-    ]);
+  final blocks = <pw.Widget>[
+    if (frame.showPhoto && showPhoto != null)
+      pw.Center(child: portrait(showPhoto)),
+    if (frame.showContacts)
+      ...renderer._contactSection([
+        ...[
+          ...contact,
+          ...links,
+        ].where((value) => !hasHeader || !tooWide(value)),
+      ]),
+    if (frame.showHeader)
+      ..._header(
+        spec,
+        info,
+        photo: photoInFlow ? null : showPhoto,
+        photoWidget: portrait,
+        contact: contact
+            .where((value) => contactFrame == null || tooWide(value))
+            .toList(),
+        links: links
+            .where((value) => contactFrame == null || tooWide(value))
+            .toList(),
+      ),
+  ];
+  final order = <CvSection>[
+    ...frame.sectionOrder,
+    if (frame.includeRemaining)
+      ...document.presentation.orderedSections.where(
+        (s) => !frame.sectionOrder.contains(s),
+      ),
+  ];
+  for (final section in order) {
+    if (section == CvSection.personalInfo ||
+        frame.excludedSections.contains(section) ||
+        !document.isVisible(section) ||
+        !document.hasContent(section)) {
+      continue;
+    }
+    blocks.addAll(renderer.standardSection(section, document));
   }
-
-  final headerBlocks = _header(
-    spec,
-    info,
-    photo: sidebar?.holdsPhoto ?? false ? null : showPhoto,
-    contact: contact
-        .where((value) => contactInHeader || wideContacts.contains(value))
-        .toList(),
-    links: links
-        .where((value) => contactInHeader || wideContacts.contains(value))
-        .toList(),
-    photoWidget: photoWidget,
-  );
-
-  pdf.addPage(
-    pw.MultiPage(
-      pageTheme: pw.PageTheme(
-        pageFormat: format,
-        margin: pw.EdgeInsets.all(margin),
-        theme: fonts.theme.copyWith(
-          defaultTextStyle: pw.TextStyle(
-            fontSize: tokens.scale.body,
-            lineSpacing: tokens.bodyLineSpacing,
-            color: PdfColor.fromInt(tokens.bodyColor),
-          ),
-        ),
-        // Le fond de la colonne, avec son retrait et son arrondi. Il ne
-        // porte aucun texte.
-        buildBackground: sidebar == null
-            ? null
-            : (context) => pw.FullPage(
-                ignoreMargins: true,
-                child: pw.Align(
-                  alignment: sidebar.position == CvSidebarPosition.left
-                      ? pw.Alignment.topLeft
-                      : pw.Alignment.topRight,
-                  child: pw.Padding(
-                    padding: pw.EdgeInsets.all(sidebar.surfaceInset),
-                    child: pw.Container(
-                      width: band - 2 * sidebar.surfaceInset,
-                      height: format.height - 2 * sidebar.surfaceInset,
-                      decoration: pw.BoxDecoration(
-                        color: PdfColor.fromInt(
-                          tokens.effectiveSidebarSurfaceColor,
-                        ),
-                        borderRadius: pw.BorderRadius.circular(
-                          sidebar.cornerRadius,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-      ),
-      footer: (context) => pw.Align(
-        alignment: pw.Alignment.centerRight,
-        child: pw.Text(
-          '${context.pageNumber} / ${context.pagesCount}',
-          style: pw.TextStyle(
-            fontSize: tokens.scale.footer,
-            color: PdfColor.fromInt(tokens.footerColor),
-          ),
-        ),
-      ),
-      build: (context) => sidebar == null
-          ? [...headerBlocks, ...mainBlocks]
-          : [
-              // Le corps d'abord : c'est l'ordre dans lequel les zones sont
-              // émises sur chaque page.
-              ZonedFlow(
-                zones: [
-                  PdfZone(
-                    left: mainLeft,
-                    width: mainWidth,
-                    children: [...headerBlocks, ...mainBlocks],
-                  ),
-                  PdfZone(
-                    left: asideLeft,
-                    width: asideWidth,
-                    children: asideBlocks,
-                  ),
-                ],
-              ),
-            ],
-    ),
-  );
-  return pdf.save();
+  if (frame.includeCustom) {
+    for (final section in document.customSections) {
+      if (section.visible && section.hasContent) {
+        blocks.addAll(renderer.customSection(section));
+      }
+    }
+  }
+  return blocks;
 }
 
-/// Une coordonnée telle qu'elle est posée sur la page.
+String _canvasBinding(CvDocument document, String binding) {
+  if (binding == 'personalInfo.fullName') return document.personalInfo.fullName;
+  final parts = binding.split('.');
+  final section = CvSection.values
+      .where((s) => s.name == parts.first)
+      .firstOrNull;
+  if (section != null && !document.isVisible(section)) return '';
+  Object? value = document.toJson();
+  for (final part in parts) {
+    if (value == null) return '';
+    if (value is Map<String, dynamic>) {
+      if (!value.containsKey(part)) {
+        // Les champs optionnels nulls sont omis par le sérialiseur du CV.
+        if (['start', 'end', 'month', 'date'].contains(part)) return '';
+        throw FormatException('Champ du CV inconnu : $binding');
+      }
+      value = value[part];
+    } else if (value is List) {
+      final index = int.tryParse(part);
+      if (index == null) {
+        throw FormatException('Indice de liste invalide : $binding');
+      }
+      if (index >= value.length) return '';
+      value = value[index];
+      if (value is Map && value['visible'] == false) return '';
+    } else {
+      throw FormatException('Liaison de données invalide : $binding');
+    }
+  }
+  if (value == null) return '';
+  if (value is String || value is num || value is bool) return value.toString();
+  throw FormatException(
+    'La liaison doit désigner une valeur simple : $binding',
+  );
+}
+
+/// Mesure le contenu sans limite verticale avant de vérifier le cadre.
+/// Une erreur empêche aussi l'export : aucun texte n'est tronqué en silence.
+class _CanvasFit extends pw.SingleChildWidget {
+  _CanvasFit(this.id, {required pw.Widget child}) : super(child: child);
+  final String id;
+  @override
+  bool get canSpan => false;
+  @override
+  void layout(
+    pw.Context context,
+    pw.BoxConstraints constraints, {
+    bool parentUsesSize = false,
+  }) {
+    child!.layout(context, pw.BoxConstraints(maxWidth: constraints.maxWidth));
+    final size = child!.box!;
+    if (size.height > constraints.maxHeight + .01 ||
+        size.width > constraints.maxWidth + .01) {
+      throw CanvasLayoutException(id);
+    }
+    // Le haut du contenu reste aligné au haut du cadre positionné.
+    child!.box = PdfRect(
+      0,
+      constraints.maxHeight - size.height,
+      size.width,
+      size.height,
+    );
+    box = PdfRect(0, 0, constraints.maxWidth, constraints.maxHeight);
+  }
+
+  @override
+  void paint(pw.Context context) {
+    super.paint(context);
+    paintChild(context);
+  }
+}
+
 class _Contact {
   const _Contact(this.text, {this.target, this.flows = false});
 
@@ -646,6 +792,7 @@ class _SectionRenderer {
 
   /// Les coordonnées reprises par la colonne latérale, une par ligne.
   Iterable<pw.Widget> _contactSection(List<_Contact> values) {
+    if (values.isEmpty) return const [];
     pw.Widget line(_Contact value) => value.flows
         ? _flowingText(value.text)
         : _contactLine(

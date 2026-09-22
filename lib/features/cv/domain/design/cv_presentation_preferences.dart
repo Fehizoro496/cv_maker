@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'cv_design.dart';
+import 'cv_template.dart';
 import 'cv_design_spec.dart';
 import '../document/cv_section.dart';
 
@@ -10,9 +11,9 @@ part 'cv_presentation_preferences.g.dart';
 /// Choix de présentation d'un CV : modèle, réglages, ordre et visibilité des
 /// sections.
 ///
-/// Ces préférences ne décrivent pas le modèle, elles s'y réfèrent par son
-/// identifiant : le catalogue reste libre de faire évoluer un modèle sans
-/// migrer les CV enregistrés.
+/// L'identifiant relie le CV au catalogue ; [templateSnapshot] conserve la
+/// définition appliquée pour que les imports suivants ne changent pas son rendu.
+/// Les anciens CV sans copie utilisent encore le modèle intégré correspondant.
 ///
 /// [accentArgb], [showPhoto], [photoShape] et [photoSizeMm] sont les seules
 /// propriétés de mise en forme qu'un CV impose au modèle choisi ; le reste
@@ -22,6 +23,9 @@ part 'cv_presentation_preferences.g.dart';
 abstract class CvPresentationPreferences with _$CvPresentationPreferences {
   const factory CvPresentationPreferences({
     @Default('classic') String designId,
+
+    /// Copie autonome : les mises à jour du catalogue ne modifient pas ce CV.
+    CvTemplate? templateSnapshot,
     @Default(CvAccent.defaultColor) int accentArgb,
     @Default(true) bool showPhoto,
 
@@ -96,7 +100,7 @@ abstract class CvPresentationPreferences with _$CvPresentationPreferences {
   }
 
   CvPresentationPreferences withDesign(CvDesign design) =>
-      copyWith(designId: design.id);
+      copyWith(designId: design.id, templateSnapshot: null);
 
   /// Impose la forme et la taille de la photo, bornée ; `null` rend la main
   /// au modèle.
@@ -118,6 +122,7 @@ abstract class CvPresentationPreferences with _$CvPresentationPreferences {
     required bool showPhoto,
   }) => copyWith(
     designId: design.id,
+    templateSnapshot: null,
     accentArgb: accentArgb | 0xFF000000,
     showPhoto: showPhoto,
   );

@@ -1,0 +1,43 @@
+{
+  "format": "cv-maker-template",
+  "schemaVersion": 2,
+  "template": {
+    "id": "atelier.epure",
+    "revision": 1,
+    "label": "Épuré",
+    "description": "Une colonne avec un en-tête centré.",
+    "spec": {
+      "header": {
+        "alignment": "center",
+        "showPhoto": false
+      },
+      "tokens": {
+        "accentColor": 4281236876
+      },
+      "sections": {
+        "headerRuleThickness": null
+      },
+      "canvas": {
+        "pages": [
+          {
+            "showPageNumber": true,
+            "elements": [
+              {
+                "id": "body",
+                "type": "flow",
+                "x": 20,
+                "y": 20,
+                "width": 170,
+                "height": 257,
+                "palette": "body",
+                "showHeader": true,
+                "includeRemaining": true,
+                "includeCustom": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

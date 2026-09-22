@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/entries/cv_custom_section.dart';
 import '../../domain/design/cv_design.dart';
+import '../../domain/design/cv_template.dart';
 import '../../domain/design/cv_design_spec.dart';
 import '../../domain/document/cv_document.dart';
 import '../../domain/entries/cv_entry.dart';
@@ -252,7 +254,10 @@ class CvSessionNotifier extends Notifier<CvSession> {
   }
 
   void setDesign(CvDesign design) {
-    if (document.design == design) return;
+    if (document.presentation.designId == design.id &&
+        document.presentation.templateSnapshot == null) {
+      return;
+    }
     _commitDocument(document.withDesign(design));
   }
 
@@ -271,6 +276,28 @@ class CvSessionNotifier extends Notifier<CvSession> {
       showPhoto: showPhoto,
     );
     if (next == document.presentation) return;
+    _commitDocument(document.copyWith(presentation: next));
+  }
+
+  void applyCatalogTemplate({
+    required CvTemplate template,
+    required int accentArgb,
+    required bool showPhoto,
+  }) {
+    final current = document.presentation;
+    final previous = current.templateSnapshot ?? CvTemplate.of(current.design);
+    if (current.designId == template.id &&
+        current.accentColor == (accentArgb | 0xFF000000) &&
+        current.showPhoto == showPhoto &&
+        jsonEncode(previous.toJson()) == jsonEncode(template.toJson())) {
+      return;
+    }
+    final next = document.presentation.copyWith(
+      designId: template.id,
+      templateSnapshot: template,
+      accentArgb: accentArgb | 0xFF000000,
+      showPhoto: showPhoto,
+    );
     _commitDocument(document.copyWith(presentation: next));
   }
 

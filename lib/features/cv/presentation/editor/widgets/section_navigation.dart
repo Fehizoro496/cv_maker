@@ -7,6 +7,7 @@ import '../../../../../shared/widgets/dashed_border.dart';
 import '../../../domain/document/cv_section.dart';
 import '../../../../../shared/formatting/modified_label.dart';
 import '../../preview/catalog_preview_provider.dart';
+import '../../preview/template_catalog_provider.dart';
 import '../../session/cv_autosave.dart';
 import '../../library/cv_library_provider.dart';
 import '../cv_section_presentation.dart';
@@ -72,7 +73,7 @@ class SectionNavigation extends ConsumerWidget {
                 final choice = await showDialog<CatalogChoice>(
                   context: context,
                   builder: (_) => DesignCatalog(
-                    selected: presentation.design,
+                    selected: presentation.designId,
                     accentArgb: presentation.accentColor,
                     showPhoto: presentation.showPhoto,
                     hasPhoto: session.hasPhoto,
@@ -81,8 +82,10 @@ class SectionNavigation extends ConsumerWidget {
                 if (choice == null || !context.mounted) return;
                 ref
                     .read(cvSessionProvider.notifier)
-                    .applyTemplate(
-                      design: choice.design,
+                    .applyCatalogTemplate(
+                      template: ref.read(
+                        templateByIdProvider(choice.templateId),
+                      ),
                       accentArgb: choice.accentArgb,
                       showPhoto: choice.showPhoto,
                     );
@@ -91,7 +94,9 @@ class SectionNavigation extends ConsumerWidget {
                     .show(
                       kind: AppToastKind.info,
                       title: 'Modèle appliqué',
-                      message: choice.design.label,
+                      message: ref
+                          .read(templateByIdProvider(choice.templateId))
+                          .label,
                     );
               },
               icon: const Icon(Icons.style, size: 18),
@@ -100,13 +105,14 @@ class SectionNavigation extends ConsumerWidget {
                 children: [
                   const Text('Catalogue des modèles'),
                   Text(
-                    ref
-                        .watch(
-                          cvSessionProvider.select(
-                            (session) => session.document.design,
-                          ),
-                        )
-                        .label,
+                    document.presentation.templateSnapshot?.label ??
+                        ref
+                            .watch(
+                              templateByIdProvider(
+                                document.presentation.designId,
+                              ),
+                            )
+                            .label,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

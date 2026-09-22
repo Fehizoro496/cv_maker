@@ -1,8 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cv_maker/app/app_theme.dart';
 import 'package:cv_maker/features/cv/domain/design/cv_design.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_design_spec.dart';
+import 'package:cv_maker/features/cv/domain/design/cv_template.dart';
+import 'package:cv_maker/features/cv/domain/design/template_file.dart';
+import 'package:cv_maker/features/cv/data/template_repository.dart';
+import 'package:cv_maker/features/cv/presentation/preview/template_file_io.dart';
 import 'package:cv_maker/features/cv/presentation/preview/catalog_preview_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/template_catalog_provider.dart';
 import 'package:cv_maker/features/cv/presentation/preview/widgets/design_catalog.dart';
@@ -46,6 +52,8 @@ String _hex(int argb) => ColorPickerDialog.hexOf(Color(argb));
 
 void main() {
   CatalogChoice? result;
+  String? importSource;
+  CvTemplate? exported;
 
   Future<void> openCatalog(
     WidgetTester tester, {
@@ -61,7 +69,16 @@ void main() {
     thumbnailed.clear();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [_fakePreviews, _fakeThumbnails],
+        overrides: [
+          _fakePreviews,
+          _fakeThumbnails,
+          templateRepositoryProvider.overrideWithValue(_Templates()),
+          readTemplateFileProvider.overrideWithValue(() async => importSource),
+          writeTemplateFileProvider.overrideWithValue((template) async {
+            exported = template;
+            return true;
+          }),
+        ],
         child: MaterialApp(
           theme: buildAppTheme(),
           home: Builder(
@@ -71,7 +88,7 @@ void main() {
                   result = await showDialog<CatalogChoice>(
                     context: context,
                     builder: (_) => DesignCatalog(
-                      selected: selected,
+                      selected: selected.id,
                       accentArgb: accentArgb,
                       showPhoto: showPhoto,
                       hasPhoto: hasPhoto,
@@ -88,6 +105,83 @@ void main() {
     await tester.tap(find.text('Ouvrir'));
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+    'le canvas importé expose ses couleurs propres et son contrôle de cadres',
+    (tester) async {
+      importSource = File(
+        'docs/examples/canvas.cv-template.json',
+      ).readAsStringSync();
+      await openCatalog(tester);
+      await tester.tap(find.text('Importer un modèle'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Les couleurs sont définies dans chaque cadre du modèle.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Canvas libre : vérifiez les cadres sur toutes les pages'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Choisir'),
+            )
+            .onPressed,
+        isNull,
+      );
+      importSource = null;
+    },
+  );
+
+  testWidgets(
+    'importe un modèle externe, le prévisualise, l’exporte et le choisit',
+    (tester) async {
+      const template = CvTemplate(
+        id: 'studio.custom',
+        label: 'Studio custom',
+        description: 'Modèle importé',
+        spec: compactDesignSpec,
+      );
+      importSource = TemplateFile.encode(template);
+      exported = null;
+      await openCatalog(tester);
+      await tester.tap(find.text('Importer un modèle'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('9 modèles'), findsOneWidget);
+      expect(requested.last.templateId, template.id);
+      expect(
+        find.textContaining('Modèle importé : Studio custom'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Exporter le modèle'));
+      await tester.pumpAndSettle();
+      expect(exported!.toJson(), template.toJson());
+      await tester.tap(find.text('Appliquer le modèle'));
+      await tester.pumpAndSettle();
+      expect(result!.templateId, template.id);
+      importSource = null;
+    },
+  );
+
+  testWidgets('annuler ou importer un fichier invalide préserve la sélection', (
+    tester,
+  ) async {
+    importSource = null;
+    await openCatalog(tester);
+    await tester.tap(find.text('Importer un modèle'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Échec'), findsNothing);
+    importSource = '{}';
+    await tester.tap(find.text('Importer un modèle'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Échec'), findsOneWidget);
+    await tester.tap(find.text('Appliquer le modèle'));
+    await tester.pumpAndSettle();
+    expect(result!.templateId, 'classic');
+    importSource = null;
+  });
 
   for (final size in [
     const Size(1440, 900),
@@ -193,11 +287,13 @@ void main() {
 
   testWidgets('appliquer retourne le modèle choisi', (tester) async {
     await openCatalog(tester, selected: CvDesign.classic);
+    await tester.ensureVisible(find.text(CvDesign.academic.label));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(CvDesign.academic.label));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
     await tester.pumpAndSettle();
-    expect(result?.design, CvDesign.academic);
+    expect(result?.templateId, CvDesign.academic.id);
     expect(find.byType(DesignCatalog), findsNothing);
   });
 
@@ -222,7 +318,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Appliquer le modèle'));
     await tester.pumpAndSettle();
     expect(result?.accentArgb, 0xFFAB12CD);
-    expect(result?.design, CvDesign.classic);
+    expect(result?.templateId, CvDesign.classic.id);
   });
 
   testWidgets('annuler le sélecteur laisse la couleur inchangée', (
@@ -334,7 +430,11 @@ void main() {
     // d'exemple, n'en dépendent pas et ne sont pas regénérées.
     expect(before, isNotEmpty);
     expect(requested, {
-      (design: CvDesign.classic, accentArgb: 0xFFAB12CD, showPhoto: true),
+      (
+        templateId: CvDesign.classic.id,
+        accentArgb: 0xFFAB12CD,
+        showPhoto: true,
+      ),
     });
     expect(thumbnailed, isEmpty);
   });
@@ -345,15 +445,17 @@ void main() {
     await openCatalog(tester, selected: CvDesign.classic);
     requested.clear();
     thumbnailed.clear();
+    await tester.ensureVisible(find.text(CvDesign.compact.label));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(CvDesign.compact.label));
     await tester.pumpAndSettle();
     expect(
       requested,
       everyElement(
         isA<CatalogChoice>().having(
-          (choice) => choice.design,
+          (choice) => choice.templateId,
           'design',
-          CvDesign.compact,
+          CvDesign.compact.id,
         ),
       ),
     );
@@ -363,6 +465,8 @@ void main() {
 
   testWidgets('annuler ne retourne aucun choix', (tester) async {
     await openCatalog(tester, selected: CvDesign.banner);
+    await tester.ensureVisible(find.text(CvDesign.plain.label));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(CvDesign.plain.label));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, 'Annuler'));
@@ -376,4 +480,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(result, isNull);
   });
+}
+
+class _Templates implements TemplateRepository {
+  @override
+  Future<List<CvTemplate>> list() async => [];
+  @override
+  Future<void> save(CvTemplate template) async {}
 }

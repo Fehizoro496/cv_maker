@@ -11,6 +11,7 @@ import '../../../../../shared/system/reveal_file.dart';
 import '../../../../../shared/system/save_location.dart';
 import '../../../../../shared/widgets/soft_panel.dart';
 import '../draft_preview_provider.dart';
+import '../../../domain/design/cv_canvas.dart';
 import '../preview_input_provider.dart';
 
 class PdfPreviewPanel extends ConsumerStatefulWidget {
@@ -126,14 +127,15 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
         actionIcon: Icons.folder_open_outlined,
         onAction: () => _reveal(path),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       toasts.show(
         kind: AppToastKind.error,
         title: "L’export a échoué",
-        message:
-            'Le fichier est peut-être ouvert dans une autre application. '
-            'Fermez-le puis réessayez.',
+        message: error is CanvasLayoutException
+            ? error.toString()
+            : 'Le fichier est peut-être ouvert dans une autre application. '
+                  'Fermez-le puis réessayez.',
         actionLabel: 'Réessayer',
         actionIcon: Icons.refresh,
         onAction: _export,
@@ -314,6 +316,14 @@ class _PdfPreviewPanelState extends ConsumerState<PdfPreviewPanel> {
                                 "Le PDF n'a pas pu être généré.",
                                 style: TextStyle(fontSize: 12),
                               ),
+                              if (preview.error is CanvasLayoutException)
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Text(
+                                    '${preview.error}',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
                               OutlinedButton.icon(
                                 onPressed: _refresh,
                                 icon: const Icon(Icons.refresh, size: 16),

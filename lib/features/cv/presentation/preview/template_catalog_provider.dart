@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/design/cv_design.dart';
+import '../../domain/design/template_file.dart';
+import '../../data/template_repository.dart';
 import '../../domain/design/cv_template.dart';
 import '../../domain/document/cv_example.dart';
 import 'draft_preview_provider.dart';
@@ -10,12 +12,13 @@ import 'widgets/cv_pdf.dart';
 
 /// Les modèles proposés par le catalogue, dans l'ordre d'affichage.
 ///
-/// C'est le seul endroit qui sait d'où viennent les modèles. Les remplacer un
-/// jour par des descriptions lues hors du code — un fichier livré, un dossier
-/// utilisateur, une table — se fait ici, sans toucher au catalogue, aux
-/// aperçus ni au générateur.
+/// Réunit les modèles intégrés et la dernière révision des imports locaux.
+/// Les aperçus observent cette liste et suivent les mises à jour du catalogue.
 final templateCatalogProvider = Provider<List<CvTemplate>>(
-  (ref) => [for (final design in CvDesign.values) CvTemplate.of(design)],
+  (ref) => [
+    for (final design in CvDesign.values) CvTemplate.of(design),
+    ...ref.watch(importedTemplatesProvider),
+  ],
 );
 
 /// Le modèle d'identifiant [id], ou le modèle de repli s'il a disparu.
@@ -23,7 +26,7 @@ final templateByIdProvider = Provider.family<CvTemplate, String>((ref, id) {
   final templates = ref.watch(templateCatalogProvider);
   return templates.firstWhere(
     (template) => template.id == id,
-    orElse: () => templates.first,
+    orElse: () => CvTemplate.of(CvDesign.fallback),
   );
 });
 
@@ -87,5 +90,59 @@ final templateThumbnailProvider = FutureProvider.family<Uint8List, String>((
 void warmTemplateThumbnails(WidgetRef ref) {
   for (final template in ref.read(templateCatalogProvider)) {
     ref.read(templateThumbnailProvider(template.id).future).ignore();
+  }
+}
+
+final templateRepositoryProvider = Provider<TemplateRepository>(
+  (ref) => throw StateError('Stockage des modèles non initialisé'),
+);
+final initialTemplatesProvider = Provider<List<CvTemplate>>((ref) => const []);
+final importedTemplatesProvider =
+    NotifierProvider<ImportedTemplates, List<CvTemplate>>(
+      ImportedTemplates.new,
+    );
+
+class ImportedTemplates extends Notifier<List<CvTemplate>> {
+  bool _importing = false;
+  @override
+  List<CvTemplate> build() =>
+      List.unmodifiable(ref.watch(initialTemplatesProvider));
+
+  Future<CvTemplate> importFile(String source) async {
+    if (_importing) throw StateError('Un import est déjà en cours.');
+    _importing = true;
+    try {
+      final template = TemplateFile.decode(source);
+      final existing = [
+        for (final design in CvDesign.values) CvTemplate.of(design),
+        ...state,
+      ].where((item) => item.id == template.id).firstOrNull;
+      if (existing != null) {
+        if (TemplateFile.encode(existing) == TemplateFile.encode(template)) {
+          return existing;
+        }
+        if (CvDesign.values.any((design) => design.id == template.id)) {
+          throw const FormatException(
+            'Cet identifiant est réservé à un modèle intégré. Choisissez un nouvel identifiant.',
+          );
+        }
+        if (template.revision <= existing.revision) {
+          throw const FormatException(
+            'Une révision plus récente est requise pour remplacer ce modèle.',
+          );
+        }
+      }
+      await ref.read(templateRepositoryProvider).save(template);
+      if (ref.mounted) {
+        state = List.unmodifiable([
+          for (final item in state)
+            if (item.id != template.id) item,
+          template,
+        ]);
+      }
+      return template;
+    } finally {
+      _importing = false;
+    }
   }
 }

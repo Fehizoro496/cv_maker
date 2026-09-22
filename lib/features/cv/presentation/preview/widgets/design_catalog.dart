@@ -6,20 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../app/app_theme.dart';
 import '../../../../../shared/widgets/color_picker_dialog.dart';
 import '../../../domain/design/cv_design.dart';
-import '../../../domain/design/cv_design_spec.dart';
 import '../../../domain/design/cv_template.dart';
+import '../../../domain/design/cv_canvas.dart';
 import '../catalog_preview_provider.dart';
 import '../template_catalog_provider.dart';
+import '../template_file_io.dart';
 
-/// Catalogue des modèles intégrés, avec ses deux réglages.
+/// Catalogue des modèles intégrés et importés, avec ses deux réglages.
 ///
 /// Reprend la maquette « Choisir un modèle » du dossier de design : grille de
 /// vignettes à gauche, aperçu et réglages à droite, pied rappelant la
 /// compatibilité ATS.
 ///
-/// Le dialogue ne modifie rien de lui-même : il retourne le choix retenu, que
-/// l'appelant applique. « Annuler » et la croix retournent `null`, ce qui
-/// laisse le CV intact.
+/// Le dialogue retourne le choix retenu, que l'appelant applique au CV.
+/// « Annuler » laisse le CV intact ; les imports sont conservés au catalogue.
 ///
 /// Les vignettes montrent un CV d'exemple, identique d'une ouverture à l'autre :
 /// elles ne dépendent donc que du modèle et restent en cache pour la session.
@@ -34,7 +34,7 @@ class DesignCatalog extends ConsumerStatefulWidget {
   });
 
   /// Le modèle, la couleur et l'affichage de la photo enregistrés dans le CV.
-  final CvDesign selected;
+  final String selected;
   final int accentArgb;
   final bool showPhoto;
 
@@ -57,13 +57,46 @@ class DesignCatalog extends ConsumerStatefulWidget {
 }
 
 class _DesignCatalogState extends ConsumerState<DesignCatalog> {
-  late CvDesign _design = widget.selected;
+  late String _design = widget.selected;
   late int _accentArgb = widget.accentArgb;
   late bool _showPhoto = widget.showPhoto;
 
+  bool _busy = false;
+  String? _feedback;
+
+  Future<void> _transfer({required bool importing}) async {
+    setState(() {
+      _busy = true;
+      _feedback = null;
+    });
+    try {
+      if (importing) {
+        final source = await ref.read(readTemplateFileProvider)();
+        if (source == null || !mounted) return;
+        final template = await ref
+            .read(importedTemplatesProvider.notifier)
+            .importFile(source);
+        if (!mounted) return;
+        setState(() {
+          _design = template.id;
+          _feedback = 'Modèle importé : ${template.label}';
+        });
+      } else {
+        final saved = await ref.read(writeTemplateFileProvider)(
+          ref.read(templateByIdProvider(_design)),
+        );
+        if (mounted && saved) setState(() => _feedback = 'Modèle exporté');
+      }
+    } catch (error) {
+      if (mounted) setState(() => _feedback = 'Échec : $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   /// Le choix en cours de composition, prévisualisé en grand.
   CatalogChoice get _choice =>
-      (design: _design, accentArgb: _accentArgb, showPhoto: _showPhoto);
+      (templateId: _design, accentArgb: _accentArgb, showPhoto: _showPhoto);
 
   @override
   Widget build(BuildContext context) => Dialog(
@@ -81,6 +114,41 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const _Header(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _transfer(importing: true),
+                      icon: const Icon(Icons.file_open_outlined),
+                      label: const Text('Importer un modèle'),
+                    ),
+                    TextButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _transfer(importing: false),
+                      icon: const Icon(Icons.save_alt),
+                      label: const Text('Exporter le modèle'),
+                    ),
+                  ],
+                ),
+                if (_busy) const LinearProgressIndicator(),
+                if (_feedback != null)
+                  Text(
+                    _feedback!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    semanticsLabel: _feedback,
+                  ),
+              ],
+            ),
+          ),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -123,18 +191,25 @@ class _DesignCatalogState extends ConsumerState<DesignCatalog> {
               },
             ),
           ),
-          _Footer(onApply: () => Navigator.pop(context, _choice)),
+          _Footer(
+            canvas: ref
+                .watch(templateByIdProvider(_design))
+                .spec
+                .canvas
+                .isFixed,
+            onApply: () => Navigator.pop(context, _choice),
+          ),
         ],
       ),
     ),
   );
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context, WidgetRef ref) => Container(
     padding: const EdgeInsets.fromLTRB(24, 22, 16, 16),
     decoration: const BoxDecoration(
       border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
@@ -152,8 +227,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                '${CvDesign.values.length} modèles, tous lisibles par les '
-                'logiciels de tri des candidatures. Vos informations sont '
+                '${ref.watch(templateCatalogProvider).length} modèles. Vos informations sont '
                 'conservées quand vous changez de modèle.',
                 style: const TextStyle(
                   fontSize: 12,
@@ -186,9 +260,9 @@ class _TemplateGrid extends ConsumerWidget {
     this.insideScrollView = false,
   });
 
-  final CvDesign selected;
+  final String selected;
 
-  final ValueChanged<CvDesign> onSelected;
+  final ValueChanged<String> onSelected;
 
   /// Vrai lorsque la grille est posée dans un parent qui défile déjà.
   final bool insideScrollView;
@@ -233,8 +307,8 @@ class _TemplateGrid extends ConsumerWidget {
           final template = templates[index];
           return _TemplateCard(
             template: template,
-            isSelected: template.id == selected.id,
-            onSelected: () => onSelected(CvDesign.fromId(template.id)),
+            isSelected: template.id == selected,
+            onSelected: () => onSelected(template.id),
           );
         },
       );
@@ -411,8 +485,13 @@ class _PageImage extends StatelessWidget {
           semanticLabel: 'Aperçu du modèle',
           gaplessPlayback: true,
         ),
-        AsyncError() => const Center(
-          child: Icon(Icons.error_outline, color: AppColors.outline),
+        AsyncError(:final error) => Center(
+          child: Tooltip(
+            message: error is CanvasLayoutException
+                ? error.toString()
+                : 'Aperçu indisponible',
+            child: const Icon(Icons.error_outline, color: AppColors.outline),
+          ),
         ),
         _ => const Center(
           child: SizedBox(
@@ -426,7 +505,7 @@ class _PageImage extends StatelessWidget {
   );
 }
 
-class _SettingsPanel extends StatelessWidget {
+class _SettingsPanel extends ConsumerWidget {
   const _SettingsPanel({
     required this.choice,
     required this.hasPhoto,
@@ -440,8 +519,10 @@ class _SettingsPanel extends StatelessWidget {
   final ValueChanged<bool> onShowPhoto;
 
   @override
-  Widget build(BuildContext context) {
-    final ignoresAccent = choice.design.spec.tokens.ignoresAccent;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spec = ref.watch(templateByIdProvider(choice.templateId)).spec;
+    final canvas = spec.canvas.isFixed;
+    final ignoresAccent = canvas || spec.tokens.ignoresAccent;
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.canvas,
@@ -486,9 +567,11 @@ class _SettingsPanel extends StatelessWidget {
                 ),
                 if (ignoresAccent) ...[
                   const SizedBox(height: 8),
-                  const Text(
-                    'Ce modèle n’utilise aucune couleur.',
-                    style: TextStyle(
+                  Text(
+                    canvas
+                        ? 'Les couleurs sont définies dans chaque cadre du modèle.'
+                        : 'Ce modèle n’utilise aucune couleur.',
+                    style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -606,9 +689,10 @@ class _AccentField extends StatelessWidget {
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer({required this.onApply});
+  const _Footer({required this.onApply, this.canvas = false});
 
   final VoidCallback onApply;
+  final bool canvas;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -618,15 +702,21 @@ class _Footer extends StatelessWidget {
     ),
     child: Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Row(
             children: [
-              Icon(Icons.check_circle, size: 16, color: AppColors.outline),
-              SizedBox(width: 6),
+              const Icon(
+                Icons.check_circle,
+                size: 16,
+                color: AppColors.outline,
+              ),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Compatible avec les logiciels de tri des candidatures',
-                  style: TextStyle(
+                  canvas
+                      ? 'Canvas libre : vérifiez les cadres sur toutes les pages'
+                      : 'Compatible avec les logiciels de tri des candidatures',
+                  style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.onSurfaceVariant,
                   ),

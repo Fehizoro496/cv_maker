@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import '../features/cv/data/cv_repository.dart';
 import '../features/cv/presentation/library/cv_library_provider.dart';
 import 'cv_maker_app.dart';
+import '../features/cv/data/template_repository.dart';
+import '../features/cv/presentation/preview/template_catalog_provider.dart';
 import 'startup_failure_screen.dart';
 
 /// L'application prête à s'afficher sur les CV de [repository].
@@ -16,10 +18,13 @@ import 'startup_failure_screen.dart';
 /// endommagé, dossier de données inaccessible — l'application affiche à la
 /// place un écran d'erreur avec « Réessayer », plutôt que de disparaître sans
 /// un mot.
-Future<Widget> bootstrap(CvRepository repository) async {
+Future<Widget> bootstrap(
+  CvRepository repository, {
+  TemplateRepository? templates,
+}) async {
   try {
     return ProviderScope(
-      overrides: await startupOverrides(repository),
+      overrides: await startupOverrides(repository, templates: templates),
       child: const CvMakerApp(),
     );
   } catch (error) {
@@ -27,7 +32,8 @@ Future<Widget> bootstrap(CvRepository repository) async {
       details: '$error',
       // Un nouveau `runApp` remplace la racine : réessayer repart donc d'une
       // lecture neuve, sans conserver l'état manquant.
-      onRetry: () async => runApp(await bootstrap(repository)),
+      onRetry: () async =>
+          runApp(await bootstrap(repository, templates: templates)),
     );
   }
 }
@@ -36,7 +42,14 @@ Future<Widget> bootstrap(CvRepository repository) async {
 ///
 /// Aucun CV n'est ouvert, et donc aucun document décodé : un CV illisible ne
 /// peut pas empêcher l'application de démarrer.
-Future<List<Override>> startupOverrides(CvRepository repository) async => [
+Future<List<Override>> startupOverrides(
+  CvRepository repository, {
+  TemplateRepository? templates,
+}) async => [
   cvRepositoryProvider.overrideWithValue(repository),
+  if (templates != null) ...[
+    templateRepositoryProvider.overrideWithValue(templates),
+    initialTemplatesProvider.overrideWithValue(await templates.list()),
+  ],
   initialCvLibraryProvider.overrideWithValue(await repository.list()),
 ];

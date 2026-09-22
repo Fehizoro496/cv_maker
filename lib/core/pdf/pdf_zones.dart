@@ -24,12 +24,22 @@ class KeepTogether extends pw.SingleChildWidget {
 
 /// Une zone d'un [ZonedFlow] : une bande verticale de la page et ses blocs.
 class PdfZone {
-  PdfZone({required this.left, required this.width, required this.children});
+  PdfZone({
+    required this.left,
+    required this.width,
+    required this.children,
+    this.top = 0,
+    this.height,
+    this.overflowError,
+  });
 
   /// Position de la bande depuis le bord gauche de la zone de contenu.
   final double left;
 
   final double width;
+  final double top;
+  final double? height;
+  final Object? overflowError;
 
   /// Les blocs de la zone, de haut en bas.
   ///
@@ -92,10 +102,15 @@ class ZonedFlow extends pw.Widget with pw.SpanningWidget {
     pw.BoxConstraints constraints, {
     bool parentUsesSize = false,
   }) {
-    final available = constraints.maxHeight;
     var height = 0.0;
     for (var z = 0; z < zones.length; z++) {
       final zone = zones[z];
+      final available = constraints.maxHeight.isFinite
+          ? math.min(
+              zone.height ?? double.infinity,
+              math.max(0.0, constraints.maxHeight - zone.top),
+            )
+          : double.infinity;
       final start = _context.start[z];
       final placed = _placed[z]..clear();
       var used = 0.0;
@@ -142,10 +157,22 @@ class ZonedFlow extends pw.Widget with pw.SpanningWidget {
         break;
       }
 
+      if (available.isFinite &&
+          index == start.index &&
+          used <= 0 &&
+          index < zone.children.length) {
+        throw zone.overflowError ??
+            StateError('Un bloc ne tient pas dans sa zone.');
+      }
       _context.end[z]
         ..index = index
         ..inner = resumeAt;
-      height = math.max(height, used);
+      height = math.max(height, used + zone.top);
+      if (!constraints.maxHeight.isFinite &&
+          zone.height != null &&
+          used > zone.height!) {
+        height = double.infinity;
+      }
     }
     box = PdfRect(0, 0, constraints.maxWidth, height);
   }
@@ -159,7 +186,7 @@ class ZonedFlow extends pw.Widget with pw.SpanningWidget {
         final size = child.box!;
         child.box = PdfRect(
           box!.left + zones[z].left,
-          box!.top - placed.top - size.height,
+          box!.top - zones[z].top - placed.top - size.height,
           size.width,
           size.height,
         );
